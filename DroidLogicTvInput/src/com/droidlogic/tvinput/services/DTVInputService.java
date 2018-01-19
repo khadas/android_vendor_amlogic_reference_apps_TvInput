@@ -191,6 +191,7 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
     private EASProcessManager mEASProcessManager;
     private String mEasText = null;
     private boolean pal_teletext = false;
+    private boolean isEasTextChannged = false;
 
     protected DTVSessionImpl mCurrentSession;
     protected int id = 0;
@@ -296,6 +297,7 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
             session.stopSubtitle();
             //releasePlayer();
             session.setMonitor(null);
+            session.updateEasState();
         }
     }
 
@@ -339,11 +341,6 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
 
                 if (DEBUG)
                     Log.d(TAG, "onSigChange" + status.ordinal() + status.toString());
-                Log.d(TAG, "TVIN_SIG_STATUS_STABLE:" + mEASProcessManager.isEasInProgress());
-                if (mEASProcessManager != null && mEASProcessManager.isEasInProgress()) {
-                    if (mCurrentSession != null)
-                        mCurrentSession.showEasText();
-                }
             }
         }
     }
@@ -1138,7 +1135,6 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
                 mUnblockedRatingSet.clear();
             }
             mCurrentChannelUri = uri;
-
             mChannelBlocked = -1;
             isUnlockCurrent_NR = false;
 
@@ -2131,17 +2127,11 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
         public void notifyVideoAvailable() {
             Log.d(TAG, "notifyVideoAvailable "+getSessionId());
             super.notifyVideoAvailable();
-
             mVideoUnavailableReason = TvInputManager.VIDEO_UNAVAILABLE_REASON_UNKNOWN - 1;
 
             enableSubtitleShow(true);
-            Log.i(TAG,"mCurrentUri = "+mCurrentUri+",mEasprocessManager = "+mEASProcessManager);
-            if (mEASProcessManager != null &&
-                    mEASProcessManager.isEasInProgress() && mEASProcessManager.getEasChannelUri() != null &&
-                    mEASProcessManager.getEasChannelUri().equals(mCurrentUri)) {
-                notifyAppEasStatus(true);
-                showEasText();
-            }
+            updateEasState();
+
             if (isRadioChannel() && mOverlayView != null) {
                 mOverlayView.setImage(R.drawable.bg_radio);
                 mOverlayView.setImageVisibility(true);
@@ -2150,14 +2140,48 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
             }
 
             if (mIsChannelScrambled && mTvControlManager.DtvGetVideoFormatInfo().fps <= 0
-                    && mOverlayView != null) {
+                && mOverlayView != null) {
                 mOverlayView.setText(R.string.av_scrambled);
                 mOverlayView.setTextVisibility(true);
             } else {
                 mIsChannelScrambled = false;
             }
-
         }
+
+        public void updateEasState() {
+            if (mEASProcessManager != null && mEASProcessManager.isEasInProgress()
+                    && mEASProcessManager.getEasChannelUri() != null
+                    && mEASProcessManager.getEasChannelUri().equals(mCurrentUri)) {
+                Log.i(TAG,"return to eas");
+                notifyAppEasStatus(true);
+                showEasText(true);
+            } else {
+                Log.i(TAG,"disable eas state");
+                notifyAppEasStatus(false);
+                if (mOverlayView != null)
+                    mOverlayView.setEasTextVisibility(false);
+            }
+        }
+
+        public void stopEasText() {
+            if (mOverlayView.isEasTextShown()) {
+                mOverlayView.setEasTextVisibility(false);
+                notifyAppEasStatus(false);
+            }
+        }
+
+        public final static int MSG_STOP_EAS_TEXT = 0;
+
+        Handler easHandler = new Handler(){
+            @Override
+            public void handleMessage(Message msg) {
+                switch (msg.what) {
+                    case MSG_STOP_EAS_TEXT:
+                        stopEasText();
+                        break;
+                }
+            }
+        };
 
         @Override
         public void notifyVideoUnavailable(int reason) {
@@ -2169,10 +2193,7 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
             }
             super.notifyVideoUnavailable(reason);
             mVideoUnavailableReason = reason;
-            Log.i(TAG,"measprocessManager = "+mEASProcessManager);
-            if (mEASProcessManager != null && mEASProcessManager.isEasInProgress()) {
-                notifyAppEasStatus(false);
-            }
+            stopEasText();
             if (mOverlayView != null) {
                 switch (reason) {
                     case TvInputManager.VIDEO_UNAVAILABLE_REASON_AUDIO_ONLY:
@@ -2190,7 +2211,6 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
                         mOverlayView.setTextVisibility(true);
                         mOverlayView.setImageVisibility(true);
                         mOverlayView.setTextVisibility(true);
-                        mOverlayView.setEasTextVisibility(false);
                         enableSubtitleShow(false);
                         break;
                 }
@@ -4354,10 +4374,10 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
                                 Log.d(TAG, "[TS Update] Freq:" + tvservice.getFrequency());
                                 int mode = new TvControlManager.TvMode(tvservice.getType()).getMode();
                                 mUpdateFrequency = tvservice.getFrequency();
-
                                 mEasText = null;
                                 enterServiceLocked(null);
                                 enterChannelLocked(null, true);
+                                easHandler.sendEmptyMessage(MSG_STOP_EAS_TEXT);
                                 stopSubtitle();
                                 releasePlayer();
                                 Log.d(TAG, "EVENT_CHANNEL_UPDATE mUpdateFrequency:" + mUpdateFrequency);
@@ -4712,19 +4732,42 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
             mHandler.obtainMessage(MSG_REC_PLAY, recordUri).sendToTarget();
         }
 
-        public void showEasText() {
+         public void showEasText(boolean isShowNow) {
             Log.d(TAG,"showEasText:"+mEasText);
             if (mOverlayView == null) {
                 Log.d(TAG,"showEasText fail,because overlayview is NULL");
                 return;
             }
-            if (mEasText != null ) {
+
+            if (!isEasTextChannged && mOverlayView.isEasTextShown())
+                return;
+            if (mEasText != null) {
+                isEasTextChannged = false;
                 mOverlayView.setImageVisibility(false);
-                mOverlayView.setTextForEas(mEasText);
-                mOverlayView.setEasTextVisibility(true);
+                if (mOverlayView.isEasTextShown()) {
+                    Log.i("dtv","eas is shown, show immediately");
+                    mOverlayView.setEasTextVisibility(true);
+                    mOverlayView.setTextForEas(mEasText);
+                }else if (isShowNow){
+                    Log.i("dtv","eas is not shown ,show after 2s");
+                    mOverlayView.setEasTextVisibility(true);
+                    mOverlayView.setTextForEas(mEasText);
+                }
             } else {
                 mOverlayView.setEasTextVisibility(false);
             }
+        }
+
+        public boolean isEasTextShown() {
+            if (mOverlayView != null) {
+                return false;
+            }
+            return mOverlayView.isEasTextShown();
+        }
+
+
+        public void tuneToEasChannel(Uri uri) {
+            doTuneInService(uri, getSessionId());
         }
     }
 
@@ -5259,10 +5302,20 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
                 @Override
                 public void onUpdateEasText(String text) {
                     if (DEBUG) Log.d(TAG,"onUpdateEasText:"+text);
-                        mEasText = text;
+                    if ((mEasText == null && text == null) || (mEasText != null && mEasText.equals(text)))
+                        isEasTextChannged = false;
+                    else
+                        isEasTextChannged = true;
+                    mEasText = text;
                     if (mCurrentSession != null) {
-                        mCurrentSession.showEasText();
+                        mCurrentSession.showEasText(false);
                     }
+                }
+                @Override
+                public void tuneToEasChannel(Uri uri) {
+                    if (DEBUG) Log.d(TAG,"tuneToEasChannel:"+uri);
+                    if (mCurrentSession != null)
+                        mCurrentSession.tuneToEasChannel(uri);
                 }
     };
 }

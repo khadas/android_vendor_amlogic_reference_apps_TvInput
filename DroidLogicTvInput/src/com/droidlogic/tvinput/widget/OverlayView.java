@@ -14,9 +14,10 @@ import android.util.AttributeSet;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.HorizontalScrollView;
 
-import com.droidlogic.app.tv.DroidLogicOverlayView;
 import com.droidlogic.tvinput.R;
+import com.droidlogic.app.tv.DroidLogicOverlayView;
 
 public class OverlayView extends DroidLogicOverlayView {
 
@@ -40,5 +41,7 @@ public class OverlayView extends DroidLogicOverlayView {
         mTuningImageView = (ImageView) findViewById(R.id.tuning_image);
         mTeletextNumber = (TextView) findViewById(R.id.msg_teletext_number);
         mDoblyVisionImageView = (ImageView) findViewById(R.id.dobly_vision_image);
+        mEasScrollView = (HorizontalScrollView)findViewById(R.id.eas_scrollview);
     }
+
 }

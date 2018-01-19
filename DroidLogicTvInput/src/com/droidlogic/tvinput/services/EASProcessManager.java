@@ -138,11 +138,18 @@ public class EASProcessManager{
     }
 
     private String getAlertText(EasEvent easEvent){
+        boolean isEndIndicator = false;
         if (easEvent.multiTextCount != 0) {
             String easText = "";
             for (EasEvent.MultiStr multiStr:easEvent.multiText) {
+                if (isEndIndicator)
+                    break;
                 for (int ch:multiStr.compressedStr) {
-                    if (ch >= 0 && ch <= 255) {
+                    if (ch == 0) {
+                        isEndIndicator = true;
+                        break;
+                    }
+                    if (ch > 0 && ch <= 255) {
                         easText += Character.toString((char)ch);
                     }
                 }
@@ -222,10 +229,7 @@ public class EASProcessManager{
 
     private void launchLiveTv(Uri uri) {
         if (DEBUG) Log.d(TAG, "launchLiveTv="+uri);
-        Intent intent = new Intent(Intent.ACTION_VIEW);
-        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        intent.setData(uri);
-        mContext.startActivity(intent);
+        mCallback.tuneToEasChannel(uri);
    }
 
 
@@ -296,7 +300,7 @@ public class EASProcessManager{
             return ret;
         }
 
-        public  boolean isInteger(String string) {
+        public boolean isInteger(String string) {
             try {
                 Integer.parseInt(string);
             } catch(NumberFormatException e) {
@@ -315,6 +319,8 @@ public class EASProcessManager{
         public void onEasEnd() {
         }
         public void onUpdateEasText(String inputId) {
+        }
+        public void tuneToEasChannel(Uri uri) {
         }
     }
 }
