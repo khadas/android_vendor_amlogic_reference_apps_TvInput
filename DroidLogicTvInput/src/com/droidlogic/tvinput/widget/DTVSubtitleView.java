@@ -174,9 +174,9 @@ public class DTVSubtitleView extends View {
     private native void native_set_buffer(ByteBuffer array);
 
     static {
-        System.loadLibrary("am_adp");
-        System.loadLibrary("am_mw");
-        System.loadLibrary("zvbi");
+//        System.loadLibrary("am_adp");
+//        System.loadLibrary("am_mw");
+//        System.loadLibrary("zvbi");
         System.loadLibrary("jnidtvsubtitle");
     }
 
@@ -287,10 +287,7 @@ public class DTVSubtitleView extends View {
     private boolean   destroy;
     private static DTVSubtitleView activeView = null;
     private void update() {
-        if (handler != null)
-            handler.obtainMessage(UPDATE_BITMAP).sendToTarget();
-        else
-            Log.e(TAG, "update was called, but handler is null");
+        postInvalidate();
     }
 
     private void stopDecoder() {
@@ -862,11 +859,6 @@ public class DTVSubtitleView extends View {
             switch (msg.what) {
                 case JSON_MSG_NORMAL:
                     json_str = (String)msg.obj;
-                    postInvalidate();
-                    break;
-                case UPDATE_BITMAP:
-                    bitmap_bytebuffer.rewind();
-                    bitmap.copyPixelsFromBuffer(bitmap_bytebuffer);
                     postInvalidate();
                     break;
             }
