@@ -17,6 +17,7 @@
 #include <am_pes.h>
 #include <am_misc.h>
 #include <am_cc.h>
+#include <am_isdb.h>
 #endif
 #include <stdlib.h>
 #include <pthread.h>
@@ -40,6 +41,7 @@ typedef void* AM_SUB2_Handle_t;
         AM_PES_Handle_t  pes_handle;
         AM_TT2_Handle_t  tt_handle;
         AM_CC_Handle_t   cc_handle;
+        AM_ISDB_Handle_t isdb_handle;
     #endif
         int              dmx_id;
         int              filter_handle;
@@ -72,6 +74,7 @@ typedef void* AM_SUB2_Handle_t;
     static jmethodID gReadSysfsID;
     static jmethodID gWriteSysfsID;
     static char gJsonStr[CC_JSON_BUFFER_SIZE];
+    static jchar gJchar[CC_JSON_BUFFER_SIZE];
     static unsigned char* bmp_buffer;
 
     static jint sub_clear(JNIEnv *env, jobject obj);
@@ -284,6 +287,13 @@ typedef void* AM_SUB2_Handle_t;
         AM_SUB2_Decode(sub->sub_handle, buf, size);
     }
 
+    static void pes_isdbt_cb(AM_PES_Handle_t handle, uint8_t *buf, int size)
+    {
+        TVSubtitleData *sub = (TVSubtitleData *)AM_PES_GetUserData(handle);
+
+        AM_ISDB_Decode(sub->isdb_handle, buf, size);
+    }
+
     static void show_sub_cb(AM_SUB2_Handle_t handle, AM_SUB2_Picture_t *pic)
     {
         TVSubtitleData *sub = (TVSubtitleData *)AM_SUB2_GetUserData(handle);
@@ -420,7 +430,6 @@ typedef void* AM_SUB2_Handle_t;
         ret = AM_DMX_AllocateFilter(dmx_id, &data->filter_handle);
         if (ret != AM_SUCCESS)
             goto error;
-
         ret = AM_DMX_SetBufferSize(dmx_id, data->filter_handle, 0x80000);
         if (ret != AM_SUCCESS)
             goto error;
@@ -462,6 +471,19 @@ error:
         data->filter_handle = -1;
 
         return 0;
+    }
+
+    static jchar* utf8_to_utf16(char* utf8)
+    {
+        int i;
+        if (utf8)
+        {
+            for (i=0; i<strlen(utf8); i++)
+                gJchar[i] = utf8[i];
+            return gJchar;
+        }
+        else
+            return NULL;
     }
 
     static void sub_update(jobject obj)
@@ -511,6 +533,43 @@ error:
         env->CallVoidMethod(sub->obj, gPassJsonStr, data);
         env->DeleteLocalRef(data);
 
+        if (attached) {
+            gJavaVM->DetachCurrentThread();
+        }
+
+    }
+
+    static void json_isdb_update_cb(AM_ISDB_Handle_t handle)
+    {
+        TVSubtitleData *sub = (TVSubtitleData *)handle;
+        JNIEnv *env;
+        int ret;
+        jstring data;
+        int attached = 0;
+        int i;
+        jchar* utf16;
+
+        ret = gJavaVM->GetEnv((void **) &env, JNI_VERSION_1_4);
+
+        if (ret < 0) {
+            ret = gJavaVM->AttachCurrentThread(&env, NULL);
+            if (ret < 0) {
+                LOGE("Can't attach thread");
+                return;
+            }
+            attached = 1;
+        }
+
+        if (utf16 = utf8_to_utf16(gJsonStr))
+        {
+            data = env->NewString(utf16, strlen(gJsonStr));
+            if (data)
+            {
+                env->CallVoidMethod(sub->obj, gPassJsonStr, data);
+                env->DeleteLocalRef(data);
+            }
+            sub_update(sub->obj);
+        }
         if (attached) {
             gJavaVM->DetachCurrentThread();
         }
@@ -1010,6 +1069,76 @@ error:
         return 0;
     }
 
+    static jint sub_stop_isdbt_sub(JNIEnv *env, jobject obj)
+    {
+#ifdef SUPPORT_ADTV
+        TVSubtitleData *data = sub_get_data(env, obj);
+        LOGE("Native stop isdb");
+        close_dmx(data);
+        AM_PES_Destroy(data->pes_handle);
+        data->pes_handle = NULL;
+        AM_ISDB_Stop(data->isdb_handle);
+
+    #endif
+        return 0;
+    }
+
+    static jint sub_start_isdbt_sub(JNIEnv *env, jobject obj, jint dmx_id, jint pid, int caption_id)
+    {
+
+#ifdef SUPPORT_ADTV
+        TVSubtitleData *data = sub_get_data(env, obj);
+        AM_PES_Para_t pesp;
+
+        AM_Isdb_CreatePara_t isdb_create_para;
+        AM_Isdb_StartPara_t isdb_start_para;
+        isdb_create_para.json_update = json_isdb_update_cb;
+        isdb_create_para.json_buffer = gJsonStr;
+        isdb_create_para.user_data = (void *)data;
+        int ret;
+
+        LOGE("analyze isdbt now dmx %d pid %d captionid %d", dmx_id, pid, caption_id);
+
+        setDvbDebugLogLevel();
+        ret = AM_ISDB_Create(&isdb_create_para, &data->isdb_handle);
+        if (ret != AM_SUCCESS)
+        {
+            AM_ISDB_Destroy(&data->isdb_handle);
+            goto error;
+        }
+
+        AM_ISDB_Start(&isdb_start_para, data->isdb_handle);
+        memset(&pesp, 0, sizeof(pesp));
+        pesp.packet    = pes_isdbt_cb;
+        pesp.user_data = data;
+        pesp.payload_only = 1;
+
+        ret = AM_PES_Create(&data->pes_handle, &pesp);
+        if (ret != AM_SUCCESS)
+        {
+            LOGE("Pes create failed");
+            goto error;
+        }
+        ret = open_dmx(data, dmx_id, pid);
+        if (ret < 0)
+        {
+            LOGE("Open dmx create failed");
+            goto error;
+        }
+
+        LOGI("isdb started at demux %d, pid %d", dmx_id, pid);
+
+        return 0;
+error:
+        if (data->pes_handle) {
+            AM_PES_Destroy(data->pes_handle);
+            data->pes_handle = NULL;
+        }
+#endif
+        return -1;
+    }
+
+
     static jint sub_tt_search(JNIEnv *env, jobject obj, jint dir)
     {
     #ifdef SUPPORT_ADTV
@@ -1153,7 +1282,7 @@ error:
         LOGI("stop cc");
         AM_CC_Destroy(data->cc_handle);
         pthread_mutex_lock(&data->lock);
-		if (data->obj)
+        if (data->obj)
             sub_update(data->obj);
         pthread_mutex_unlock(&data->lock);
 
@@ -1234,6 +1363,8 @@ error:
         {"native_sub_stop_atsc_cc", "()I", (void *)sub_stop_atsc_cc},
         {"native_sub_set_atsc_cc_options", "(IIIIII)I", (void *)sub_set_atsc_cc_options},
         {"native_sub_set_active", "(Z)I", (void *)sub_set_active},
+        {"native_sub_start_isdbt", "(III)I", (void *)sub_start_isdbt_sub},
+        {"native_sub_stop_isdbt", "()I", (void *)sub_stop_isdbt_sub},
     };
 
     JNIEXPORT jint

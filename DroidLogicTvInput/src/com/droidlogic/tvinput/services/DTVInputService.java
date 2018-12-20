@@ -2252,12 +2252,14 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
                 mSubtitleView.setMargin(225, 128, 225, 128);
                 Log.d(TAG, "ATV CC pid="+pid+" dp "+id1+ " lang "+lang+",fg_color="+ccParam.fg_color+", fg_op="+ccParam.fg_opacity+", bg_color="+ccParam.bg_color+", bg_op="+ccParam.bg_opacity);
             } else if (type == ChannelInfo.Subtitle.TYPE_DTV_TELETEXT_IMG) {
-                Log.e(TAG, "TELETEXT_IMG");
                 int pgno;
                 pgno = (id1 == 0) ? 800 : id1 * 100;
                 pgno += (id2 & 15) + ((id2 >> 4) & 15) * 10 + ((id2 >> 8) & 15) * 100;
                 DTVSubtitleView.DTVTTParams params =
                         new DTVSubtitleView.DTVTTParams(0, pid, pgno, 0x3F7F, getTeletextRegionID("English"), type, stype);
+                mSubtitleView.setSubParams(params);
+            } else if (type == ChannelInfo.Subtitle.TYPE_ISDB_SUB) {
+                DTVSubtitleView.ISDBParams params = new DTVSubtitleView.ISDBParams(0, pid, 0);
                 mSubtitleView.setSubParams(params);
             }
         }

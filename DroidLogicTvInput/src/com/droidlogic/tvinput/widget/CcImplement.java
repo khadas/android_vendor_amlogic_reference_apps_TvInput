@@ -263,7 +263,7 @@ public class CcImplement {
     }
 
 
-    class CaptionScreen
+    public class CaptionScreen
     {
         int width;
         int height;
