@@ -1158,7 +1158,13 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
                 TvContentRating[] newparseratings = null;
                 if (mCurrentProgram != null) {
                     json = mCurrentProgram.getInternalProviderData();
-                    newparseratings = parseDRatingsT(json, -1, null, mCurrentProgram.getTitle());
+                    Log.d(TAG, "getContentRatingsOfCurrentProgram programid = " + mCurrentProgram.getId() + ", channel json = " + json);
+                    newparseratings = parseDRatingsT(json, mTvDataBaseManager, mCurrentProgram.getTitle(), channelInfo.getUri(), mCurrentProgram.getId(), mCurrentProgram.getStartTimeUtcMillis());
+                } else if (DEBUG) {
+                    Log.d(TAG, "getContentRatingsOfCurrentProgram mCurrentProgram = null");
+                }
+                if (true || DEBUG) {
+                    Log.d(TAG, "getContentRatingsOfCurrentProgram newrating = " + Program.contentRatingsToString(newparseratings) + ", ratings = " + Program.contentRatingsToString(ratings));
                 }
                 if (newparseratings != null && !TextUtils.equals(Program.contentRatingsToString(newparseratings), Program.contentRatingsToString(ratings))) {
                     ratings = newparseratings;
@@ -2076,7 +2082,7 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
             //Log.d(TAG, "check_program_pmt_rating_block cur channel: " + mCurrentChannel.getServiceId() +" PMT ServiceId:" + ServiceId + " ratings:" + json);
             if ((mCurrentChannel != null && mCurrentChannel.isAtscChannel()) || isAtscForcedStandard()) {
                 //Log.d(TAG, "PMT get mCurrentPmtContentRatings");
-                mCurrentPmtContentRatings = parseDRatingsT(json, -1, null, "");
+                mCurrentPmtContentRatings = parseDRatingsT(json, null, "", mCurrentChannel.getUri(), -1, -1);
                 if (DEBUG) Log.d(TAG, "PMT save mCurrentPmtContentRatings = " + Program.contentRatingsToString(mCurrentPmtContentRatings));
                 saveCurrentChannelRatings();
                 if (mHandler != null)
@@ -3085,7 +3091,7 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
                                     .setChannelId(ContentUris.parseId(channelUri))
                                     .setTitle(TvMultilingualText.getText((evt.name == null ? null : new String(evt.name)), languages))
                                     .setDescription(TvMultilingualText.getText((evt.ext_descr == null ? null : new String(evt.ext_descr)), languages))
-                                    .setContentRatings(evt.rrt_ratings == null ? null : parseDRatingsT(new String(evt.rrt_ratings), evt.evt_id, mTvDataBaseManager, (evt.name == null ? null : new String(evt.name))))
+                                    .setContentRatings(evt.rrt_ratings == null ? null : parseDRatingsT(new String(evt.rrt_ratings), mTvDataBaseManager, (evt.name == null ? null : new String(evt.name)), channelUri, -1, start * 1000))
                                     //.setContentRatings(evt.rrt_ratings == null ? null : DroidLogicTvUtils.parseDRatings(new String(evt.rrt_ratings)))
                                     //.setCanonicalGenres(programInfo.genres)
                                     //.setPosterArtUri(programInfo.posterArtUri)
@@ -3183,7 +3189,7 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
                                     .setChannelId(cid)
                                     .setTitle(TvMultilingualText.getText((evt.name == null ? null : new String(evt.name)), languages))
                                     .setDescription(TvMultilingualText.getText((evt.ext_descr == null ? null : new String(evt.ext_descr)), languages))
-                                    .setContentRatings(evt.rrt_ratings == null ? null : parseDRatingsT(new String(evt.rrt_ratings), evt.evt_id, mTvDataBaseManager, (evt.name == null ? null : new String(evt.name))))
+                                    .setContentRatings(evt.rrt_ratings == null ? null : parseDRatingsT(new String(evt.rrt_ratings), mTvDataBaseManager, (evt.name == null ? null : new String(evt.name)), c.getUri(), -1, start * 1000))
                                     //.setContentRatings(evt.rrt_ratings == null ? null : DroidLogicTvUtils.parseDRatings(new String(evt.rrt_ratings)))
                                     //.setCanonicalGenres(programInfo.genres)
                                     //.setPosterArtUri(programInfo.posterArtUri)
@@ -4227,7 +4233,7 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
         return ratings_arry;
     }
 
-    public TvContentRating[] parseDRatingsT(String jsonString, int programid, TvDataBaseManager tvdatamanager, String title) {
+    public TvContentRating[] parseDRatingsT(String jsonString, TvDataBaseManager tvdatamanager, String title, Uri channeluri, long programid, long starttime) {
         String RatingDomain = DroidContentRatingsParser.DOMAIN_RRT_RATINGS;
         int rrt5count = 0;
         int nonerrt5count = 0;
@@ -4277,11 +4283,28 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
                     //Log.d(TAG, "   dimension:"+ dimension+",rating_value:"+value);
                     if (dimension == -1 || value == -1)
                         continue;
-                        RrtSearchInfo rrtSearchInfo = mTvControlManager.SearchRrtInfo(region, dimension, value);
+                        RrtSearchInfo rrtSearchInfo = mTvControlManager.SearchRrtInfo(region, dimension, value, (int)programid);
                         if (rrtSearchInfo != null) {
-                            if (TextUtils.isEmpty(rrtSearchInfo.rating_region_name)
-                                    ||TextUtils.isEmpty(rrtSearchInfo.dimensions_name) || TextUtils.isEmpty(rrtSearchInfo.rating_value_text))
+                            if (rrtSearchInfo.status == -1) {
+                                if (tvdatamanager != null && channeluri != null && starttime > -1) {
+                                    Program program = tvdatamanager.getProgramByStartTime(channeluri, starttime);
+                                    if (program != null) {
+                                        TvContentRating[] allprogramratings = program.getContentRatings();
+                                        if (allprogramratings != null && allprogramratings.length > 0) {
+                                            for (TvContentRating singone : allprogramratings) {
+                                                if (DroidContentRatingsParser.DOMAIN_RRT_RATINGS.equals(singone.getDomain())) {
+                                                    /*if (DEBUG)*/ Log.d(TAG, "programid = " + program.getId() + " parse ratings status erro, add previous = " + singone.flattenToString());
+                                                    RatingList.add(singone);
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                                break;
+                            } else if (TextUtils.isEmpty(rrtSearchInfo.rating_region_name)
+                                    || TextUtils.isEmpty(rrtSearchInfo.dimensions_name) || TextUtils.isEmpty(rrtSearchInfo.rating_value_text)) {
                                 continue;
+                            }
                             TvContentRating r = TvContentRating.createRating(RatingDomain,rrtSearchInfo.dimensions_name, rrtSearchInfo.rating_value_text, null);
                             if (r != null) {
                                 RatingList.add(r);
