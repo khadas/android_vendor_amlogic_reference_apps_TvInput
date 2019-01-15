@@ -166,8 +166,8 @@ public class DTVSubtitleView extends View {
     private native int native_sub_tt_search_next(int dir);
     protected native int native_get_subtitle_picture_width();
     protected native int native_get_subtitle_picture_height();
-    private native int native_sub_start_atsc_cc(int vfmt, int caption, int fg_color, int fg_opacity, int bg_color, int bg_opacity, int font_style, int font_size);
-    private native int native_sub_start_atsc_atvcc(int caption, int fg_color, int fg_opacity, int bg_color, int bg_opacity, int font_style, int font_size);
+    private native int native_sub_start_atsc_cc(int vfmt, int caption, int decoder_param, String lang, int fg_color, int fg_opacity, int bg_color, int bg_opacity, int font_style, int font_size);
+    private native int native_sub_start_atsc_atvcc(int caption, int decoder_param, String lang, int fg_color, int fg_opacity, int bg_color, int bg_opacity, int font_style, int font_size);
     private native int native_sub_stop_atsc_cc();
     private native static int native_sub_set_atsc_cc_options(int fg_color, int fg_opacity, int bg_color, int bg_opacity, int font_style, int font_size);
     private native int native_sub_set_active(boolean active);
@@ -219,17 +219,21 @@ public class DTVSubtitleView extends View {
     static public class DTVCCParams {
         protected int vfmt;
         protected int caption_mode;
+        protected int decoder_param;
         protected int fg_color;
         protected int fg_opacity;
         protected int bg_color;
         protected int bg_opacity;
         protected int font_style;
         protected float font_size;
+        protected String lang;
 
-        public DTVCCParams(int vfmt, int caption, int fg_color, int fg_opacity,
+        public DTVCCParams(int vfmt, int caption, int decoder_param, String lang, int fg_color, int fg_opacity,
                 int bg_color, int bg_opacity, int font_style, float font_size) {
             this.vfmt = vfmt;
             this.caption_mode = caption;
+            this.decoder_param = decoder_param;
+            this.lang = lang;
             this.fg_color = fg_color;
             this.fg_opacity = fg_opacity;
             this.bg_color = bg_color;
@@ -240,16 +244,16 @@ public class DTVSubtitleView extends View {
     }
 
     static public class ATVCCParams extends DTVCCParams {
-        public ATVCCParams(int caption, int fg_color, int fg_opacity,
+        public ATVCCParams(int caption, int decoder_param, String lang, int fg_color, int fg_opacity,
                 int bg_color, int bg_opacity, int font_style, float font_size) {
-            super(VFMT_ATV, caption, fg_color, fg_opacity,
+            super(VFMT_ATV, caption, decoder_param, lang, fg_color, fg_opacity,
                     bg_color, bg_opacity, font_style, font_size);
         }
     }
     static public class AVCCParams extends DTVCCParams {
-        public AVCCParams(int caption, int fg_color, int fg_opacity,
+        public AVCCParams(int caption, int decoder_param, String lang, int fg_color, int fg_opacity,
                 int bg_color, int bg_opacity, int font_style, float font_size) {
-            super(VFMT_ATV, caption, fg_color, fg_opacity,
+            super(VFMT_ATV, caption, decoder_param, lang, fg_color, fg_opacity,
                     bg_color, bg_opacity, font_style, font_size);
         }
     }
@@ -611,6 +615,8 @@ public class DTVSubtitleView extends View {
                     ret = native_sub_start_atsc_cc(
                             sub_params.vfmt,
                             sub_params.dtv_cc.caption_mode,
+                            sub_params.dtv_cc.decoder_param,
+                            sub_params.dtv_cc.lang,
                             sub_params.dtv_cc.fg_color,
                             sub_params.dtv_cc.fg_opacity,
                             sub_params.dtv_cc.bg_color,
@@ -621,6 +627,8 @@ public class DTVSubtitleView extends View {
                 case MODE_ATV_CC:
                     ret = native_sub_start_atsc_atvcc(
                             sub_params.atv_cc.caption_mode,
+                            sub_params.atv_cc.decoder_param,
+                            sub_params.dtv_cc.lang,
                             sub_params.atv_cc.fg_color,
                             sub_params.atv_cc.fg_opacity,
                             sub_params.atv_cc.bg_color,
@@ -631,6 +639,8 @@ public class DTVSubtitleView extends View {
                 case MODE_AV_CC:
                     ret = native_sub_start_atsc_atvcc(
                             sub_params.av_cc.caption_mode,
+                            sub_params.av_cc.decoder_param,
+                            sub_params.av_cc.lang,
                             sub_params.av_cc.fg_color,
                             sub_params.av_cc.fg_opacity,
                             sub_params.av_cc.bg_color,

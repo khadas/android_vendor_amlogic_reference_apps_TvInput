@@ -1424,7 +1424,8 @@ public class CcImplement {
                             background_paint.setAlpha(bg_opacity_int);
                             if (fill_opacity_int != 0xff)
                                 background_paint.setXfermode(porter_src);
-                            canvas.drawRect((float) str_left, (float) str_top, (float) str_right, (float) str_bottom, background_paint);
+//                            canvas.drawRect((float) str_left, (float) str_top, (float) str_right, (float) str_bottom, background_paint);
+                            canvas.drawRect((float) str_left, (float) str_top, (float) str_left + text_paint.measureText(data), (float) str_bottom, background_paint);
                         }
                         if (!justify.equalsIgnoreCase("full")) {
                             draw_text(canvas, data, font_face, font_size,

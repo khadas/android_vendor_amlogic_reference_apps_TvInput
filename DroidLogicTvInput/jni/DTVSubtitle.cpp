@@ -1020,7 +1020,25 @@ error:
         return 0;
     }
 
-    static jint sub_start_atsc_cc(JNIEnv *env, jobject obj, jint source, jint vfmt, jint caption, jint fg_color,
+void jstringToChar(JNIEnv* env, jstring jstr, char *buffer, int len)
+{
+    jclass clsstring = env->FindClass("java/lang/String");
+    jstring strencode = env->NewStringUTF("UTF-8");
+    jmethodID mid = env->GetMethodID(clsstring, "getBytes", "(Ljava/lang/String;)[B");
+    jbyteArray barr = (jbyteArray) env->CallObjectMethod(jstr, mid, strencode);
+    jsize alen = env->GetArrayLength(barr);
+    jbyte* ba = env->GetByteArrayElements(barr, JNI_FALSE);
+    if ((alen > 0) && (alen < len)) {
+        memcpy(buffer, ba, alen);
+        buffer[alen] = 0;
+    } else {
+        memset(buffer, 0, len);
+    }
+    env->ReleaseByteArrayElements(barr, ba, 0);
+}
+
+    static jint sub_start_atsc_cc(JNIEnv *env, jobject obj, jint source, jint vfmt, jint caption,
+    jint decoder_param, char* lang, jint fg_color,
 
             jint fg_opacity, jint bg_color, jint bg_opacity, jint font_style, jint font_size)
     {
@@ -1032,12 +1050,12 @@ error:
 
         setDvbDebugLogLevel();
 
-        LOGI("start cc: vfmt %d caption %d, fgc %d, bgc %d, fgo %d, bgo %d, fsize %d, fstyle %d source %d",
-                vfmt, caption, fg_color, bg_color, fg_opacity, bg_opacity, font_size, font_style, source);
+        LOGI("start cc: vfmt %d caption %d, dp 0x%x, lang %s, fgc %d, bgc %d, fgo %d, bgo %d, fsize %d, fstyle %d",
+                vfmt, caption, decoder_param, lang, fg_color, bg_color, fg_opacity, bg_opacity, font_size, font_style);
 
         memset(&cc_para, 0, sizeof(cc_para));
         memset(&spara, 0, sizeof(spara));
-
+        cc_para.decoder_param = decoder_param;
         cc_para.bmp_buffer = data->buffer;
         cc_para.pitch = data->bmp_pitch;
         cc_para.draw_begin = cc_draw_begin_cb;
@@ -1048,6 +1066,7 @@ error:
         cc_para.data_cb = cc_data_cb;
         cc_para.data_timeout = 5000;//5s
         cc_para.switch_timeout = 3000;//3s
+        strncpy(cc_para.lang, lang, 10);
         spara.vfmt = vfmt;
         spara.caption1                 = (AM_CC_CaptionMode_t)caption;
         spara.caption2                 = AM_CC_CAPTION_NONE;
@@ -1099,22 +1118,27 @@ error:
     #endif
     }
 
-    static jint sub_start_atsc_dtvcc(JNIEnv *env, jobject obj, jint vfmt, jint caption, jint fg_color,
+    static jint sub_start_atsc_dtvcc(JNIEnv *env, jobject obj, jint vfmt, jint caption, jint decoder_param, jstring lang, jint fg_color,
             jint fg_opacity, jint bg_color, jint bg_opacity, jint font_style, jint font_size)
     {
     #ifdef SUPPORT_ADTV
-        return sub_start_atsc_cc(env, obj, AM_CC_INPUT_USERDATA, vfmt, caption, fg_color,
-                fg_opacity, bg_color, bg_opacity, font_style, font_size);
+        char langarr[10];
+        jstringToChar(env, lang, langarr, 10);
+        return sub_start_atsc_cc(env, obj, AM_CC_INPUT_USERDATA, vfmt, caption, decoder_param,
+        langarr, fg_color, fg_opacity, bg_color, bg_opacity, font_style, font_size);
     #else
         return -1;
     #endif
     }
 
-    static jint sub_start_atsc_atvcc(JNIEnv *env, jobject obj, jint caption, jint fg_color,
+    static jint sub_start_atsc_atvcc(JNIEnv *env, jobject obj, jint caption, jint decoder_param,
+    jstring lang, jint fg_color,
             jint fg_opacity, jint bg_color, jint bg_opacity, jint font_style, jint font_size)
     {
     #ifdef SUPPORT_ADTV
-        return sub_start_atsc_cc(env, obj, AM_CC_INPUT_VBI, 100, caption, fg_color,
+        char langarr[10];
+        jstringToChar(env, lang, langarr, 10);
+        return sub_start_atsc_cc(env, obj, AM_CC_INPUT_VBI, 100, caption, decoder_param, langarr, fg_color,
                 fg_opacity, bg_color, bg_opacity, font_style, font_size);
     #else
         return -1;
@@ -1205,8 +1229,8 @@ error:
         {"native_sub_tt_search_next", "(I)I", (void *)sub_tt_search},
         {"native_get_subtitle_picture_width", "()I", (void *)get_subtitle_piture_width},
         {"native_get_subtitle_picture_height", "()I", (void *)get_subtitle_piture_height},
-        {"native_sub_start_atsc_cc", "(IIIIIIII)I", (void *)sub_start_atsc_dtvcc},
-        {"native_sub_start_atsc_atvcc", "(IIIIIII)I", (void *)sub_start_atsc_atvcc},
+        {"native_sub_start_atsc_cc", "(IIILjava/lang/String;IIIIII)I", (void *)sub_start_atsc_dtvcc},
+        {"native_sub_start_atsc_atvcc", "(IILjava/lang/String;IIIIII)I", (void *)sub_start_atsc_atvcc},
         {"native_sub_stop_atsc_cc", "()I", (void *)sub_stop_atsc_cc},
         {"native_sub_set_atsc_cc_options", "(IIIIII)I", (void *)sub_set_atsc_cc_options},
         {"native_sub_set_active", "(Z)I", (void *)sub_set_active},

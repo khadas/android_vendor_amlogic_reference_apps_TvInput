@@ -1659,13 +1659,13 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
             int CaptionType
                 = isAnalog ? ChannelInfo.Subtitle.TYPE_ATV_CC : ChannelInfo.Subtitle.TYPE_DTV_CC;
             int count = 0;
-
+            //stype indicates the source type, where cc comes from
             if (!isAnalog) {
                 for (int i = 0; i < CaptionCSMax; i++) {
                     ChannelInfo.Subtitle s
-                        = new ChannelInfo.Subtitle(CaptionType,
+                        = new ChannelInfo.Subtitle(ChannelInfo.Subtitle.TYPE_DTV_CC,
                                                 ChannelInfo.Subtitle.CC_CAPTION_SERVICE1 + i,
-                                                CaptionType,
+                                                ChannelInfo.Subtitle.TYPE_DTV_CC,
                                                 0,
                                                 0,
                                                 "CS"+(i+1),
@@ -1675,7 +1675,7 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
             }
             for (int i = 0; i < CaptionCCMax; i++) {
                 ChannelInfo.Subtitle s
-                    = new ChannelInfo.Subtitle(CaptionType,
+                    = new ChannelInfo.Subtitle(ChannelInfo.Subtitle.TYPE_ATV_CC,
                                             ChannelInfo.Subtitle.CC_CAPTION_CC1 + i,
                                             CaptionType,
                                             0,
@@ -1686,7 +1686,7 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
             }
             for (int i = 0; i < CaptionTXMax; i++) {
                 ChannelInfo.Subtitle s
-                    = new ChannelInfo.Subtitle(CaptionType,
+                    = new ChannelInfo.Subtitle(ChannelInfo.Subtitle.TYPE_ATV_CC,
                                             ChannelInfo.Subtitle.CC_CAPTION_TEXT1 + i,
                                             CaptionType,
                                             0,
@@ -1708,7 +1708,10 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
             while (iter.hasNext()) {
                 ChannelInfo.Subtitle s = iter.next();
                 if (s.mType == sub.mType && s.mPid == sub.mPid)
+                    {
+                    Log.e(TAG, "pid "+s.mPid + " id1 "+s.mId1 + " id2 "+s.mId2);
                     return s;
+                    }
             }
             return null;
         }
@@ -1729,12 +1732,14 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
             while (iter.hasNext()) {
                 ChannelInfo.Subtitle s = iter.next();
                 ChannelInfo.Subtitle sub = null;
+
                 sub = getExistSubtitleFromList(channelSubs, s);
                 if (sub != null)
-                    s = new ChannelInfo.Subtitle.Builder(sub).setId(s.id).setLang(s.mLang).build();
+                    s = new ChannelInfo.Subtitle.Builder(sub).setId(s.id).setLang(s.mLang + "-" +
+                        sub.mLang).setId1(sub.mId1).build();
                 sub = getExistSubtitleFromList(programSubs, s);
                 if (sub != null)
-                    s = new ChannelInfo.Subtitle.Builder(sub).setId(s.id).setLang(s.mLang).build();;
+                    s = new ChannelInfo.Subtitle.Builder(sub).setId(s.id).setLang(s.mLang).setId1(sub.mId1).build();
                 subtitles.add(s);
             }
         }
@@ -1991,7 +1996,7 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
                 return;
             startSubtitle(channel.getVfmt(),channel.isAnalogChannel()?
                                 ChannelInfo.Subtitle.TYPE_ATV_CC : ChannelInfo.Subtitle.TYPE_DTV_CC,
-                            15/*ChannelInfo.Subtitle.CC_CAPTION_XDS*/, 0, 0, 0);
+                            15/*ChannelInfo.Subtitle.CC_CAPTION_XDS*/, 0, 0, 0, "");
             enableSubtitleShow(false);
             mSystemControlManager.setProperty(DTV_SUBTITLE_TRACK_IDX, "-3");
         }
@@ -2203,7 +2208,7 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
              }
          }
 
-        protected void setSubtitleParam(int vfmt, int type, int pid, int stype, int id1, int id2) {
+        protected void setSubtitleParam(int vfmt, int type, int pid, int stype, int id1, int id2, String lang) {
             if (type == ChannelInfo.Subtitle.TYPE_DVB_SUBTITLE) {
                 DTVSubtitleView.DVBSubParams params =
                     new DTVSubtitleView.DVBSubParams(0, pid, id1, id2);
@@ -2221,6 +2226,7 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
                 CCStyleParams ccParam = getCaptionStyle();
                 DTVSubtitleView.DTVCCParams params =
                     new DTVSubtitleView.DTVCCParams(vfmt, pid,
+                        id1, lang,
                         ccParam.fg_color,
                         ccParam.fg_opacity,
                         ccParam.bg_color,
@@ -2229,12 +2235,12 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
                         ccParam.font_size);
                 mSubtitleView.setSubParams(params);
                 mSubtitleView.setMargin(225, 128, 225, 128);
-                Log.d(TAG, "DTV CC pid="+pid+",fg_color="+ccParam.fg_color+", fg_op="+ccParam.fg_opacity+", bg_color="+ccParam.bg_color+", bg_op="+ccParam.bg_opacity);
+                Log.d(TAG, "DTV CC pid="+pid+" dp "+id1+" lang "+lang+ ",fg_color="+ccParam.fg_color+", fg_op="+ccParam.fg_opacity+", bg_color="+ccParam.bg_color+", bg_op="+ccParam.bg_opacity);
 
             } else if (type == ChannelInfo.Subtitle.TYPE_ATV_CC) {
                 CCStyleParams ccParam = getCaptionStyle();
                 DTVSubtitleView.ATVCCParams params =
-                    new DTVSubtitleView.ATVCCParams(pid,
+                    new DTVSubtitleView.ATVCCParams(pid, id1, lang,
                         ccParam.fg_color,
                         ccParam.fg_opacity,
                         ccParam.bg_color,
@@ -2244,7 +2250,7 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
 
                 mSubtitleView.setSubParams(params);
                 mSubtitleView.setMargin(225, 128, 225, 128);
-                Log.d(TAG, "ATV CC pid="+pid+",fg_color="+ccParam.fg_color+", fg_op="+ccParam.fg_opacity+", bg_color="+ccParam.bg_color+", bg_op="+ccParam.bg_opacity);
+                Log.d(TAG, "ATV CC pid="+pid+" dp "+id1+ " lang "+lang+",fg_color="+ccParam.fg_color+", fg_op="+ccParam.fg_opacity+", bg_color="+ccParam.bg_color+", bg_op="+ccParam.bg_opacity);
             } else if (type == ChannelInfo.Subtitle.TYPE_DTV_TELETEXT_IMG) {
                 Log.e(TAG, "TELETEXT_IMG");
                 int pgno;
@@ -2430,7 +2436,7 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
             return params;
         }
 
-        protected void startSubtitle(int vfmt, int type, int pid, int stype, int id1, int id2) {
+        protected void startSubtitle(int vfmt, int type, int pid, int stype, int id1, int id2, String lang) {
             synchronized (mSubtitleLock) {
                 Log.d(TAG, "start Subtitle [" + type + " " + pid + " " + stype + " " + id1 + " " + id2 + "]");
                 if (mSubtitleView == null) {
@@ -2445,7 +2451,7 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
 
                 current_cc_pid = pid;
 
-                setSubtitleParam(vfmt, type, pid, stype, id1, id2);
+                setSubtitleParam(vfmt, type, pid, stype, id1, id2, lang);
 
                 mSubtitleView.setActive(true);
                 mSubtitleView.startSub();
@@ -2456,7 +2462,8 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
             mCurrentSubtitle = subtitle;
             if (subtitle != null) {
                 enableSubtitleShow(true);
-                startSubtitle(vfmt, subtitle.mType, subtitle.mPid, subtitle.mStype, subtitle.mId1, subtitle.mId2);
+                startSubtitle(vfmt, subtitle.mType, subtitle.mPid, subtitle.mStype, subtitle.mId1, subtitle.mId2,
+                subtitle.mLang);
             }
         }
 
@@ -3354,7 +3361,7 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
                         boolean updated = false;
                         synchronized (this) {
                             if (tvservice != null
-                                && tvservice.getServiceId() == event.channel.getServiceId()) {
+                                    && tvservice.getServiceId() == event.channel.getServiceId()) {
                                     tvservice.setVideoPid(event.channel.getVideoPid());
                                     tvservice.setVfmt(event.channel.getVfmt());
                                     tvservice.setPcrPid(event.channel.getPcrPid());
