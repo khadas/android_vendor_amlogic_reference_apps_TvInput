@@ -405,11 +405,11 @@ public class CcImplement {
                 case 1:
                 case 4:
                 case 7:
-                    return offset - row_length/2 + safe_title_width / 2;
+                    return offset - row_length/2;
                 case 2:
                 case 5:
                 case 8:
-                    return offset - row_length + safe_title_width;
+                    return offset - row_length;
                 default:
                     return -1;
             }
