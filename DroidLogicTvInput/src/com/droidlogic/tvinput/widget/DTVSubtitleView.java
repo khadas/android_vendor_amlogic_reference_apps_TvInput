@@ -42,6 +42,7 @@ import android.util.Log;
 import android.view.accessibility.CaptioningManager;
 import android.widget.Toast;
 import com.droidlogic.app.SystemControlManager;
+import com.droidlogic.app.tv.ChannelInfo;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -198,13 +199,17 @@ public class DTVSubtitleView extends View {
         private int page_no;
         private int sub_page_no;
         private int region_id;
+        private int type;
+        private int stype;
 
-        public DTVTTParams(int dmx_id, int pid, int page_no, int sub_page_no, int region_id) {
+        public DTVTTParams(int dmx_id, int pid, int page_no, int sub_page_no, int region_id, int type, int stype) {
             this.dmx_id      = dmx_id;
             this.pid         = pid;
             this.page_no     = page_no;
             this.sub_page_no = sub_page_no;
             this.region_id   = region_id;
+            this.type = type;
+            this.stype = stype;
         }
     }
 
@@ -547,6 +552,11 @@ public class DTVSubtitleView extends View {
                 return;
 
             int ret = 0;
+            boolean is_subtitle;
+            if (tt_params.dtv_tt.type == ChannelInfo.Subtitle.TYPE_DTV_TELETEXT_IMG)
+                is_subtitle = false;
+            else
+                is_subtitle = true;
             switch (tt_params.mode) {
                 case MODE_DTV_TT:
                     ret = native_sub_start_dtv_tt(tt_params.dtv_tt.dmx_id,
@@ -554,7 +564,7 @@ public class DTVSubtitleView extends View {
                             tt_params.dtv_tt.pid,
                             tt_params.dtv_tt.page_no,
                             tt_params.dtv_tt.sub_page_no,
-                            false);
+                            is_subtitle);
                     break;
                 default:
                     break;
@@ -584,12 +594,18 @@ public class DTVSubtitleView extends View {
                             sub_params.dvb_sub.ancillary_page_id);
                     break;
                 case MODE_DTV_TT:
+                    boolean is_subtitle;
+                    if (sub_params.dtv_tt.type == ChannelInfo.Subtitle.TYPE_DTV_TELETEXT_IMG)
+                        is_subtitle = false;
+                    else
+                        is_subtitle = true;
+                    Log.e(TAG, "start teletext type " + sub_params.dtv_tt.type);
                     ret = native_sub_start_dtv_tt(sub_params.dtv_tt.dmx_id,
                             sub_params.dtv_tt.region_id,
                             sub_params.dtv_tt.pid,
                             sub_params.dtv_tt.page_no,
                             sub_params.dtv_tt.sub_page_no,
-                            true);
+                            is_subtitle);
                     break;
                 case MODE_DTV_CC:
                     ret = native_sub_start_atsc_cc(
