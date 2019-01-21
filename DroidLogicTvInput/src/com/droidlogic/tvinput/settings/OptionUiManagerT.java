@@ -38,6 +38,7 @@ import com.droidlogic.app.tv.TvControlManager;
 import com.droidlogic.app.tv.TvControlDataManager;
 import com.droidlogic.app.tv.TvDataBaseManager;
 import com.droidlogic.app.tv.TvMultilingualText;
+import com.droidlogic.app.tv.TvScanConfig;
 import com.droidlogic.tvinput.R;
 
 import java.lang.StringBuilder;
@@ -832,7 +833,7 @@ public class OptionUiManagerT implements  OnFocusChangeListener, TvControlManage
 
             Bundle bundle = new Bundle();
             int[] freqPair = new int[2];
-            mTvControlManager.ATVGetMinMaxFreq(freqPair);
+            TvScanConfig.GetTvAtvMinMaxFreq(DroidLogicTvUtils.getCountry(mContext), freqPair);
             mode.setExt(mode.getExt() | 1);//mixed adtv
             bundle.putInt(DroidLogicTvUtils.PARA_SCAN_MODE, mode.getMode());
             bundle.putInt(DroidLogicTvUtils.PARA_SCAN_TYPE_DTV, TvControlManager.ScanType.SCAN_DTV_ALLBAND);
@@ -927,9 +928,10 @@ public class OptionUiManagerT implements  OnFocusChangeListener, TvControlManage
             autoscanmode = checkLiveTvAutoScanMode();
         }
 
-        mATvAutoScanMode = mTvControlManager.GetAtvAutoScanMode();
+        String countryId = DroidLogicTvUtils.getCountry(mContext);
+        mATvAutoScanMode = TvScanConfig.GetTvAtvStepScan(countryId);
         if (mATvAutoScanMode == TvControlManager.ScanType.SCAN_ATV_AUTO_ALL_BAND && autoscanmode == ScanEdit.SCAN_ONLY_ATV) {
-            mTvControlManager.ATVGetMinMaxFreq(freqPair);
+            TvScanConfig.GetTvAtvMinMaxFreq(countryId, freqPair);
             Log.d(TAG, "freqPair[0] " + freqPair[0] + ", freqPair[1] " + freqPair[1]);
         }
 
@@ -1486,7 +1488,7 @@ public class OptionUiManagerT implements  OnFocusChangeListener, TvControlManage
     public void callManualSearch () {
         mLiveTvManualSearch = true;
         mLiveTvAutoSearch = false;
-        mATvAutoScanMode = mTvControlManager.GetAtvAutoScanMode();
+        mATvAutoScanMode = TvScanConfig.GetTvAtvStepScan(DroidLogicTvUtils.getCountry(mContext));
         if (TvContract.Channels.TYPE_ATSC_C.equals(mSettingsManager.getDtvType()) && mAtsccMode == ATSC_C_AUTO_SET) {
             mSystemControlManager.writeSysFs(AUTO_ATSC_C_PATH, AUTO_ATSC_C_MODE_ENABLE);
             mSystemControlManager.writeSysFs(AUTO_ATSC_C_ATV_PATH, AUTO_ATSC_C_MODE_ENABLE);

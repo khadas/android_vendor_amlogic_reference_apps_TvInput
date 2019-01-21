@@ -54,6 +54,7 @@ import com.droidlogic.app.tv.TvChannelParams;
 import com.droidlogic.app.tv.TvMultilingualText;
 import com.droidlogic.app.tv.ChannelInfo;
 import com.droidlogic.app.tv.TvDataBaseManager;
+import com.droidlogic.app.tv.TvScanConfig;
 import com.droidlogic.tvinput.R;
 import com.droidlogic.tvinput.Utils;
 import com.droidlogic.tvinput.settings.ContentListView;
@@ -1831,7 +1832,7 @@ public class OptionUiManager implements OnClickListener, OnFocusChangeListener, 
 
             Bundle bundle = new Bundle();
             int[] freqPair = new int[2];
-            mTvControlManager.ATVGetMinMaxFreq(freqPair);
+            TvScanConfig.GetTvAtvMinMaxFreq(DroidLogicTvUtils.getCountry(mContext), freqPair);
             mode.setExt(mode.getExt() | 1);//mixed adtv
             bundle.putInt(DroidLogicTvUtils.PARA_SCAN_MODE, mode.getMode());
             bundle.putInt(DroidLogicTvUtils.PARA_SCAN_TYPE_DTV, TvControlManager.ScanType.SCAN_DTV_ALLBAND);
@@ -1895,7 +1896,7 @@ public class OptionUiManager implements OnClickListener, OnFocusChangeListener, 
         Bundle bundle = new Bundle();
 
         int[] freqPair = new int[2];
-        mTvControlManager.ATVGetMinMaxFreq(freqPair);
+        TvScanConfig.GetTvAtvMinMaxFreq(DroidLogicTvUtils.getCountry(mContext), freqPair);
         bundle.putInt(DroidLogicTvUtils.PARA_SCAN_PARA1, freqPair[0]);
         bundle.putInt(DroidLogicTvUtils.PARA_SCAN_PARA2, freqPair[1]);
 
