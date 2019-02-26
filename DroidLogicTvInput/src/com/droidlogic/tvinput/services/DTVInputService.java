@@ -175,6 +175,8 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
     public boolean is_subtitle_enabled;
     // cur channnel ratings
     private TvContentRating[] mCurChannelRatings = null;
+    private Uri mCurrentChannelUri = null;
+    protected final Set<TvContentRating> mUnblockedRatingSet = new HashSet<>();
 
     protected Map<Integer, DTVSessionImpl> sessionMap = new HashMap<>();
     protected final BroadcastReceiver mChannelScanStartReceiver = new BroadcastReceiver() {
@@ -446,7 +448,7 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
         protected TvInputManager mTvInputManager;
         protected TvDataBaseManager mTvDataBaseManager;
         protected TvContentRating mLastBlockedRating;
-        protected final Set<TvContentRating> mUnblockedRatingSet = new HashSet<>();
+        //protected final Set<TvContentRating> mUnblockedRatingSet = new HashSet<>();//declare in dtvinputservice
         protected ChannelInfo mCurrentChannel;
         protected List<ChannelInfo.Subtitle> mCurrentSubtitles;
         protected ChannelInfo.Subtitle mCurrentSubtitle;
@@ -830,7 +832,13 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
             mCurrentUri = uri;
             stopSubtitle();
 
-            mUnblockedRatingSet.clear();
+            if (uri != null && !uri.equals(mCurrentChannelUri)) {
+                mUnblockedRatingSet.clear();//keep set for same channel
+            } else if (uri == null) {
+                mUnblockedRatingSet.clear();
+            }
+            mCurrentChannelUri = uri;
+
             mChannelBlocked = -1;
             isUnlockCurrent_NR = false;
 
