@@ -825,10 +825,10 @@ public class OptionUiManager implements OnClickListener, OnFocusChangeListener, 
                 break;
             // Switch Channel
             case R.id.switch_channel_static_frame:
-                mTvControlManager.setBlackoutEnable(0);
+                mTvControlManager.setBlackoutEnable(0, 1);
                 break;
             case R.id.switch_channel_black_frame:
-                mTvControlManager.setBlackoutEnable(1);
+                mTvControlManager.setBlackoutEnable(1, 1);
                 break;
             // startup app
             case R.id.startup_setting_launcher:

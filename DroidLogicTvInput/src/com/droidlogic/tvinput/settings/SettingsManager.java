@@ -943,7 +943,7 @@ public class SettingsManager {
     }
 
     public String getSwitchChannelStatus () {
-        if (mTvControlManager.getBlackoutEnalbe() == 0)
+        if (mTvControlManager.getBlackoutEnable() == 0)
             return mResources.getString(R.string.static_frame);
         else
             return mResources.getString(R.string.black_frame);

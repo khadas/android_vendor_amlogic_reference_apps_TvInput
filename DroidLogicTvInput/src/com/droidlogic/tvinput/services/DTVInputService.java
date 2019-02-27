@@ -900,7 +900,7 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
 
         private ChannelInfo mLastChannel = null;
         protected boolean tryPlayProgram(ChannelInfo info) {
-            boolean needstaticframe = mTvControlManager.getBlackoutEnalbe() == 0;
+            boolean needstaticframe = mTvControlManager.getBlackoutEnable() == 0;
             boolean needdisablestaticframe = false;
             if (mCurrentChannel != null && info != null) {
                 if (DroidLogicTvUtils.isAtscCountry(mContext)) {
@@ -925,10 +925,10 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
             }
             if (needstaticframe && !needdisablestaticframe) {
                 if (DEBUG) Log.d(TAG, "enable show last frame");
-                mTvControlManager.setBlackoutEnable(0);
+                mTvControlManager.setBlackoutEnable(0, 0);
             } else {
                 if (DEBUG) Log.d(TAG, "disable show last frame");
-                mTvControlManager.setBlackoutEnable(1);
+                mTvControlManager.setBlackoutEnable(1, 0);
             }
 
             mCurrentChannel = info;
