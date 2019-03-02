@@ -658,7 +658,7 @@ public class DTVSubtitleView extends View {
                     ret = native_sub_start_atsc_atvcc(
                             sub_params.atv_cc.caption_mode,
                             sub_params.atv_cc.decoder_param,
-                            sub_params.dtv_cc.lang,
+                            sub_params.atv_cc.lang,
                             sub_params.atv_cc.fg_color,
                             sub_params.atv_cc.fg_opacity,
                             sub_params.atv_cc.bg_color,
