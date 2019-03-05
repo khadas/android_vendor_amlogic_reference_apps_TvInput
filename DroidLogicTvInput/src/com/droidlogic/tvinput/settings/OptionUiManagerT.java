@@ -1322,6 +1322,8 @@ public class OptionUiManagerT implements  OnFocusChangeListener, TvControlManage
                 if (radioNumber != 0) {
                     prompt += " " + radioNumber + " " + mResources.getString(R.string.radio_channel);
                 }
+                //this log print for auto test
+                Log.d("TvStoreManager", "video channel number =" + channelNumber + " radio channel number =" + radioNumber);
                 showToast(prompt);
                 break;
 
