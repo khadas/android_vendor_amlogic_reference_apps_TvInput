@@ -43,6 +43,7 @@ import android.database.ContentObserver;
 import android.provider.Settings;
 import android.graphics.Color;
 import android.widget.Toast;
+import android.annotation.NonNull;
 import java.lang.reflect.Method;
 import java.lang.reflect.Field;
 
@@ -686,6 +687,13 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
                 if (mSubtitleView != null) {
                     mSubtitleView.gotoPage(number);
                 }
+            } else if (DroidLogicTvUtils.ACTION_TIF_BEFORE_TUNE.equals(action)) {
+                boolean status = bundle.getBoolean(DroidLogicTvUtils.ACTION_TIF_BEFORE_TUNE, false);
+                Log.d(TAG, "do private cmd:"+ DroidLogicTvUtils.ACTION_TIF_BEFORE_TUNE + ", status:" + status);
+                setTuningScreen(true);
+            } else if (DroidLogicTvUtils.ACTION_TIF_AFTER_TUNE.equals(action)) {
+                boolean status = bundle.getBoolean(DroidLogicTvUtils.ACTION_TIF_AFTER_TUNE, false);
+                Log.d(TAG, "do private cmd:"+ DroidLogicTvUtils.ACTION_TIF_AFTER_TUNE + ", status:" + status);
             }
         }
 
@@ -926,7 +934,9 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
                     if (DEBUG) Log.d(TAG, "disable show last frame as diffrent video type");
                     needdisablestaticframe = true;//radio to video or video to radio, this case last frame is not needed
                 }
-                if (mIsBlocked || mIsPreviousChannelBlocked) {
+                boolean lastRatingBlockStatus = mSystemControlManager.getPropertyBoolean(DroidLogicTvUtils.TV_CURRENT_BLOCK_STATUS, false);
+                boolean lastChannelBlockStatus = mSystemControlManager.getPropertyBoolean(DroidLogicTvUtils.TV_CURRENT_CHANNELBLOCK_STATUS, false);
+                if (/*mIsBlocked || mIsPreviousChannelBlocked || */lastRatingBlockStatus || lastChannelBlockStatus) {
                     if (DEBUG) Log.d(TAG, "disable show last frame as previous blocked");
                     needdisablestaticframe = true;//blocked channel to non blocked, this case last frame is not needed
                 }
@@ -937,6 +947,7 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
             } else {
                 if (DEBUG) Log.d(TAG, "disable show last frame");
                 mTvControlManager.setBlackoutEnable(1, 0);
+                setTuningScreen(true);
             }
 
             mCurrentChannel = info;
@@ -1048,6 +1059,7 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
             tryStartSubtitle(info);
             startAudioADByMain(info, audioAuto);
             isUnlockCurrent_NR = false;
+            setTuningScreen(false);
             return true;
         }
 
@@ -1562,6 +1574,20 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
             }
         }
 
+        @Override
+        public void notifyContentAllowed() {
+            Log.d(TAG, "notifyContentAllowed ");
+            super.notifyContentAllowed();
+            setTuningScreen(false);
+        }
+
+        @Override
+        public void notifyContentBlocked(@NonNull final TvContentRating rating) {
+            Log.d(TAG, "notifyContentBlocked: "+rating);
+            super.notifyContentBlocked(rating);
+            setTuningScreen(true);
+        }
+
         //update overlay display need run in main handler
         private void showRadioPicture(final int time) {
             if (mMainHandler != null) {
@@ -1583,6 +1609,20 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
             if (mCurrentChannel != null)
                 return ChannelInfo.isRadioChannel(mCurrentChannel);
             return false;
+        }
+
+        //update overlay display need run in main handler
+        private void setTuningScreen(final boolean status) {
+            if (mMainHandler != null) {
+                mMainHandler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (mOverlayView != null) {
+                            mOverlayView.setTuningImageVisibility(status);
+                        }
+                    }
+                });
+            }
         }
 
         protected String generateAudioIdString(ChannelInfo.Audio audio) {
