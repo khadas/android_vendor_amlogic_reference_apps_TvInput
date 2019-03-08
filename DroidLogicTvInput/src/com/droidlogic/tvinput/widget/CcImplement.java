@@ -1343,6 +1343,7 @@ public class CcImplement {
 //                                string_length_on_paint = window_paint.measureText(data) + max_single_font_width;
 //                             string_length_on_paint = (data.length()+1) * max_single_font_width;
                         } else {
+//                            string_length_on_paint = text_paint.measureText(data);
                             string_length_on_paint = data.length() * caption_screen.fixed_char_width;
                         }
                         /* Convert */
@@ -1424,8 +1425,8 @@ public class CcImplement {
                             background_paint.setAlpha(bg_opacity_int);
                             if (fill_opacity_int != 0xff)
                                 background_paint.setXfermode(porter_src);
-//                            canvas.drawRect((float) str_left, (float) str_top, (float) str_right, (float) str_bottom, background_paint);
-                            canvas.drawRect((float) str_left, (float) str_top, (float) str_left + text_paint.measureText(data), (float) str_bottom, background_paint);
+                            canvas.drawRect((float) str_left, (float) str_top, (float) str_right, (float) str_bottom, background_paint);
+//                            canvas.drawRect((float) str_left, (float) str_top, (float) str_left + text_paint.measureText(data), (float) str_bottom, background_paint);
                         }
                         if (!justify.equalsIgnoreCase("full")) {
                             draw_text(canvas, data, font_face, font_size,

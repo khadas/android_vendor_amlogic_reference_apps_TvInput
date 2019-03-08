@@ -1715,9 +1715,9 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
             if (!isAnalog) {
                 for (int i = 0; i < CaptionCSMax; i++) {
                     ChannelInfo.Subtitle s
-                        = new ChannelInfo.Subtitle(ChannelInfo.Subtitle.TYPE_DTV_CC,
+                        = new ChannelInfo.Subtitle(CaptionType,
                                                 ChannelInfo.Subtitle.CC_CAPTION_SERVICE1 + i,
-                                                ChannelInfo.Subtitle.TYPE_DTV_CC,
+                                                CaptionType,
                                                 0,
                                                 0,
                                                 "CS"+(i+1),
@@ -1727,7 +1727,7 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
             }
             for (int i = 0; i < CaptionCCMax; i++) {
                 ChannelInfo.Subtitle s
-                    = new ChannelInfo.Subtitle(ChannelInfo.Subtitle.TYPE_ATV_CC,
+                    = new ChannelInfo.Subtitle(CaptionType,
                                             ChannelInfo.Subtitle.CC_CAPTION_CC1 + i,
                                             CaptionType,
                                             0,
@@ -1738,7 +1738,7 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
             }
             for (int i = 0; i < CaptionTXMax; i++) {
                 ChannelInfo.Subtitle s
-                    = new ChannelInfo.Subtitle(ChannelInfo.Subtitle.TYPE_ATV_CC,
+                    = new ChannelInfo.Subtitle(CaptionType,
                                             ChannelInfo.Subtitle.CC_CAPTION_TEXT1 + i,
                                             CaptionType,
                                             0,
