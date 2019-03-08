@@ -3363,6 +3363,7 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
                                                     String.valueOf(mEitVersions[event.eitNumber]));
                                                     //String.valueOf(event.eitNumber));
                                     }
+                                    refreshChannelMap();
                                     for (ChannelInfo ch : channelMap) {
                                         if (!isAlive) {
                                             Log.e(TAG, "DTVMonitor is destroyed, exit EVENT_EIT_CHANGED");
