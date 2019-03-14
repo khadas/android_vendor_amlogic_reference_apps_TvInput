@@ -323,7 +323,7 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
 
     @Override
     protected void releasePlayer() {
-        mTvControlManager.stopPlay("atsc", null);
+        mTvControlManager.StopTv();
     }
 
     public String getCacheStoragePath() {
