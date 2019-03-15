@@ -396,7 +396,6 @@ public class OptionUiManagerT implements  OnFocusChangeListener, TvControlManage
             fe.setMode(tvMode);
             fe.setVideoStd(atvVideoStd);
             fe.setAudioStd(atvAudioStd);
-            fe.setLanguage(TvMultilingualText.getLocalLang());
             if (TvContract.Channels.TYPE_DVB_C.equals(tvMode.toType())) {
                 int qammode = mTvControlDataManager.getInt(mContext.getContentResolver(), DroidLogicTvUtils.TV_SEARCH_DVBC_QAM, DroidLogicTvUtils.TV_SEARCH_DVBC_QAM16);
                 int symbol = 0;
@@ -1094,7 +1093,6 @@ public class OptionUiManagerT implements  OnFocusChangeListener, TvControlManage
                 fe.setMode(tvMode);
                 fe.setVideoStd(atvVideoStd);
                 fe.setAudioStd(atvAudioStd);
-                fe.setLanguage(TvMultilingualText.getLocalLang());
                 if (TvContract.Channels.TYPE_DVB_C.equals(tvMode.toType())) {
                     int qammode = mTvControlDataManager.getInt(mContext.getContentResolver(), DroidLogicTvUtils.TV_SEARCH_DVBC_QAM, DroidLogicTvUtils.TV_SEARCH_DVBC_QAM16);
                     fe.setModulation(qammode);
