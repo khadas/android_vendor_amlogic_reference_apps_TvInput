@@ -323,6 +323,10 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
 
     @Override
     protected void releasePlayer() {
+        mTvControlManager.stopPlay("atsc", null);
+    }
+
+    protected void stopTv() {
         mTvControlManager.StopTv();
     }
 
@@ -573,7 +577,7 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
                 stopSubtitle();
                 mTvControlManager.SetAVPlaybackListener(null);
                 mTvControlManager.SetAudioEventListener(null);
-                releasePlayer();
+                stopTv();
             }
             setMonitor(null);
             releaseWorkThread();
