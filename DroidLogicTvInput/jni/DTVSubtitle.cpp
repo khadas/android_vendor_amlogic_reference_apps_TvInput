@@ -65,6 +65,8 @@ typedef void* AM_SUB2_Handle_t;
 #define CC_JSON_BUFFER_SIZE 8192
     static JavaVM   *gJavaVM = NULL;
     static jmethodID gUpdateID;
+    static jmethodID gTeletextNotifyID;
+    static jmethodID gTTUpdateID;
     static jfieldID  gBitmapID;
     static TVSubtitleData gSubtitleData;
     static jmethodID gUpdateDataID;
@@ -79,6 +81,7 @@ typedef void* AM_SUB2_Handle_t;
 
     static jint sub_clear(JNIEnv *env, jobject obj);
     static void sub_update(jobject obj);
+    static void tt_update(jobject obj, int page_type, int pgno, char* subs, int sub_cnt, int red, int green, int yellow, int blue, int curr_subpg);
     static void data_update(jobject obj, char *json);
 
     static uint8_t *lock_bitmap(JNIEnv *env, jobject bitmap)
@@ -189,6 +192,26 @@ typedef void* AM_SUB2_Handle_t;
         pthread_mutex_unlock(&sub->lock);
 
         sub_update(sub->obj);
+    }
+
+    static void tt_draw_begin_cb(AM_TT2_Handle_t handle)
+    {
+        TVSubtitleData *sub = (TVSubtitleData *)AM_TT2_GetUserData(handle);
+
+        pthread_mutex_lock(&sub->lock);
+
+        sub->buffer = lock_bitmap(NULL, sub->obj_bitmap);
+        clear_bitmap(sub);
+    }
+
+    static void tt_draw_end_cb(AM_TT2_Handle_t handle, int page_type, int pgno, char* subs, int sub_cnt, int red, int green, int yellow, int blue, int curr_subpg)
+    {
+        TVSubtitleData *sub = (TVSubtitleData *)AM_TT2_GetUserData(handle);
+        unlock_bitmap(NULL, sub->obj_bitmap);
+
+        pthread_mutex_unlock(&sub->lock);
+
+        tt_update(sub->obj, page_type, pgno, subs, sub_cnt, red, green, yellow, blue, curr_subpg);
     }
 
     static void cc_draw_begin_cb(AM_CC_Handle_t handle, AM_CC_DrawPara_t *draw_para)
@@ -516,6 +539,52 @@ error:
         }
     }
 
+    static void tt_update(jobject obj,
+                    int page_type,
+                    int pgno,
+                    char* subs,
+                    int sub_cnt,
+                    int red,
+                    int green,
+                    int yellow,
+                    int blue,
+                    int curr_subpg)
+    {
+        JNIEnv *env;
+        jbyteArray byteArray;
+        int ret;
+        int attached = 0;
+
+        if (!obj)
+        return;
+
+        ret = gJavaVM->GetEnv((void **) &env, JNI_VERSION_1_4);
+
+        if (ret < 0) {
+            ret = gJavaVM->AttachCurrentThread(&env, NULL);
+            if (ret < 0) {
+                LOGE("Can't attach thread");
+                return;
+            }
+            attached = 1;
+        }
+        byteArray = env->NewByteArray(sub_cnt);
+        env->SetByteArrayRegion(byteArray, 0, sub_cnt, (const jbyte*)subs);
+        env->CallVoidMethod(obj,
+                        gTTUpdateID,
+                        page_type,
+                        pgno,
+                        byteArray,
+                        red,
+                        green,
+                        yellow,
+                        blue,
+                        curr_subpg);
+        if (attached) {
+                gJavaVM->DetachCurrentThread();
+        }
+    }
+
     static void json_update_cb(AM_CC_Handle_t handle)
     {
         TVSubtitleData *sub = (TVSubtitleData *)AM_CC_GetUserData(handle);
@@ -542,6 +611,30 @@ error:
             gJavaVM->DetachCurrentThread();
         }
 
+    }
+
+    static void notify_teletext_have_data(AM_TT2_Handle_t handle, int have_data)
+    {
+        TVSubtitleData *sub = (TVSubtitleData *)AM_TT2_GetUserData(handle);
+        JNIEnv *env;
+        int ret;
+        int attached = 0;
+        ret = gJavaVM->GetEnv((void **) &env, JNI_VERSION_1_4);
+
+        if (ret < 0) {
+            ret = gJavaVM->AttachCurrentThread(&env, NULL);
+            if (ret < 0) {
+                LOGE("Can't attach thread");
+                return;
+            }
+            attached = 1;
+        }
+
+        env->CallVoidMethod(sub->obj, gTeletextNotifyID, 1);
+
+        if (attached) {
+            gJavaVM->DetachCurrentThread();
+        }
     }
 
     static void json_isdb_update_cb(AM_ISDB_Handle_t handle)
@@ -923,13 +1016,14 @@ error:
 
         if (!data->tt_handle) {
             memset(&ttp, 0, sizeof(ttp));
-            ttp.draw_begin = draw_begin_cb;
-            ttp.draw_end  = draw_end_cb;
+            ttp.draw_begin = tt_draw_begin_cb;
+            ttp.draw_end  = tt_draw_end_cb;
             ttp.is_subtitle = is_sub;
             ttp.bitmap    = data->buffer;
             ttp.pitch     = data->bmp_pitch;
             ttp.user_data = data;
             ttp.default_region = region_id;
+            ttp.input = AM_TT_INPUT_PES;
             ret = AM_TT2_Create(&data->tt_handle, &ttp);
             if (ret != AM_SUCCESS)
                 goto error;
@@ -962,9 +1056,46 @@ error:
         return -1;
     }
 
+    int sub_start_atv_tt(JNIEnv *env, jobject obj, jint page, jint sub_page, jint region_id, jboolean is_sub)
+    {
+        LOGE("jni sub_start_atv_tt");
+#ifdef SUPPORT_ADTV
+        TVSubtitleData *data = sub_get_data(env, obj);
+        AM_TT2_Para_t ttp;
+        int ret;
+
+        setDvbDebugLogLevel();
+
+        bitmap_init(obj);
+
+
+        if (!data->tt_handle) {
+            memset(&ttp, 0, sizeof(ttp));
+            ttp.draw_begin = tt_draw_begin_cb;
+            ttp.draw_end  = tt_draw_end_cb;
+            ttp.is_subtitle = is_sub;
+            ttp.notify_tt_data = notify_teletext_have_data;
+            ttp.bitmap	  = data->buffer;
+            ttp.pitch	  = data->bmp_pitch;
+            ttp.user_data = data;
+            ttp.default_region = region_id;
+            ttp.input = AM_TT_INPUT_VBI;
+            ret = AM_TT2_Create(&data->tt_handle, &ttp);
+            if (ret != AM_SUCCESS)
+                return -1;
+        } else {
+            AM_TT2_SetSubtitleMode(data->tt_handle, is_sub);
+        }
+
+        AM_TT2_GotoPage(data->tt_handle, page, sub_page);
+        AM_TT2_Start(data->tt_handle);
+#endif
+        return 0;
+    }
+
     static jint sub_stop_dvb_sub(JNIEnv *env, jobject obj)
     {
-    #ifdef SUPPORT_ADTV
+#ifdef SUPPORT_ADTV
         TVSubtitleData *data = sub_get_data(env, obj);
 
         close_dmx(data);
@@ -1007,12 +1138,41 @@ error:
         return 0;
     }
 
-    static jint sub_tt_goto(JNIEnv *env, jobject obj, jint page)
+    static jint sub_stop_atv_tt(JNIEnv *env, jobject obj)
+    {
+#ifdef SUPPORT_ADTV
+        TVSubtitleData *data = sub_get_data(env, obj);
+
+        AM_TT2_Stop(data->tt_handle);
+
+        pthread_mutex_lock(&data->lock);
+        data->buffer = lock_bitmap(env, data->obj_bitmap);
+        clear_bitmap(data);
+        unlock_bitmap(env, data->obj_bitmap);
+        if (data->obj)
+            sub_update(data->obj);
+        bitmap_deinit(obj);
+        pthread_mutex_unlock(&data->lock);
+    #endif
+        return 0;
+    }
+
+    static jint sub_tt_set_region(JNIEnv *env, jobject obj, jint region_id)
+    {
+#ifdef SUPPORT_ADTV
+        TVSubtitleData *data = sub_get_data(env, obj);
+
+        AM_TT2_SetRegion(data->tt_handle, region_id);
+#endif
+        return 0;
+    }
+
+    static jint sub_tt_goto(JNIEnv *env, jobject obj, jint page, jint subno)
     {
     #ifdef SUPPORT_ADTV
         TVSubtitleData *data = sub_get_data(env, obj);
 
-        AM_TT2_GotoPage(data->tt_handle, page, AM_TT2_ANY_SUBNO);
+        AM_TT2_GotoPage(data->tt_handle, page, subno);
     #endif
         return 0;
     }
@@ -1043,7 +1203,40 @@ error:
         TVSubtitleData *data = sub_get_data(env, obj);
 
         AM_TT2_NextPage(data->tt_handle, dir);
-    #endif
+#endif
+        return 0;
+    }
+    static jint sub_tt_set_display_mode(JNIEnv *env, jobject obj, jint mode)
+    {
+#ifdef SUPPORT_ADTV
+        TVSubtitleData *data = sub_get_data(env, obj);
+
+        AM_TT2_SetTTDisplayMode(data->tt_handle, mode);
+#endif
+        return 0;
+    }
+
+    static jint sub_tt_lock_subpg(JNIEnv *env, jobject obj, jint lock)
+    {
+        TVSubtitleData *data = sub_get_data(env, obj);
+        AM_TT2_LockSubpg(data->tt_handle, lock);
+        return 0;
+    }
+    static jint sub_tt_goto_subtitle(JNIEnv *env, jobject obj)
+    {
+        TVSubtitleData *data = sub_get_data(env, obj);
+
+        AM_TT2_GotoSubtitle(data->tt_handle);
+        return 0;
+    }
+
+    static jint sub_tt_set_reveal_mode(JNIEnv *env, jobject obj, jboolean mode)
+    {
+#ifdef SUPPORT_ADTV
+        TVSubtitleData *data = sub_get_data(env, obj);
+
+        AM_TT2_SetRevealMode(data->tt_handle, mode);
+#endif
         return 0;
     }
 
@@ -1353,9 +1546,11 @@ error:
         {"native_sub_clear", "()I", (void *)sub_clear},
         {"native_sub_start_dvb_sub", "(IIII)I", (void *)sub_start_dvb_sub},
         {"native_sub_start_dtv_tt", "(IIIIIZ)I", (void *)sub_start_dtv_tt},
+        {"native_sub_start_atv_tt", "(IIIZ)I", (void*)sub_start_atv_tt},
         {"native_sub_stop_dvb_sub", "()I", (void *)sub_stop_dvb_sub},
         {"native_sub_stop_dtv_tt", "()I", (void *)sub_stop_dtv_tt},
-        {"native_sub_tt_goto", "(I)I", (void *)sub_tt_goto},
+        {"native_sub_stop_atv_tt", "()I", (void *)sub_stop_atv_tt},
+        {"native_sub_tt_goto", "(II)I", (void *)sub_tt_goto},
         {"native_sub_tt_color_link", "(I)I", (void *)sub_tt_color_link},
         {"native_sub_tt_home_link", "()I", (void *)sub_tt_home_link},
         {"native_sub_tt_next", "(I)I", (void *)sub_tt_next},
@@ -1370,6 +1565,11 @@ error:
         {"native_sub_set_active", "(Z)I", (void *)sub_set_active},
         {"native_sub_start_isdbt", "(III)I", (void *)sub_start_isdbt_sub},
         {"native_sub_stop_isdbt", "()I", (void *)sub_stop_isdbt_sub},
+        {"native_sub_tt_set_display_mode", "(I)I", (void *)sub_tt_set_display_mode},
+        {"native_sub_tt_set_reveal_mode", "(Z)I", (void *)sub_tt_set_reveal_mode},
+        {"native_sub_tt_lock_subpg", "(I)I", (void *)sub_tt_lock_subpg},
+        {"native_sub_tt_goto_subtitle", "()I", (void *)sub_tt_goto_subtitle},
+        {"native_sub_tt_set_region", "(I)I", (void *)sub_tt_set_region},
     };
 
     JNIEXPORT jint
@@ -1399,7 +1599,8 @@ error:
 
 
             gUpdateID = env->GetMethodID(clazz, "update", "()V");
-
+            gTeletextNotifyID = env->GetMethodID(clazz, "tt_data_notify", "(I)V");
+            gTTUpdateID = env->GetMethodID(clazz, "tt_update", "(II[BIIIII)V");
             gPassJsonStr = env->GetMethodID(clazz, "saveJsonStr", "(Ljava/lang/String;)V");
             gBitmapID = env->GetStaticFieldID(clazz, "bitmap", "Landroid/graphics/Bitmap;");
             gUpdateDataID = env->GetMethodID(clazz, "updateData", "(Ljava/lang/String;)V");

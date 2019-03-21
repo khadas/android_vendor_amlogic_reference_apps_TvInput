@@ -1330,16 +1330,13 @@ public class CcImplement {
                         window_paint.setTextSize((float)this.font_size);
                         // window_paint.setLetterSpacing((float) 0.05);
                         max_single_font_width = window_paint.measureText("_");
-                        text_paint.setTypeface(this.font_face);
-                        text_paint.setTextSize((float)font_size);
-                        text_paint.setTextScaleX((float)font_scale);
                         if (ccVersion.matches("cea708")) {
                             if (is_monospace) {
 //                                string_length_on_paint = (data.length() + 1) * max_single_font_width;
-                                string_length_on_paint = text_paint.measureText(data);
+                                string_length_on_paint = window_paint.measureText(data);
                             }
                             else
-                                string_length_on_paint = text_paint.measureText(data);
+                                string_length_on_paint = window_paint.measureText(data);
 //                                string_length_on_paint = window_paint.measureText(data) + max_single_font_width;
 //                             string_length_on_paint = (data.length()+1) * max_single_font_width;
                         } else {
