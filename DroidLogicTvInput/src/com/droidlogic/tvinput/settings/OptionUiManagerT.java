@@ -164,6 +164,9 @@ public class OptionUiManagerT implements  OnFocusChangeListener, TvControlManage
     /* 0: freq table list sacn mode */
     /* 1: all band sacn mode */
     private int mATvAutoScanMode = 0;
+    private static final String AUTO_QAM_FAST_SEARCH_PATH = "/sys/kernel/debug/demod/dvbc_channel_fast";
+    private static final String AUTO_QAM_FAST_SEARCH_ON = "fast_search on";
+    private static final String AUTO_QAM_FAST_SEARCH_OFF = "fast_search off";
 
     public boolean isSearching() {
         return (isSearching != SEARCH_STOPPED);
@@ -400,6 +403,11 @@ public class OptionUiManagerT implements  OnFocusChangeListener, TvControlManage
                 int qammode = mTvControlDataManager.getInt(mContext.getContentResolver(), DroidLogicTvUtils.TV_SEARCH_DVBC_QAM, DroidLogicTvUtils.TV_SEARCH_DVBC_QAM16);
                 int symbol = 0;
                 String mode = mTvControlDataManager.getString(mContext.getContentResolver(), DroidLogicTvUtils.TV_SEARCH_MODE);
+                if (qammode == DroidLogicTvUtils.TV_SEARCH_DVBC_QAMAUTO) {
+                    mSystemControlManager.writeSysFs(AUTO_QAM_FAST_SEARCH_PATH, AUTO_QAM_FAST_SEARCH_ON);
+                } else {
+                    mSystemControlManager.writeSysFs(AUTO_QAM_FAST_SEARCH_PATH, AUTO_QAM_FAST_SEARCH_OFF);
+                }
                 fe.setModulation(qammode);
                 if (DroidLogicTvUtils.TV_SEARCH_MODE_NIT.equals(mode)) {
                     symbol = mTvControlDataManager.getInt(mContext.getContentResolver(), DroidLogicTvUtils.TV_SEARCH_DVBC_SYMBOL_RATE, DroidLogicTvUtils.TV_SEARCH_DVBC_SYMBOL_RATE_DEFAULT);
@@ -827,7 +835,7 @@ public class OptionUiManagerT implements  OnFocusChangeListener, TvControlManage
         TvControlManager.TvMode mode = new TvControlManager.TvMode(mSettingsManager.getDtvType());
         //mSettingsManager.sendBroadcastToTvapp("search_channel");
         if (mSettingsManager.getCurentVirtualTvSource() == TvControlManager.SourceInput_Type.SOURCE_TYPE_ADTV) {
-            Log.d(TAG, "ADTV");
+            Log.d(TAG, "startAutosearch ADTV");
 
             deleteChannels(mode, true, true);
 
@@ -847,7 +855,7 @@ public class OptionUiManagerT implements  OnFocusChangeListener, TvControlManage
             doScanCmd(DroidLogicTvUtils.ACTION_DTV_AUTO_SCAN, bundle);  //ww
             mTvControlDataManager.putInt(mContext.getContentResolver(), DroidLogicTvUtils.TV_DTV_CHANNEL_INDEX, -1);
         } else if (mSettingsManager.getCurentTvSource() == TvControlManager.SourceInput_Type.SOURCE_TYPE_TV) {
-            Log.d(TAG, "SOURCE_TYPE_TV");
+            Log.d(TAG, "startAutosearch SOURCE_TYPE_TV");
 
             deleteChannels(mode, true, false);
 
@@ -861,7 +869,7 @@ public class OptionUiManagerT implements  OnFocusChangeListener, TvControlManage
             doScanCmd(DroidLogicTvUtils.ACTION_ATV_AUTO_SCAN, bundle);
             mTvControlDataManager.putInt(mContext.getContentResolver(), DroidLogicTvUtils.TV_ATV_CHANNEL_INDEX, -1);
         } else if (mSettingsManager.getCurentTvSource() == TvControlManager.SourceInput_Type.SOURCE_TYPE_DTV) {
-            Log.d(TAG, "SOURCE_TYPE_DTV");
+            Log.d(TAG, "startAutosearch SOURCE_TYPE_DTV");
 
             deleteChannels(mode, true, false);
 
@@ -1095,6 +1103,11 @@ public class OptionUiManagerT implements  OnFocusChangeListener, TvControlManage
                 fe.setAudioStd(atvAudioStd);
                 if (TvContract.Channels.TYPE_DVB_C.equals(tvMode.toType())) {
                     int qammode = mTvControlDataManager.getInt(mContext.getContentResolver(), DroidLogicTvUtils.TV_SEARCH_DVBC_QAM, DroidLogicTvUtils.TV_SEARCH_DVBC_QAM16);
+                    if (qammode == DroidLogicTvUtils.TV_SEARCH_DVBC_QAMAUTO) {
+                        mSystemControlManager.writeSysFs(AUTO_QAM_FAST_SEARCH_PATH, AUTO_QAM_FAST_SEARCH_ON);
+                    } else {
+                        mSystemControlManager.writeSysFs(AUTO_QAM_FAST_SEARCH_PATH, AUTO_QAM_FAST_SEARCH_OFF);
+                    }
                     fe.setModulation(qammode);
                     Log.d(TAG, "doScanCmd dvbc qam = " + qammode);
                 }
