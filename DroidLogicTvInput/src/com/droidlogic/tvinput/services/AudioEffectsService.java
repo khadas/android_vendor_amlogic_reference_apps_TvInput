@@ -10,19 +10,25 @@
 
 package com.droidlogic.tvinput.services;
 
+import android.app.Service;
 import android.content.Context;
+import android.content.ContentProviderClient;
 import android.content.Intent;
-import android.util.Log;
+import android.content.IntentFilter;
+import android.content.BroadcastReceiver;
+import android.database.ContentObserver;
+import android.media.tv.TvContract;
+import android.net.Uri;
 import android.os.IBinder;
 import android.os.UserHandle;
 import android.os.Binder;
 import android.os.Handler;
-import android.content.IntentFilter;
-import android.content.BroadcastReceiver;
-import android.database.ContentObserver;
+import android.os.Message;
+import android.os.SystemProperties;
 import android.provider.Settings;
-import android.net.Uri;
-import android.app.Service;
+import android.text.TextUtils;
+import android.util.Log;
+
 import com.droidlogic.tvinput.settings.SoundEffectManager;
 
 /**
@@ -91,11 +97,37 @@ public class AudioEffectsService extends PersistentService {
         final String action = intent.getAction();
         if (ACTION_STARTUP.equals(action)) {
             if (DEBUG) Log.d(TAG, "processing " + ACTION_STARTUP);
-            handleActionStartUp();
+            mHandler.sendEmptyMessage(MSG_CHECK_BOOTVIDEO_FINISHED);
         } else {
             Log.w(TAG, "Unknown intent: " + action);
         }
     }
+
+    private boolean isBootvideoStopped() {
+        ContentProviderClient tvProvider = getContentResolver().acquireContentProviderClient(TvContract.AUTHORITY);
+
+        return (tvProvider != null) &&
+                (((SystemProperties.getInt("persist.vendor.media.bootvideo", 50)  > 100)
+                        && TextUtils.equals(SystemProperties.get("dev.bootcomplete", "0"), "1"))
+                || ((SystemProperties.getInt("persist.vendor.media.bootvideo", 50)  <= 100)));
+    }
+
+    private static final int MSG_CHECK_BOOTVIDEO_FINISHED = 0;
+    private Handler mHandler = new Handler() {
+        public void handleMessage(Message msg) {
+            switch (msg.what) {
+                case MSG_CHECK_BOOTVIDEO_FINISHED:
+                    if (isBootvideoStopped()) {
+                        handleActionStartUp();
+                    } else {
+                        mHandler.sendEmptyMessageDelayed(MSG_CHECK_BOOTVIDEO_FINISHED, 10);
+                    }
+                    break;
+                default:
+                    break;
+            }
+        }
+    };
 
     private final IAudioEffectsService.Stub mBinder = new IAudioEffectsService.Stub(){
         public int getSoundModeStatus () {
