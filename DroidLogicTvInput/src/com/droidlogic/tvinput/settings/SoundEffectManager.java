@@ -35,8 +35,8 @@ import android.media.AudioFormat;
 import android.media.AudioTrack;
 
 import java.util.*;
-import com.droidlogic.app.AudioOutputManager;
 import com.droidlogic.app.tv.AudioEffectManager;
+import com.droidlogic.app.OutputModeManager;
 
 public class SoundEffectManager {
 
@@ -66,7 +66,7 @@ public class SoundEffectManager {
     public static final int PARAM_BAND4                 = 6;
     public static final int PARAM_BAND5                 = 7;
     public static final int PARAM_BAND_COUNT            = 8;
-    //dap AudioEffect
+    //dap AudioEffect, [ HPEQparams ] enumeration alignment in Hpeq.cpp
     public static final int PARAM_EQ_ENABLE             = 0;
     public static final int PARAM_EQ_EFFECT             = 1;
     public static final int PARAM_EQ_CUSTOM             = 2;
@@ -97,15 +97,8 @@ public class SoundEffectManager {
 
     private static final int PARAMETERS_DAP_ENABLE      = 1;
     private static final int PARAMETERS_DAP_DISABLE     = 0;
-    //amlogic 5 bands effect parameters
-    private static final int EFFECT_SOUND_BANDS_NUM     = 5;
     //band 1, band 2, band 3, band 4, band 5  need transfer 0~100 to -10~10
-    private static final int[][] EFFECT_SOUND_BAND = {  {3, 0, 0, 0, 3},        //standard
-                                                        {8, 5, -3, 5, 6},       //music
-                                                        {12, -6, 7, 12, 10},    //news
-                                                        {6, -2, -2, 6, -3},     //theater
-                                                        {8, -8, 12, -1, -4},    //game
-                                                        {50, 50, 50, 50, 50}};  //user
+    private static final int[] EFFECT_SOUND_MODE_USER_BAND = {50, 50, 50, 50, 50};
 
     private static final int EFFECT_SOUND_TYPE_NUM = 6;
     //all sound mode, order is bass treble balance dialogclarity surround bassboost
@@ -206,7 +199,7 @@ public class SoundEffectManager {
                     if (CanDebug()) Log.d(TAG, "creatEqAudioEffects enable eq");
                     mSoundMode.setParameter(PARAM_EQ_ENABLE, PARAMETERS_DAP_ENABLE);
                     mSoundModule = AudioEffectManager.EQ_MODULE;
-                    Settings.Global.putString(mContext.getContentResolver(), AudioOutputManager.SOUND_EFFECT_SOUND_MODE_TYPE, AudioOutputManager.SOUND_EFFECT_SOUND_MODE_TYPE_EQ);
+                    Settings.Global.putString(mContext.getContentResolver(), OutputModeManager.SOUND_EFFECT_SOUND_MODE_TYPE, OutputModeManager.SOUND_EFFECT_SOUND_MODE_TYPE_EQ);
                 }
             }
             return true;
@@ -226,7 +219,7 @@ public class SoundEffectManager {
                     if (CanDebug()) Log.d(TAG, "creatDapAudioEffects enable dap");
                     mSoundMode.setParameter(PARAM_EQ_ENABLE, PARAMETERS_DAP_ENABLE);
                     mSoundModule = AudioEffectManager.DAP_MODULE;
-                    Settings.Global.putString(mContext.getContentResolver(), AudioOutputManager.SOUND_EFFECT_SOUND_MODE_TYPE, AudioOutputManager.SOUND_EFFECT_SOUND_MODE_TYPE_DAP);
+                    Settings.Global.putString(mContext.getContentResolver(), OutputModeManager.SOUND_EFFECT_SOUND_MODE_TYPE, OutputModeManager.SOUND_EFFECT_SOUND_MODE_TYPE_DAP);
                 }
             }
             return true;
@@ -263,7 +256,6 @@ public class SoundEffectManager {
     }
 
     public int getSoundModeStatus () {
-        Log.e(TAG, "yhc 2AudioEffectManager yhc getSoundModule");
         int saveresult = -1;
         if (!creatSoundModeAudioEffects()) {
             Log.e(TAG, "getSoundModeStatus creat fail");
@@ -486,7 +478,7 @@ public class SoundEffectManager {
         int saveresult = -1;
         if (!creatVirtualSurroundAudioEffects()) {
             Log.e(TAG, "getVirtualSurroundStatus mVirtualSurround creat fail");
-            return AudioOutputManager.VIRTUAL_SURROUND_OFF;
+            return OutputModeManager.VIRTUAL_SURROUND_OFF;
         }
         int[] value = new int[1];
         mVirtualSurround.getParameter(PARAM_VIRTUALSURROUND, value);
@@ -548,6 +540,22 @@ public class SoundEffectManager {
                 saveAudioParameters(bandnum, value);
             }
         }
+    }
+    //convert -10~10 to 0~100 controled by need or not
+    private int unMappingLine(int mapval, boolean need) {
+        if (!need) {
+            return mapval;
+        }
+
+        final int MIN_UI_VAL = -10;
+        final int MAX_UI_VAL = 10;
+        final int MIN_VAL = 0;
+        final int MAX_VAL = 100;
+        if (mapval > MAX_UI_VAL || mapval < MIN_UI_VAL) {
+            Log.e(TAG, "unMappingLine: map value:" + mapval + " invalid. set default value:" + (MAX_VAL - MIN_VAL) / 2);
+            return (MAX_VAL - MIN_VAL) / 2;
+        }
+        return (mapval - MIN_UI_VAL) * (MAX_VAL - MIN_VAL) / (MAX_UI_VAL - MIN_UI_VAL);
     }
 
     //convert 0~100 to -10~10 controled by need or not
@@ -789,65 +797,65 @@ public class SoundEffectManager {
     private void saveAudioParameters(int id, int value) {
         switch (id) {
             case AudioEffectManager.SET_BASS:
-                Settings.Global.putInt(mContext.getContentResolver(), AudioOutputManager.SOUND_EFFECT_BASS, value);
+                Settings.Global.putInt(mContext.getContentResolver(), OutputModeManager.SOUND_EFFECT_BASS, value);
                 break;
             case AudioEffectManager.SET_TREBLE:
-                Settings.Global.putInt(mContext.getContentResolver(), AudioOutputManager.SOUND_EFFECT_TREBLE, value);
+                Settings.Global.putInt(mContext.getContentResolver(), OutputModeManager.SOUND_EFFECT_TREBLE, value);
                 break;
             case AudioEffectManager.SET_BALANCE:
-                Settings.Global.putInt(mContext.getContentResolver(), AudioOutputManager.SOUND_EFFECT_BALANCE, value);
+                Settings.Global.putInt(mContext.getContentResolver(), OutputModeManager.SOUND_EFFECT_BALANCE, value);
                 break;
             case AudioEffectManager.SET_DIALOG_CLARITY:
-                Settings.Global.putInt(mContext.getContentResolver(), AudioOutputManager.SOUND_EFFECT_DIALOG_CLARITY, value);
+                Settings.Global.putInt(mContext.getContentResolver(), OutputModeManager.SOUND_EFFECT_DIALOG_CLARITY, value);
                 break;
             case AudioEffectManager.SET_SURROUND:
-                Settings.Global.putInt(mContext.getContentResolver(), AudioOutputManager.SOUND_EFFECT_SURROUND, value);
+                Settings.Global.putInt(mContext.getContentResolver(), OutputModeManager.SOUND_EFFECT_SURROUND, value);
                 break;
             case AudioEffectManager.SET_BASS_BOOST:
-                Settings.Global.putInt(mContext.getContentResolver(), AudioOutputManager.SOUND_EFFECT_BASS_BOOST, value);
+                Settings.Global.putInt(mContext.getContentResolver(), OutputModeManager.SOUND_EFFECT_BASS_BOOST, value);
                 break;
             case AudioEffectManager.SET_SOUND_MODE:
-                String soundmodetype = Settings.Global.getString(mContext.getContentResolver(), AudioOutputManager.SOUND_EFFECT_SOUND_MODE_TYPE);
-                if (soundmodetype == null || AudioOutputManager.SOUND_EFFECT_SOUND_MODE_TYPE_EQ.equals(soundmodetype)) {
-                    Settings.Global.putInt(mContext.getContentResolver(), AudioOutputManager.SOUND_EFFECT_SOUND_MODE_EQ_VALUE, value);
-                } else if ((AudioOutputManager.SOUND_EFFECT_SOUND_MODE_TYPE_DAP.equals(soundmodetype))) {
-                    Settings.Global.putInt(mContext.getContentResolver(), AudioOutputManager.SOUND_EFFECT_SOUND_MODE_DAP_VALUE, value);
+                String soundmodetype = Settings.Global.getString(mContext.getContentResolver(), OutputModeManager.SOUND_EFFECT_SOUND_MODE_TYPE);
+                if (soundmodetype == null || OutputModeManager.SOUND_EFFECT_SOUND_MODE_TYPE_EQ.equals(soundmodetype)) {
+                    Settings.Global.putInt(mContext.getContentResolver(), OutputModeManager.SOUND_EFFECT_SOUND_MODE_EQ_VALUE, value);
+                } else if ((OutputModeManager.SOUND_EFFECT_SOUND_MODE_TYPE_DAP.equals(soundmodetype))) {
+                    Settings.Global.putInt(mContext.getContentResolver(), OutputModeManager.SOUND_EFFECT_SOUND_MODE_DAP_VALUE, value);
                 } else {
-                    Settings.Global.putInt(mContext.getContentResolver(), AudioOutputManager.SOUND_EFFECT_SOUND_MODE, value);
+                    Settings.Global.putInt(mContext.getContentResolver(), OutputModeManager.SOUND_EFFECT_SOUND_MODE, value);
                 }
                 break;
             case AudioEffectManager.SET_EFFECT_BAND1:
-                Settings.Global.putInt(mContext.getContentResolver(), AudioOutputManager.SOUND_EFFECT_BAND1, value);
+                Settings.Global.putInt(mContext.getContentResolver(), OutputModeManager.SOUND_EFFECT_BAND1, value);
                 break;
             case AudioEffectManager.SET_EFFECT_BAND2:
-                Settings.Global.putInt(mContext.getContentResolver(), AudioOutputManager.SOUND_EFFECT_BAND2, value);
+                Settings.Global.putInt(mContext.getContentResolver(), OutputModeManager.SOUND_EFFECT_BAND2, value);
                 break;
             case AudioEffectManager.SET_EFFECT_BAND3:
-                Settings.Global.putInt(mContext.getContentResolver(), AudioOutputManager.SOUND_EFFECT_BAND3, value);
+                Settings.Global.putInt(mContext.getContentResolver(), OutputModeManager.SOUND_EFFECT_BAND3, value);
                 break;
             case AudioEffectManager.SET_EFFECT_BAND4:
-                Settings.Global.putInt(mContext.getContentResolver(), AudioOutputManager.SOUND_EFFECT_BAND4, value);
+                Settings.Global.putInt(mContext.getContentResolver(), OutputModeManager.SOUND_EFFECT_BAND4, value);
                 break;
             case AudioEffectManager.SET_EFFECT_BAND5:
-                Settings.Global.putInt(mContext.getContentResolver(), AudioOutputManager.SOUND_EFFECT_BAND5, value);
+                Settings.Global.putInt(mContext.getContentResolver(), OutputModeManager.SOUND_EFFECT_BAND5, value);
                 break;
             case AudioEffectManager.SET_AGC_ENABLE:
-                Settings.Global.putInt(mContext.getContentResolver(), AudioOutputManager.SOUND_EFFECT_AGC_ENABLE, value);
+                Settings.Global.putInt(mContext.getContentResolver(), OutputModeManager.SOUND_EFFECT_AGC_ENABLE, value);
                 break;
             case AudioEffectManager.SET_AGC_MAX_LEVEL:
-                Settings.Global.putInt(mContext.getContentResolver(), AudioOutputManager.SOUND_EFFECT_AGC_MAX_LEVEL, value);
+                Settings.Global.putInt(mContext.getContentResolver(), OutputModeManager.SOUND_EFFECT_AGC_MAX_LEVEL, value);
                 break;
             case AudioEffectManager.SET_AGC_ATTRACK_TIME:
-                Settings.Global.putInt(mContext.getContentResolver(), AudioOutputManager.SOUND_EFFECT_AGC_ATTRACK_TIME, value);
+                Settings.Global.putInt(mContext.getContentResolver(), OutputModeManager.SOUND_EFFECT_AGC_ATTRACK_TIME, value);
                 break;
             case AudioEffectManager.SET_AGC_RELEASE_TIME:
-                Settings.Global.putInt(mContext.getContentResolver(), AudioOutputManager.SOUND_EFFECT_AGC_RELEASE_TIME, value);
+                Settings.Global.putInt(mContext.getContentResolver(), OutputModeManager.SOUND_EFFECT_AGC_RELEASE_TIME, value);
                 break;
             case AudioEffectManager.SET_AGC_SOURCE_ID:
-                Settings.Global.putInt(mContext.getContentResolver(), AudioOutputManager.SOUND_EFFECT_AGC_SOURCE_ID, value);
+                Settings.Global.putInt(mContext.getContentResolver(), OutputModeManager.SOUND_EFFECT_AGC_SOURCE_ID, value);
                 break;
             case AudioEffectManager.SET_VIRTUAL_URROUND:
-                Settings.Global.putInt(mContext.getContentResolver(), AudioOutputManager.VIRTUAL_SURROUND, value);
+                Settings.Global.putInt(mContext.getContentResolver(), OutputModeManager.VIRTUAL_SURROUND, value);
                 break;
             default:
                 break;
@@ -858,66 +866,66 @@ public class SoundEffectManager {
         int result = -1;
         switch (id) {
             case AudioEffectManager.SET_BASS:
-                result = Settings.Global.getInt(mContext.getContentResolver(), AudioOutputManager.SOUND_EFFECT_BASS, EFFECT_SOUND_MODE[AudioEffectManager.MODE_STANDARD][AudioEffectManager.SET_BASS]);
+                result = Settings.Global.getInt(mContext.getContentResolver(), OutputModeManager.SOUND_EFFECT_BASS, EFFECT_SOUND_MODE[AudioEffectManager.MODE_STANDARD][AudioEffectManager.SET_BASS]);
                 break;
             case AudioEffectManager.SET_TREBLE:
-                result = Settings.Global.getInt(mContext.getContentResolver(), AudioOutputManager.SOUND_EFFECT_TREBLE, EFFECT_SOUND_MODE[AudioEffectManager.MODE_STANDARD][AudioEffectManager.SET_TREBLE]);
+                result = Settings.Global.getInt(mContext.getContentResolver(), OutputModeManager.SOUND_EFFECT_TREBLE, EFFECT_SOUND_MODE[AudioEffectManager.MODE_STANDARD][AudioEffectManager.SET_TREBLE]);
                 break;
             case AudioEffectManager.SET_BALANCE:
-                result = Settings.Global.getInt(mContext.getContentResolver(), AudioOutputManager.SOUND_EFFECT_BALANCE, EFFECT_SOUND_MODE[AudioEffectManager.MODE_STANDARD][AudioEffectManager.SET_BALANCE]);
+                result = Settings.Global.getInt(mContext.getContentResolver(), OutputModeManager.SOUND_EFFECT_BALANCE, EFFECT_SOUND_MODE[AudioEffectManager.MODE_STANDARD][AudioEffectManager.SET_BALANCE]);
                 break;
             case AudioEffectManager.SET_DIALOG_CLARITY:
-                result = Settings.Global.getInt(mContext.getContentResolver(), AudioOutputManager.SOUND_EFFECT_DIALOG_CLARITY, DIALOG_CLARITY_OFF);
+                result = Settings.Global.getInt(mContext.getContentResolver(), OutputModeManager.SOUND_EFFECT_DIALOG_CLARITY, DIALOG_CLARITY_OFF);
                 break;
             case AudioEffectManager.SET_SURROUND:
-                result = Settings.Global.getInt(mContext.getContentResolver(), AudioOutputManager.SOUND_EFFECT_SURROUND, UI_SWITCH_OFF);
+                result = Settings.Global.getInt(mContext.getContentResolver(), OutputModeManager.SOUND_EFFECT_SURROUND, UI_SWITCH_OFF);
                 break;
             case AudioEffectManager.SET_BASS_BOOST:
-                result = Settings.Global.getInt(mContext.getContentResolver(), AudioOutputManager.SOUND_EFFECT_BASS_BOOST, UI_SWITCH_OFF);
+                result = Settings.Global.getInt(mContext.getContentResolver(), OutputModeManager.SOUND_EFFECT_BASS_BOOST, UI_SWITCH_OFF);
                 break;
             case AudioEffectManager.SET_SOUND_MODE:
-                String soundmodetype = Settings.Global.getString(mContext.getContentResolver(), AudioOutputManager.SOUND_EFFECT_SOUND_MODE_TYPE);
-                if (soundmodetype == null || AudioOutputManager.SOUND_EFFECT_SOUND_MODE_TYPE_EQ.equals(soundmodetype)) {
-                    result = Settings.Global.getInt(mContext.getContentResolver(), AudioOutputManager.SOUND_EFFECT_SOUND_MODE_EQ_VALUE, AudioEffectManager.MODE_STANDARD);
-                } else if ((AudioOutputManager.SOUND_EFFECT_SOUND_MODE_TYPE_DAP.equals(soundmodetype))) {
-                    result = Settings.Global.getInt(mContext.getContentResolver(), AudioOutputManager.SOUND_EFFECT_SOUND_MODE_DAP_VALUE, AudioEffectManager.MODE_STANDARD);
+                String soundmodetype = Settings.Global.getString(mContext.getContentResolver(), OutputModeManager.SOUND_EFFECT_SOUND_MODE_TYPE);
+                if (soundmodetype == null || OutputModeManager.SOUND_EFFECT_SOUND_MODE_TYPE_EQ.equals(soundmodetype)) {
+                    result = Settings.Global.getInt(mContext.getContentResolver(), OutputModeManager.SOUND_EFFECT_SOUND_MODE_EQ_VALUE, AudioEffectManager.MODE_STANDARD);
+                } else if ((OutputModeManager.SOUND_EFFECT_SOUND_MODE_TYPE_DAP.equals(soundmodetype))) {
+                    result = Settings.Global.getInt(mContext.getContentResolver(), OutputModeManager.SOUND_EFFECT_SOUND_MODE_DAP_VALUE, AudioEffectManager.MODE_STANDARD);
                 } else {
-                    result = Settings.Global.getInt(mContext.getContentResolver(), AudioOutputManager.SOUND_EFFECT_SOUND_MODE, AudioEffectManager.MODE_STANDARD);
+                    result = Settings.Global.getInt(mContext.getContentResolver(), OutputModeManager.SOUND_EFFECT_SOUND_MODE, AudioEffectManager.MODE_STANDARD);
                 }
                 Log.d(TAG, "getSavedAudioParameters SET_SOUND_MODE = " + result);
                 break;
             case AudioEffectManager.SET_EFFECT_BAND1:
-                result = Settings.Global.getInt(mContext.getContentResolver(), AudioOutputManager.SOUND_EFFECT_BAND1, EFFECT_SOUND_BAND[AudioEffectManager.MODE_STANDARD][PARAM_BAND1 - PARAM_BAND1]);
+                result = Settings.Global.getInt(mContext.getContentResolver(), OutputModeManager.SOUND_EFFECT_BAND1, EFFECT_SOUND_MODE_USER_BAND[PARAM_BAND1 - PARAM_BAND1]);
                 break;
             case AudioEffectManager.SET_EFFECT_BAND2:
-                result = Settings.Global.getInt(mContext.getContentResolver(), AudioOutputManager.SOUND_EFFECT_BAND2, EFFECT_SOUND_BAND[AudioEffectManager.MODE_STANDARD][PARAM_BAND2 - PARAM_BAND1]);
+                result = Settings.Global.getInt(mContext.getContentResolver(), OutputModeManager.SOUND_EFFECT_BAND2, EFFECT_SOUND_MODE_USER_BAND[PARAM_BAND2 - PARAM_BAND1]);
                 break;
             case AudioEffectManager.SET_EFFECT_BAND3:
-                result = Settings.Global.getInt(mContext.getContentResolver(), AudioOutputManager.SOUND_EFFECT_BAND3, EFFECT_SOUND_BAND[AudioEffectManager.MODE_STANDARD][PARAM_BAND3 - PARAM_BAND1]);
+                result = Settings.Global.getInt(mContext.getContentResolver(), OutputModeManager.SOUND_EFFECT_BAND3, EFFECT_SOUND_MODE_USER_BAND[PARAM_BAND3 - PARAM_BAND1]);
                 break;
             case AudioEffectManager.SET_EFFECT_BAND4:
-                result = Settings.Global.getInt(mContext.getContentResolver(), AudioOutputManager.SOUND_EFFECT_BAND4, EFFECT_SOUND_BAND[AudioEffectManager.MODE_STANDARD][PARAM_BAND4 - PARAM_BAND1]);
+                result = Settings.Global.getInt(mContext.getContentResolver(), OutputModeManager.SOUND_EFFECT_BAND4, EFFECT_SOUND_MODE_USER_BAND[PARAM_BAND4 - PARAM_BAND1]);
                 break;
             case AudioEffectManager.SET_EFFECT_BAND5:
-                result = Settings.Global.getInt(mContext.getContentResolver(), AudioOutputManager.SOUND_EFFECT_BAND5, EFFECT_SOUND_BAND[AudioEffectManager.MODE_STANDARD][PARAM_BAND5 - PARAM_BAND1]);
+                result = Settings.Global.getInt(mContext.getContentResolver(), OutputModeManager.SOUND_EFFECT_BAND5, EFFECT_SOUND_MODE_USER_BAND[PARAM_BAND5 - PARAM_BAND1]);
                 break;
             case AudioEffectManager.SET_AGC_ENABLE:
-                result = Settings.Global.getInt(mContext.getContentResolver(), AudioOutputManager.SOUND_EFFECT_AGC_ENABLE, DEFAULT_AGC_ENABLE ? 1 : 0);
+                result = Settings.Global.getInt(mContext.getContentResolver(), OutputModeManager.SOUND_EFFECT_AGC_ENABLE, DEFAULT_AGC_ENABLE ? 1 : 0);
                 break;
             case AudioEffectManager.SET_AGC_MAX_LEVEL:
-                result = Settings.Global.getInt(mContext.getContentResolver(), AudioOutputManager.SOUND_EFFECT_AGC_MAX_LEVEL, DEFAULT_AGC_MAX_LEVEL);
+                result = Settings.Global.getInt(mContext.getContentResolver(), OutputModeManager.SOUND_EFFECT_AGC_MAX_LEVEL, DEFAULT_AGC_MAX_LEVEL);
                 break;
             case AudioEffectManager.SET_AGC_ATTRACK_TIME:
-                result = Settings.Global.getInt(mContext.getContentResolver(), AudioOutputManager.SOUND_EFFECT_AGC_ATTRACK_TIME, DEFAULT_AGC_ATTRACK_TIME);
+                result = Settings.Global.getInt(mContext.getContentResolver(), OutputModeManager.SOUND_EFFECT_AGC_ATTRACK_TIME, DEFAULT_AGC_ATTRACK_TIME);
                 break;
             case AudioEffectManager.SET_AGC_RELEASE_TIME:
-                result = Settings.Global.getInt(mContext.getContentResolver(), AudioOutputManager.SOUND_EFFECT_AGC_RELEASE_TIME, DEFAULT_AGC_RELEASE_TIME);
+                result = Settings.Global.getInt(mContext.getContentResolver(), OutputModeManager.SOUND_EFFECT_AGC_RELEASE_TIME, DEFAULT_AGC_RELEASE_TIME);
                 break;
             case AudioEffectManager.SET_AGC_SOURCE_ID:
-                result = Settings.Global.getInt(mContext.getContentResolver(), AudioOutputManager.SOUND_EFFECT_AGC_SOURCE_ID, DEFAULT_AGC_SOURCE_ID);
+                result = Settings.Global.getInt(mContext.getContentResolver(), OutputModeManager.SOUND_EFFECT_AGC_SOURCE_ID, DEFAULT_AGC_SOURCE_ID);
                 break;
             case AudioEffectManager.SET_VIRTUAL_URROUND:
-                result = Settings.Global.getInt(mContext.getContentResolver(), AudioOutputManager.VIRTUAL_SURROUND, AudioOutputManager.VIRTUAL_SURROUND_OFF);
+                result = Settings.Global.getInt(mContext.getContentResolver(), OutputModeManager.VIRTUAL_SURROUND, OutputModeManager.VIRTUAL_SURROUND_OFF);
                 break;
             default:
                 break;
@@ -960,8 +968,17 @@ public class SoundEffectManager {
 
     public void initSoundEffectSettings() {
         if (Settings.Global.getInt(mContext.getContentResolver(), "set_five_band", 0) == 0) {
-            for (int i = AudioEffectManager.SET_EFFECT_BAND1; i <= AudioEffectManager.SET_EFFECT_BAND5; i++) {
-                saveAudioParameters(i, EFFECT_SOUND_BAND[AudioEffectManager.MODE_CUSTOM][i - AudioEffectManager.SET_EFFECT_BAND1]);
+            if (mSoundMode != null) {
+                byte[] fiveBandNum = new byte[5];
+                mSoundMode.getParameter(PARAM_EQ_CUSTOM, fiveBandNum);
+                for (int i = AudioEffectManager.SET_EFFECT_BAND1; i <= AudioEffectManager.SET_EFFECT_BAND5; i++) {
+                    saveAudioParameters(i, unMappingLine(fiveBandNum[i - AudioEffectManager.SET_EFFECT_BAND1], true));
+                }
+            } else {
+                for (int i = AudioEffectManager.SET_EFFECT_BAND1; i <= AudioEffectManager.SET_EFFECT_BAND5; i++) {
+                    saveAudioParameters(i, EFFECT_SOUND_MODE_USER_BAND[i - AudioEffectManager.SET_EFFECT_BAND1]);
+                }
+                Log.w(TAG, "get default band value fail, set default value:0,0,0,0,0, mSoundMode == null");
             }
             Settings.Global.putInt(mContext.getContentResolver(), "set_five_band", 1);
         }
@@ -970,6 +987,10 @@ public class SoundEffectManager {
             setParameters(i, value);
             Log.d(TAG, "initSoundEffectSettings NO." + i + "=" + value);
         }
+
+        int soundMode = getSavedAudioParameters(AudioEffectManager.SET_SOUND_MODE);
+        setSoundModeByObserver(soundMode);
+
         for (int i = AudioEffectManager.SET_AGC_ENABLE; i < AudioEffectManager.SET_VIRTUAL_URROUND + 1; i++) {
             int value = getSavedAudioParameters(i);
             setParameters(i, value);
@@ -987,28 +1008,28 @@ public class SoundEffectManager {
     public void resetSoundEffectSettings() {
         Log.d(TAG, "resetSoundEffectSettings");
         cleanupAudioEffects();
-        Settings.Global.putInt(mContext.getContentResolver(), AudioOutputManager.SOUND_EFFECT_BASS, EFFECT_SOUND_MODE[AudioEffectManager.MODE_STANDARD][AudioEffectManager.SET_BASS]);
-        Settings.Global.putInt(mContext.getContentResolver(), AudioOutputManager.SOUND_EFFECT_TREBLE, EFFECT_SOUND_MODE[AudioEffectManager.MODE_STANDARD][AudioEffectManager.SET_TREBLE]);
-        Settings.Global.putInt(mContext.getContentResolver(), AudioOutputManager.SOUND_EFFECT_BALANCE, EFFECT_SOUND_MODE[AudioEffectManager.MODE_STANDARD][AudioEffectManager.SET_BALANCE]);
-        Settings.Global.putInt(mContext.getContentResolver(), AudioOutputManager.SOUND_EFFECT_DIALOG_CLARITY, DIALOG_CLARITY_OFF);
-        Settings.Global.putInt(mContext.getContentResolver(), AudioOutputManager.SOUND_EFFECT_SURROUND, UI_SWITCH_OFF);
-        Settings.Global.putInt(mContext.getContentResolver(), AudioOutputManager.SOUND_EFFECT_BASS_BOOST, UI_SWITCH_OFF);
-        Settings.Global.putString(mContext.getContentResolver(), AudioOutputManager.SOUND_EFFECT_SOUND_MODE_TYPE, AudioOutputManager.SOUND_EFFECT_SOUND_MODE_TYPE_EQ);
-        Settings.Global.putInt(mContext.getContentResolver(), AudioOutputManager.SOUND_EFFECT_SOUND_MODE, AudioEffectManager.MODE_STANDARD);
-        Settings.Global.putInt(mContext.getContentResolver(), AudioOutputManager.SOUND_EFFECT_SOUND_MODE_DAP_VALUE, AudioEffectManager.MODE_STANDARD);
-        Settings.Global.putInt(mContext.getContentResolver(), AudioOutputManager.SOUND_EFFECT_SOUND_MODE_EQ_VALUE, AudioEffectManager.MODE_STANDARD);
-        Settings.Global.putInt(mContext.getContentResolver(), AudioOutputManager.SOUND_EFFECT_BAND1, EFFECT_SOUND_BAND[AudioEffectManager.MODE_STANDARD][PARAM_BAND1 - PARAM_BAND1]);
-        Settings.Global.putInt(mContext.getContentResolver(), AudioOutputManager.SOUND_EFFECT_BAND2, EFFECT_SOUND_BAND[AudioEffectManager.MODE_STANDARD][PARAM_BAND2 - PARAM_BAND1]);
-        Settings.Global.putInt(mContext.getContentResolver(), AudioOutputManager.SOUND_EFFECT_BAND3, EFFECT_SOUND_BAND[AudioEffectManager.MODE_STANDARD][PARAM_BAND3 - PARAM_BAND1]);
-        Settings.Global.putInt(mContext.getContentResolver(), AudioOutputManager.SOUND_EFFECT_BAND4, EFFECT_SOUND_BAND[AudioEffectManager.MODE_STANDARD][PARAM_BAND4 - PARAM_BAND1]);
-        Settings.Global.putInt(mContext.getContentResolver(), AudioOutputManager.SOUND_EFFECT_BAND5, EFFECT_SOUND_BAND[AudioEffectManager.MODE_STANDARD][PARAM_BAND5 - PARAM_BAND1]);
+        Settings.Global.putInt(mContext.getContentResolver(), OutputModeManager.SOUND_EFFECT_BASS, EFFECT_SOUND_MODE[AudioEffectManager.MODE_STANDARD][AudioEffectManager.SET_BASS]);
+        Settings.Global.putInt(mContext.getContentResolver(), OutputModeManager.SOUND_EFFECT_TREBLE, EFFECT_SOUND_MODE[AudioEffectManager.MODE_STANDARD][AudioEffectManager.SET_TREBLE]);
+        Settings.Global.putInt(mContext.getContentResolver(), OutputModeManager.SOUND_EFFECT_BALANCE, EFFECT_SOUND_MODE[AudioEffectManager.MODE_STANDARD][AudioEffectManager.SET_BALANCE]);
+        Settings.Global.putInt(mContext.getContentResolver(), OutputModeManager.SOUND_EFFECT_DIALOG_CLARITY, DIALOG_CLARITY_OFF);
+        Settings.Global.putInt(mContext.getContentResolver(), OutputModeManager.SOUND_EFFECT_SURROUND, UI_SWITCH_OFF);
+        Settings.Global.putInt(mContext.getContentResolver(), OutputModeManager.SOUND_EFFECT_BASS_BOOST, UI_SWITCH_OFF);
+        Settings.Global.putString(mContext.getContentResolver(), OutputModeManager.SOUND_EFFECT_SOUND_MODE_TYPE, OutputModeManager.SOUND_EFFECT_SOUND_MODE_TYPE_EQ);
+        Settings.Global.putInt(mContext.getContentResolver(), OutputModeManager.SOUND_EFFECT_SOUND_MODE, AudioEffectManager.MODE_STANDARD);
+        Settings.Global.putInt(mContext.getContentResolver(), OutputModeManager.SOUND_EFFECT_SOUND_MODE_DAP_VALUE, AudioEffectManager.MODE_STANDARD);
+        Settings.Global.putInt(mContext.getContentResolver(), OutputModeManager.SOUND_EFFECT_SOUND_MODE_EQ_VALUE, AudioEffectManager.MODE_STANDARD);
+        Settings.Global.putInt(mContext.getContentResolver(), OutputModeManager.SOUND_EFFECT_BAND1, EFFECT_SOUND_MODE_USER_BAND[PARAM_BAND1 - PARAM_BAND1]);
+        Settings.Global.putInt(mContext.getContentResolver(), OutputModeManager.SOUND_EFFECT_BAND2, EFFECT_SOUND_MODE_USER_BAND[PARAM_BAND2 - PARAM_BAND1]);
+        Settings.Global.putInt(mContext.getContentResolver(), OutputModeManager.SOUND_EFFECT_BAND3, EFFECT_SOUND_MODE_USER_BAND[PARAM_BAND3 - PARAM_BAND1]);
+        Settings.Global.putInt(mContext.getContentResolver(), OutputModeManager.SOUND_EFFECT_BAND4, EFFECT_SOUND_MODE_USER_BAND[PARAM_BAND4 - PARAM_BAND1]);
+        Settings.Global.putInt(mContext.getContentResolver(), OutputModeManager.SOUND_EFFECT_BAND5, EFFECT_SOUND_MODE_USER_BAND[PARAM_BAND5 - PARAM_BAND1]);
         Settings.Global.putInt(mContext.getContentResolver(), "set_five_band", 0);
-        Settings.Global.putInt(mContext.getContentResolver(), AudioOutputManager.SOUND_EFFECT_AGC_ENABLE, DEFAULT_AGC_ENABLE ? 1 : 0);
-        Settings.Global.putInt(mContext.getContentResolver(), AudioOutputManager.SOUND_EFFECT_AGC_MAX_LEVEL, DEFAULT_AGC_MAX_LEVEL);
-        Settings.Global.putInt(mContext.getContentResolver(), AudioOutputManager.SOUND_EFFECT_AGC_ATTRACK_TIME, DEFAULT_AGC_ATTRACK_TIME);
-        Settings.Global.putInt(mContext.getContentResolver(), AudioOutputManager.SOUND_EFFECT_AGC_RELEASE_TIME, DEFAULT_AGC_RELEASE_TIME);
-        Settings.Global.putInt(mContext.getContentResolver(), AudioOutputManager.SOUND_EFFECT_AGC_SOURCE_ID, DEFAULT_AGC_SOURCE_ID);
-        Settings.Global.putInt(mContext.getContentResolver(), AudioOutputManager.VIRTUAL_SURROUND, AudioOutputManager.VIRTUAL_SURROUND_OFF);
+        Settings.Global.putInt(mContext.getContentResolver(), OutputModeManager.SOUND_EFFECT_AGC_ENABLE, DEFAULT_AGC_ENABLE ? 1 : 0);
+        Settings.Global.putInt(mContext.getContentResolver(), OutputModeManager.SOUND_EFFECT_AGC_MAX_LEVEL, DEFAULT_AGC_MAX_LEVEL);
+        Settings.Global.putInt(mContext.getContentResolver(), OutputModeManager.SOUND_EFFECT_AGC_ATTRACK_TIME, DEFAULT_AGC_ATTRACK_TIME);
+        Settings.Global.putInt(mContext.getContentResolver(), OutputModeManager.SOUND_EFFECT_AGC_RELEASE_TIME, DEFAULT_AGC_RELEASE_TIME);
+        Settings.Global.putInt(mContext.getContentResolver(), OutputModeManager.SOUND_EFFECT_AGC_SOURCE_ID, DEFAULT_AGC_SOURCE_ID);
+        Settings.Global.putInt(mContext.getContentResolver(), OutputModeManager.VIRTUAL_SURROUND, OutputModeManager.VIRTUAL_SURROUND_OFF);
         initSoundEffectSettings();
     }
 
