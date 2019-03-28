@@ -577,7 +577,7 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
                 stopSubtitle();
                 mTvControlManager.SetAVPlaybackListener(null);
                 mTvControlManager.SetAudioEventListener(null);
-                stopTv();
+                //stopTv();
             }
             setMonitor(null);
             releaseWorkThread();
