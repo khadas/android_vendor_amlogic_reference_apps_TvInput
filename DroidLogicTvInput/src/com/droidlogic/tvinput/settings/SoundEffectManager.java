@@ -511,8 +511,12 @@ public class SoundEffectManager {
                     //set one band, at the same time the others will be set
                     setDifferentBandEffects(AudioEffectManager.SET_EFFECT_BAND1, getSavedAudioParameters(AudioEffectManager.SET_EFFECT_BAND1), false);
                 //}
+                setTreble(getSavedAudioParameters(AudioEffectManager.SET_TREBLE));
+                setBass(getSavedAudioParameters(AudioEffectManager.SET_BASS));
             } else {
                 mSoundMode.setParameter(PARAM_EQ_EFFECT, mode);
+                setTreble(EFFECT_SOUND_MODE[AudioEffectManager.MODE_STANDARD][AudioEffectManager.SET_TREBLE]);
+                setBass(EFFECT_SOUND_MODE[AudioEffectManager.MODE_STANDARD][AudioEffectManager.SET_BASS]);
             }
             //need to set sound mode by observer listener
             //saveAudioParameters(AudioEffectManager.SET_SOUND_MODE, mode);
@@ -797,10 +801,16 @@ public class SoundEffectManager {
     private void saveAudioParameters(int id, int value) {
         switch (id) {
             case AudioEffectManager.SET_BASS:
-                Settings.Global.putInt(mContext.getContentResolver(), OutputModeManager.SOUND_EFFECT_BASS, value);
+                int soundModeBass = getSoundModeFromDb();
+                if (AudioEffectManager.MODE_CUSTOM == soundModeBass) {
+                    Settings.Global.putInt(mContext.getContentResolver(), OutputModeManager.SOUND_EFFECT_BASS, value);
+                }
                 break;
             case AudioEffectManager.SET_TREBLE:
-                Settings.Global.putInt(mContext.getContentResolver(), OutputModeManager.SOUND_EFFECT_TREBLE, value);
+                int soundModeTreble = getSoundModeFromDb();
+                if (AudioEffectManager.MODE_CUSTOM == soundModeTreble) {
+                    Settings.Global.putInt(mContext.getContentResolver(), OutputModeManager.SOUND_EFFECT_TREBLE, value);
+                }
                 break;
             case AudioEffectManager.SET_BALANCE:
                 Settings.Global.putInt(mContext.getContentResolver(), OutputModeManager.SOUND_EFFECT_BALANCE, value);
@@ -862,14 +872,35 @@ public class SoundEffectManager {
         }
     }
 
+    private int getSoundModeFromDb() {
+        String soundmodetype = Settings.Global.getString(mContext.getContentResolver(), OutputModeManager.SOUND_EFFECT_SOUND_MODE_TYPE);
+        if (soundmodetype == null || OutputModeManager.SOUND_EFFECT_SOUND_MODE_TYPE_EQ.equals(soundmodetype)) {
+            return Settings.Global.getInt(mContext.getContentResolver(), OutputModeManager.SOUND_EFFECT_SOUND_MODE_EQ_VALUE, AudioEffectManager.MODE_STANDARD);
+        } else if ((OutputModeManager.SOUND_EFFECT_SOUND_MODE_TYPE_DAP.equals(soundmodetype))) {
+            return Settings.Global.getInt(mContext.getContentResolver(), OutputModeManager.SOUND_EFFECT_SOUND_MODE_DAP_VALUE, AudioEffectManager.MODE_STANDARD);
+        } else {
+            return Settings.Global.getInt(mContext.getContentResolver(), OutputModeManager.SOUND_EFFECT_SOUND_MODE, AudioEffectManager.MODE_STANDARD);
+        }
+    }
+
     private int getSavedAudioParameters(int id) {
         int result = -1;
         switch (id) {
             case AudioEffectManager.SET_BASS:
-                result = Settings.Global.getInt(mContext.getContentResolver(), OutputModeManager.SOUND_EFFECT_BASS, EFFECT_SOUND_MODE[AudioEffectManager.MODE_STANDARD][AudioEffectManager.SET_BASS]);
+                int soundModeBass = getSoundModeFromDb();
+                if (AudioEffectManager.MODE_CUSTOM == soundModeBass) {
+                    result = Settings.Global.getInt(mContext.getContentResolver(), OutputModeManager.SOUND_EFFECT_BASS, EFFECT_SOUND_MODE[AudioEffectManager.MODE_STANDARD][AudioEffectManager.SET_BASS]);
+                } else {
+                    result = EFFECT_SOUND_MODE[AudioEffectManager.MODE_STANDARD][AudioEffectManager.SET_BASS];
+                }
                 break;
             case AudioEffectManager.SET_TREBLE:
-                result = Settings.Global.getInt(mContext.getContentResolver(), OutputModeManager.SOUND_EFFECT_TREBLE, EFFECT_SOUND_MODE[AudioEffectManager.MODE_STANDARD][AudioEffectManager.SET_TREBLE]);
+                int soundModeTreble = getSoundModeFromDb();
+                if (AudioEffectManager.MODE_CUSTOM == soundModeTreble) {
+                    result = Settings.Global.getInt(mContext.getContentResolver(), OutputModeManager.SOUND_EFFECT_TREBLE, EFFECT_SOUND_MODE[AudioEffectManager.MODE_STANDARD][AudioEffectManager.SET_TREBLE]);
+                } else {
+                    result = EFFECT_SOUND_MODE[AudioEffectManager.MODE_STANDARD][AudioEffectManager.SET_TREBLE];
+                }
                 break;
             case AudioEffectManager.SET_BALANCE:
                 result = Settings.Global.getInt(mContext.getContentResolver(), OutputModeManager.SOUND_EFFECT_BALANCE, EFFECT_SOUND_MODE[AudioEffectManager.MODE_STANDARD][AudioEffectManager.SET_BALANCE]);
@@ -884,14 +915,7 @@ public class SoundEffectManager {
                 result = Settings.Global.getInt(mContext.getContentResolver(), OutputModeManager.SOUND_EFFECT_BASS_BOOST, UI_SWITCH_OFF);
                 break;
             case AudioEffectManager.SET_SOUND_MODE:
-                String soundmodetype = Settings.Global.getString(mContext.getContentResolver(), OutputModeManager.SOUND_EFFECT_SOUND_MODE_TYPE);
-                if (soundmodetype == null || OutputModeManager.SOUND_EFFECT_SOUND_MODE_TYPE_EQ.equals(soundmodetype)) {
-                    result = Settings.Global.getInt(mContext.getContentResolver(), OutputModeManager.SOUND_EFFECT_SOUND_MODE_EQ_VALUE, AudioEffectManager.MODE_STANDARD);
-                } else if ((OutputModeManager.SOUND_EFFECT_SOUND_MODE_TYPE_DAP.equals(soundmodetype))) {
-                    result = Settings.Global.getInt(mContext.getContentResolver(), OutputModeManager.SOUND_EFFECT_SOUND_MODE_DAP_VALUE, AudioEffectManager.MODE_STANDARD);
-                } else {
-                    result = Settings.Global.getInt(mContext.getContentResolver(), OutputModeManager.SOUND_EFFECT_SOUND_MODE, AudioEffectManager.MODE_STANDARD);
-                }
+                result = getSoundModeFromDb();
                 Log.d(TAG, "getSavedAudioParameters SET_SOUND_MODE = " + result);
                 break;
             case AudioEffectManager.SET_EFFECT_BAND1:
@@ -978,7 +1002,7 @@ public class SoundEffectManager {
                 for (int i = AudioEffectManager.SET_EFFECT_BAND1; i <= AudioEffectManager.SET_EFFECT_BAND5; i++) {
                     saveAudioParameters(i, EFFECT_SOUND_MODE_USER_BAND[i - AudioEffectManager.SET_EFFECT_BAND1]);
                 }
-                Log.w(TAG, "get default band value fail, set default value:0,0,0,0,0, mSoundMode == null");
+                Log.w(TAG, "get default band value fail, set default value, mSoundMode == null");
             }
             Settings.Global.putInt(mContext.getContentResolver(), "set_five_band", 1);
         }
