@@ -588,7 +588,7 @@ public class AUXInputService extends DroidLogicTvInputService {
                 else
                     mSubtitleView.hide();
             }
-            mSessionHandler.sendMessage(mSessionHandler.obtainMessage(enable ? MSG_SUBTITLE_SHOW : MSG_SUBTITLE_HIDE));
+            sendSessionMessage(enable ? MSG_SUBTITLE_SHOW : MSG_SUBTITLE_HIDE);
         }*/
 
         private TvContentRating getCurrentRating() {

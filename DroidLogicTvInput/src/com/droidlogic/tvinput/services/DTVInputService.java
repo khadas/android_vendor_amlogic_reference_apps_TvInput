@@ -2534,7 +2534,7 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
                 if (mSubtitleView != null) {
                     enableSubtitleShow(false);
                     mSubtitleView.stop();
-                    mSessionHandler.sendMessage(mSessionHandler.obtainMessage(MSG_SUBTITLE_HIDE));
+                    sendSessionMessage(MSG_SUBTITLE_HIDE);
                 }
                 mSystemControlManager.setProperty(DTV_SUBTITLE_TRACK_IDX, "-1");
             }
@@ -2567,7 +2567,7 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
                     mSubtitleView.hide();
             }
             is_subtitle_enabled = enable;
-            mSessionHandler.sendMessage(mSessionHandler.obtainMessage(enable ? MSG_SUBTITLE_SHOW : MSG_SUBTITLE_HIDE));
+            sendSessionMessage(enable ? MSG_SUBTITLE_SHOW : MSG_SUBTITLE_HIDE);
         }
 
         protected void startAudioADByMain(ChannelInfo channelInfo, int mainAudioTrackIndex) {
