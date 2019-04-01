@@ -181,12 +181,12 @@ public class SoundEffectManager {
     }
 
     private boolean creatSoundModeAudioEffects() {
-        //first try dap
-        if (creatDapAudioEffects()) {
-            return true;
-        } else {
+        //dap both enable on mbox and tv, so move dap to public code
+        //effect num has limit in hal, so if dap valid, ignore eq
+        OutputModeManager opm = new OutputModeManager(mContext);
+        if (!opm.isDapValid())
             return creatEqAudioEffects();
-        }
+        return false;
     }
 
     private boolean creatEqAudioEffects() {
