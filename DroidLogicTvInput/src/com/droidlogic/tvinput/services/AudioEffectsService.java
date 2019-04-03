@@ -63,8 +63,6 @@ public class AudioEffectsService extends PersistentService {
         super.onCreate();
         if (DEBUG) Log.d(TAG, "AudioEffectsService onCreate");
         mContext = this;
-        mSoundEffectManager = new SoundEffectManager(this);
-        registerCommandReceiver(this);
     }
 
     @Override
@@ -108,7 +106,7 @@ public class AudioEffectsService extends PersistentService {
 
         return (tvProvider != null) &&
                 (((SystemProperties.getInt("persist.vendor.media.bootvideo", 50)  > 100)
-                        && TextUtils.equals(SystemProperties.get("dev.bootcomplete", "0"), "1"))
+                        && TextUtils.equals(SystemProperties.get("service.bootvideo.exit", "1"), "0"))
                 || ((SystemProperties.getInt("persist.vendor.media.bootvideo", 50)  <= 100)));
     }
 
@@ -271,7 +269,9 @@ public class AudioEffectsService extends PersistentService {
 
     private void handleActionStartUp() {
         // This will apply the saved audio settings on boot
+        mSoundEffectManager = new SoundEffectManager(this);
         mSoundEffectManager.initSoundEffectSettings();
+        registerCommandReceiver(this);
     }
 
     private static final String RESET_ACTION = "droid.action.resetsoundeffect";
