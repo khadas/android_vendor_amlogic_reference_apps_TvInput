@@ -20,6 +20,8 @@ public class IsdbImplement {
     int video_bottom;
     int video_height;
     int video_width;
+    int cc_paint_width;
+    int cc_paint_height;
     double x_dimension;
     double y_dimension;
     double safe_area_left;
@@ -33,6 +35,7 @@ public class IsdbImplement {
 
     IsdbImplement()
     {
+        cc_paint_height = 1080;
         background_paint = new Paint();
         text_paint = new Paint();
     }
@@ -52,11 +55,19 @@ public class IsdbImplement {
             video_height = video_bottom - video_top;
             video_width = video_right - video_left;
             //TODO:
-            x_dimension = 960;
-            y_dimension = 540;
-            video_h_v_rate_on_screen = (double)(video_right - video_left) / (double)(video_bottom - video_top);
-            safe_area_left = 0; //(video_right - video_left) * (1-0.8) / 2;
-            safe_area_top = 0; //(video_bottom - video_top) * (1-0.8) / 2;
+            video_h_v_rate_on_screen = (double)video_width / (double)video_height;
+            if (video_h_v_rate_on_screen < 1.7) {
+                x_dimension = 720;
+                y_dimension = 540;
+                cc_paint_width = 1440;
+                safe_area_left = (1920 - 1440)/2;
+            } else {
+                x_dimension = 960;
+                y_dimension = 540;
+                cc_paint_width = 1920;
+                safe_area_left = video_width * 0.1;
+            }
+            safe_area_top = video_height * 0.1;
             Log.i(TAG, "position: "+ video_left + " " + video_right + " " + video_top +
                     " " + video_bottom + " " + video_h_v_rate_on_screen +
                     " " + x_dimension + " " + y_dimension + ratio + " " + screen_mode);
@@ -107,7 +118,7 @@ public class IsdbImplement {
             background_paint.setColor(Color.BLACK);
             text_paint.setColor(Color.WHITE);
             text_paint.setSubpixelText(true);
-            font_actual_size = (video_height * fsize / y_dimension) / 2;
+            font_actual_size = (cc_paint_height * fsize / y_dimension) / 2;
             text_paint.setTextSize((int)font_actual_size);
             text_paint.setTypeface(Typeface.DEFAULT);
         } catch (Exception e) {
@@ -129,8 +140,8 @@ public class IsdbImplement {
                     String str = target_row.getString("text");
                     Log.e(TAG, "x:"+x+" y:"+y +" str:"+str + " horizon? " + horizon_layout);
 
-                    double str_left = x * video_width / x_dimension + safe_area_left;
-                    double str_bottom = y * video_height / y_dimension + safe_area_top;
+                    double str_left = x * cc_paint_width / x_dimension + safe_area_left;
+                    double str_bottom = y * cc_paint_height / y_dimension + safe_area_top;
                     canvas.drawRect((float) str_left,
                             (float) str_bottom + text_paint.getFontMetrics().ascent,
                             (float) (str_left + text_paint.measureText(str)),
