@@ -105,6 +105,11 @@ public class ADTVInputService extends DTVInputService {
             if (info == null)
                 return false;
 
+            if (mSurface == null) {
+                Log.d(TAG, "surface is null, drop playProgram");
+                return true;
+            }
+
             info.print();
 
             int audioAuto = getAudioAuto(info);
@@ -140,6 +145,7 @@ public class ADTVInputService extends DTVInputService {
                         .append("," + fe.toString("fe"))
                         .append(",\"a\":{\"AudComp\":"+info.getAudioCompensation()+"}")
                         .append("}");
+
                     mTvControlManager.startPlay("ntsc", param.toString());
                 }
             } else {
@@ -191,7 +197,8 @@ public class ADTVInputService extends DTVInputService {
                         .append(",\"subpid\":{" + subPidString)
                         .append("},\"subcnt\":" + subCount)
                         .append("}}");
-                    Log.e(TAG, "playProgram adtvparam: " + param.toString());
+                    Log.d(TAG, "playProgram adtvparam: " + param.toString());
+
                     mTvControlManager.startPlay("atsc", param.toString());
                     initTimeShiftStatus();
                 }
