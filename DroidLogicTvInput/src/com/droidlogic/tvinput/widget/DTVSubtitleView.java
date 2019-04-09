@@ -927,7 +927,8 @@ public class DTVSubtitleView extends View {
             switch (msg.what) {
                 case JSON_MSG_NORMAL:
                     json_str = (String)msg.obj;
-                    postInvalidate();
+                    if (play_mode != PLAY_NONE)
+                        postInvalidate();
                     break;
                 case SUB_VIEW_SHOW:
                     visible = (Boolean) msg.obj;
