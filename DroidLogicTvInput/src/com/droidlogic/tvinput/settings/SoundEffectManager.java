@@ -99,15 +99,7 @@ public class SoundEffectManager {
     private static final int PARAMETERS_DAP_DISABLE     = 0;
     //band 1, band 2, band 3, band 4, band 5  need transfer 0~100 to -10~10
     private static final int[] EFFECT_SOUND_MODE_USER_BAND = {50, 50, 50, 50, 50};
-
     private static final int EFFECT_SOUND_TYPE_NUM = 6;
-    //all sound mode, order is bass treble balance dialogclarity surround bassboost
-    private static final int[][] EFFECT_SOUND_MODE = {  {50, 50, 50, 1, 1, 0},  //standard parameters
-                                                        {74, 74, 50, 1, 0, 0},  //music parameters
-                                                        {50, 26, 50, 2, 1, 0},  //movie parameters
-                                                        {34, 34, 50, 2, 0, 0},  //news parameters
-                                                        {34, 34, 50, 2, 0, 0},  //game parameters
-                                                        {74, 50, 50, 1, 1, 0}}; //user parameters
 
     private int mSoundModule = AudioEffectManager.DAP_MODULE;
     // Prefix to append to audio preferences file
@@ -281,7 +273,7 @@ public class SoundEffectManager {
         int saveresult = -1;
         if (!creatTrebleBassAudioEffects()) {
             Log.e(TAG, "getTrebleStatus mTrebleBass creat fail");
-            return EFFECT_SOUND_MODE[AudioEffectManager.MODE_STANDARD][AudioEffectManager.SET_TREBLE];
+            return AudioEffectManager.EFFECT_TREBLE_DEFAULT;
         }
         int[] value = new int[1];
         mTrebleBass.getParameter(PARAM_TREBLE_LEVEL, value);
@@ -298,7 +290,7 @@ public class SoundEffectManager {
         int saveresult = -1;
         if (!creatTrebleBassAudioEffects()) {
             Log.e(TAG, "getBassStatus mTrebleBass creat fail");
-            return EFFECT_SOUND_MODE[AudioEffectManager.MODE_STANDARD][AudioEffectManager.SET_BASS];
+            return AudioEffectManager.EFFECT_BASS_DEFAULT;
         }
         int[] value = new int[1];
         mTrebleBass.getParameter(PARAM_BASS_LEVEL, value);
@@ -315,7 +307,7 @@ public class SoundEffectManager {
         int saveresult = -1;
         if (!creatBalanceAudioEffects()) {
             Log.e(TAG, "getBalanceStatus mBalance creat fail");
-            return EFFECT_SOUND_MODE[AudioEffectManager.MODE_STANDARD][AudioEffectManager.SET_BALANCE];
+            return AudioEffectManager.EFFECT_BALANCE_DEFAULT;
         }
         int[] value = new int[1];
         mBalance.getParameter(PARAM_BALANCE_LEVEL, value);
@@ -505,18 +497,14 @@ public class SoundEffectManager {
         int result = mSoundMode.setEnabled(true);
         if (result == AudioEffect.SUCCESS) {
             if (CanDebug()) Log.d(TAG, "setSoundMode = " + mode);
-            if ((mSoundModule == AudioEffectManager.DAP_MODULE && mode == AudioEffectManager.MODE_CUSTOM) ||
-                    (mSoundModule == AudioEffectManager.EQ_MODULE && mode == AudioEffectManager.EXTEND_MODE_CUSTOM)) {
+            if ((mSoundModule == AudioEffectManager.EQ_MODULE && mode == AudioEffectManager.MODE_CUSTOM) ||
+                    (mSoundModule == AudioEffectManager.DAP_MODULE && mode == AudioEffectManager.EXTEND_MODE_CUSTOM)) {
                 //for (int i = AudioEffectManager.SET_EFFECT_BAND1; i <= AudioEffectManager.SET_EFFECT_BAND5; i++) {
                     //set one band, at the same time the others will be set
                     setDifferentBandEffects(AudioEffectManager.SET_EFFECT_BAND1, getSavedAudioParameters(AudioEffectManager.SET_EFFECT_BAND1), false);
                 //}
-                setTreble(getSavedAudioParameters(AudioEffectManager.SET_TREBLE));
-                setBass(getSavedAudioParameters(AudioEffectManager.SET_BASS));
             } else {
                 mSoundMode.setParameter(PARAM_EQ_EFFECT, mode);
-                setTreble(EFFECT_SOUND_MODE[AudioEffectManager.MODE_STANDARD][AudioEffectManager.SET_TREBLE]);
-                setBass(EFFECT_SOUND_MODE[AudioEffectManager.MODE_STANDARD][AudioEffectManager.SET_BASS]);
             }
             //need to set sound mode by observer listener
             //saveAudioParameters(AudioEffectManager.SET_SOUND_MODE, mode);
@@ -889,21 +877,21 @@ public class SoundEffectManager {
             case AudioEffectManager.SET_BASS:
                 int soundModeBass = getSoundModeFromDb();
                 if (AudioEffectManager.MODE_CUSTOM == soundModeBass) {
-                    result = Settings.Global.getInt(mContext.getContentResolver(), OutputModeManager.SOUND_EFFECT_BASS, EFFECT_SOUND_MODE[AudioEffectManager.MODE_STANDARD][AudioEffectManager.SET_BASS]);
+                    result = Settings.Global.getInt(mContext.getContentResolver(), OutputModeManager.SOUND_EFFECT_BASS, AudioEffectManager.EFFECT_BASS_DEFAULT);
                 } else {
-                    result = EFFECT_SOUND_MODE[AudioEffectManager.MODE_STANDARD][AudioEffectManager.SET_BASS];
+                    result = AudioEffectManager.EFFECT_BASS_DEFAULT;
                 }
                 break;
             case AudioEffectManager.SET_TREBLE:
                 int soundModeTreble = getSoundModeFromDb();
                 if (AudioEffectManager.MODE_CUSTOM == soundModeTreble) {
-                    result = Settings.Global.getInt(mContext.getContentResolver(), OutputModeManager.SOUND_EFFECT_TREBLE, EFFECT_SOUND_MODE[AudioEffectManager.MODE_STANDARD][AudioEffectManager.SET_TREBLE]);
+                    result = Settings.Global.getInt(mContext.getContentResolver(), OutputModeManager.SOUND_EFFECT_TREBLE, AudioEffectManager.EFFECT_TREBLE_DEFAULT);
                 } else {
-                    result = EFFECT_SOUND_MODE[AudioEffectManager.MODE_STANDARD][AudioEffectManager.SET_TREBLE];
+                    result = AudioEffectManager.EFFECT_TREBLE_DEFAULT;
                 }
                 break;
             case AudioEffectManager.SET_BALANCE:
-                result = Settings.Global.getInt(mContext.getContentResolver(), OutputModeManager.SOUND_EFFECT_BALANCE, EFFECT_SOUND_MODE[AudioEffectManager.MODE_STANDARD][AudioEffectManager.SET_BALANCE]);
+                result = Settings.Global.getInt(mContext.getContentResolver(), OutputModeManager.SOUND_EFFECT_BALANCE, AudioEffectManager.EFFECT_BALANCE_DEFAULT);
                 break;
             case AudioEffectManager.SET_DIALOG_CLARITY:
                 result = Settings.Global.getInt(mContext.getContentResolver(), OutputModeManager.SOUND_EFFECT_DIALOG_CLARITY, DIALOG_CLARITY_OFF);
@@ -1032,9 +1020,9 @@ public class SoundEffectManager {
     public void resetSoundEffectSettings() {
         Log.d(TAG, "resetSoundEffectSettings");
         cleanupAudioEffects();
-        Settings.Global.putInt(mContext.getContentResolver(), OutputModeManager.SOUND_EFFECT_BASS, EFFECT_SOUND_MODE[AudioEffectManager.MODE_STANDARD][AudioEffectManager.SET_BASS]);
-        Settings.Global.putInt(mContext.getContentResolver(), OutputModeManager.SOUND_EFFECT_TREBLE, EFFECT_SOUND_MODE[AudioEffectManager.MODE_STANDARD][AudioEffectManager.SET_TREBLE]);
-        Settings.Global.putInt(mContext.getContentResolver(), OutputModeManager.SOUND_EFFECT_BALANCE, EFFECT_SOUND_MODE[AudioEffectManager.MODE_STANDARD][AudioEffectManager.SET_BALANCE]);
+        Settings.Global.putInt(mContext.getContentResolver(), OutputModeManager.SOUND_EFFECT_BASS, AudioEffectManager.EFFECT_BASS_DEFAULT);
+        Settings.Global.putInt(mContext.getContentResolver(), OutputModeManager.SOUND_EFFECT_TREBLE, AudioEffectManager.EFFECT_TREBLE_DEFAULT);
+        Settings.Global.putInt(mContext.getContentResolver(), OutputModeManager.SOUND_EFFECT_BALANCE, AudioEffectManager.EFFECT_BALANCE_DEFAULT);
         Settings.Global.putInt(mContext.getContentResolver(), OutputModeManager.SOUND_EFFECT_DIALOG_CLARITY, DIALOG_CLARITY_OFF);
         Settings.Global.putInt(mContext.getContentResolver(), OutputModeManager.SOUND_EFFECT_SURROUND, UI_SWITCH_OFF);
         Settings.Global.putInt(mContext.getContentResolver(), OutputModeManager.SOUND_EFFECT_BASS_BOOST, UI_SWITCH_OFF);
