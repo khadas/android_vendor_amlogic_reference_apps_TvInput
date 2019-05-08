@@ -857,7 +857,8 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
         }
 
         protected void doPlay(Uri uri) {
-            Log.d(TAG, "--doPlay  uri=" + uri + " this:"+ this);
+            float Time= (float) android.os.SystemClock.uptimeMillis() / 1000;
+            Log.d(TAG, "--doPlay  uri=" + uri + " this:"+ this + "SwitchSourceTime = " + Time);
             if (null == uri) {
                 return;
             }
