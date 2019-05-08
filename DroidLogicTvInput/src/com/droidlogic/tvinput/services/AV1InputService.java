@@ -815,7 +815,7 @@ public class AV1InputService extends DroidLogicTvInputService {
             }
         }
 
-        private int getRawUserStyle(){
+        /*private int getRawUserStyle(){
             try {
                 Class clazz = ClassLoader.getSystemClassLoader().loadClass("android.view.accessibility.CaptioningManager");
                 Method method = clazz.getMethod("getUserStyle");
@@ -839,7 +839,7 @@ public class AV1InputService extends DroidLogicTvInputService {
                 e.printStackTrace();
             }
             return null;
-        }
+        }*/
 
         protected String generateSubtitleIdString(ChannelInfo.Subtitle subtitle) {
             if (subtitle == null)
@@ -942,7 +942,7 @@ public class AV1InputService extends DroidLogicTvInputService {
              */
             CaptioningManager.CaptionStyle userStyle = mCaptioningManager.getUserStyle();
 
-            int style = getRawUserStyle();
+            int style = mCaptioningManager.getRawUserStyle();
             float textSize = mCaptioningManager.getFontScale();
             int fg_color = userStyle.foregroundColor & 0x00ffffff;
             int fg_opacity = userStyle.foregroundColor & 0xff000000;
@@ -951,12 +951,12 @@ public class AV1InputService extends DroidLogicTvInputService {
             int fontStyle = DTVSubtitleView.CC_FONTSTYLE_DEFAULT;
 
             for (int i = 0; i < typeface.length; ++i) {
-                if (typeface[i].equals(getRawTypeface(userStyle))) {
+                if (typeface[i].equals(userStyle.mRawTypeface)) {
                     fontStyle = i;
                     break;
                 }
             }
-            Log.d(TAG, "get style: " + style + ", fontStyle" + fontStyle + ", typeface: " + getRawTypeface(userStyle));
+            Log.d(TAG, "get style: " + style + ", fontStyle" + fontStyle + ", typeface: " + userStyle.mRawTypeface);
 
             int fg = userStyle.foregroundColor;
             int bg = userStyle.backgroundColor;
