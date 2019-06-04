@@ -113,8 +113,15 @@ public class SoundEffectManager {
     private AudioEffect mSoundMode;
     private AudioEffect mAgc;
     private AudioEffect mVirtualSurround;
+    private static SoundEffectManager mInstance;
 
-    public SoundEffectManager (Context context) {
+    public static synchronized SoundEffectManager getInstance(Context context) {
+        if (null == mInstance) {
+            mInstance = new SoundEffectManager(context);
+        }
+        return mInstance;
+    }
+    private SoundEffectManager (Context context) {
         mContext = context;
         mAudioManager = (AudioManager) context.getSystemService(context.AUDIO_SERVICE);
         creatAudioEffects();
