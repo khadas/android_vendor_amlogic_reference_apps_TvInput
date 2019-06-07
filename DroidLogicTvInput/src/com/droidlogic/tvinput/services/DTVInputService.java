@@ -526,7 +526,7 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
 
         @Override
         public boolean onSetSurface(Surface surface) {
-            Log.d(TAG,"onSetSurface:"+surface);
+            super.onSetSurface(surface);
             return setSurfaceInService(surface,this);
         }
 
@@ -1604,7 +1604,8 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
                 mOverlayView.setImageVisibility(true);
             }
 
-            if (mIsChannelScrambled && mTvControlManager.DtvGetVideoFormatInfo().fps <= 0) {
+            if (mIsChannelScrambled && mTvControlManager.DtvGetVideoFormatInfo().fps <= 0
+                    && mOverlayView != null) {
                 mOverlayView.setText(R.string.av_scrambled);
                 mOverlayView.setTextVisibility(true);
             } else {

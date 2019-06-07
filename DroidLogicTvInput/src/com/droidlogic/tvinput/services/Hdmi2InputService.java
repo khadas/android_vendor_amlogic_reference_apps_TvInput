@@ -85,6 +85,7 @@ public class Hdmi2InputService extends DroidLogicTvInputService {
 
         @Override
         public boolean onSetSurface(Surface surface) {
+            super.onSetSurface(surface);
             return setSurfaceInService(surface,this);
         }
 

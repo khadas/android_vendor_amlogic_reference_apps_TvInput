@@ -270,6 +270,7 @@ public class AUXInputService extends DroidLogicTvInputService {
 
         @Override
         public boolean onSetSurface(Surface surface) {
+            super.onSetSurface(surface);
             return setSurfaceInService(surface,this);
         }
         @Override
