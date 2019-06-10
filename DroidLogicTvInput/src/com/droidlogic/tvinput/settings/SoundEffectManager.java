@@ -1015,6 +1015,10 @@ public class SoundEffectManager {
             setParameters(i, value);
             Log.d(TAG, "initSoundEffectSettings NO." + i + "=" + value);
         }
+        OutputModeManager opm = new OutputModeManager(mContext);
+        int audioOutPutLatency = Settings.Global.getInt(mContext.getContentResolver(), OutputModeManager.DB_FIELD_AUDIO_OUTPUT_LATENCY,
+                OutputModeManager.AUDIO_OUTPUT_LATENCY_DEFAULT);
+        opm.setAudioOutputLatency(audioOutPutLatency);
         //init sound parameter at the same time
         /*SoundParameterSettingManager soundparameter = new SoundParameterSettingManager(mContext);
         if (soundparameter != null) {
