@@ -174,7 +174,6 @@ public class ADTVInputService extends DTVInputService {
 
                 /* open atv audio and mute when notify Video Available */
                 openTvAudio(DroidLogicTvUtils.SOURCE_TYPE_ATV);
-                mSystemControlManager.writeSysFs("/sys/class/tsync/mode", "0");
                 if (false) {
                     mTvControlManager.PlayATVProgram(info.getFrequency() + info.getFineTune(),
                         info.getVideoStd(),
