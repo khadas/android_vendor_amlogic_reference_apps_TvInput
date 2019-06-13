@@ -63,6 +63,7 @@ public class AudioEffectsService extends PersistentService {
         super.onCreate();
         if (DEBUG) Log.d(TAG, "AudioEffectsService onCreate");
         mContext = this;
+        mHandler.sendEmptyMessage(MSG_CHECK_BOOTVIDEO_FINISHED);
     }
 
     @Override
@@ -89,6 +90,7 @@ public class AudioEffectsService extends PersistentService {
 
     @Override
     protected void onHandleIntent(Intent intent) {
+        /*
         if (intent == null) {
             return;
         }
@@ -99,6 +101,7 @@ public class AudioEffectsService extends PersistentService {
         } else {
             Log.w(TAG, "Unknown intent: " + action);
         }
+        */
     }
 
     private boolean isBootvideoStopped() {
