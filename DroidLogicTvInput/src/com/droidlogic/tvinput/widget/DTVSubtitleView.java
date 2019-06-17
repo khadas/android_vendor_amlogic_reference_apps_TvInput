@@ -356,6 +356,7 @@ public class DTVSubtitleView extends View {
     private static int tt_blue_value;
     private static int tt_curr_pgno;
     private static int tt_curr_subpg;
+    private static String tt_navi_subpg_string;
     private static byte[] tt_subs;
 
     private void tt_update(int page_type, int pgno, byte subs[], int red, int green, int yellow, int blue, int curr_subpg) {
@@ -368,6 +369,8 @@ public class DTVSubtitleView extends View {
         tt_blue_value = blue;
         tt_curr_pgno = pgno;
         tt_curr_subpg = curr_subpg;
+        if (!tt_subpg_walk_mode)
+            tt_set_subpn_text(Integer.toString(tt_curr_subpg));
 
         teletext_have_data = true;
         if (!tt_refresh_switch)
@@ -927,6 +930,14 @@ public class DTVSubtitleView extends View {
         else
             return tt_subs.length;
     }
+    public int get_teletext_pg()
+    {
+        return tt_curr_pgno;
+    }
+    public int get_teletext_subpg()
+    {
+        return tt_curr_subpg;
+    }
 
     Runnable myTimerRun=new Runnable()
     {
@@ -958,11 +969,11 @@ public class DTVSubtitleView extends View {
     }
 
     public static int tt_subpg_mode_subno = 1;
-    public void tt_subpg_updown(boolean up)
+    public int tt_subpg_updown(boolean up)
     {
         int i;
         if (tt_subs == null)
-            return;
+            return 0;
 
         for (i=0; i<tt_subs.length; i++)
         {
@@ -980,6 +991,7 @@ public class DTVSubtitleView extends View {
         }
         Log.e(TAG, "subpg updown up " + up + " pgno " + tt_curr_pgno + " subno " + tt_curr_subpg + " tsub " + tt_subs[i]);
         native_sub_tt_goto(tt_curr_pgno, tt_subs[i]);
+        return tt_subs[i];
     }
 
     private static int tt_mix_mode;
@@ -1119,6 +1131,14 @@ public class DTVSubtitleView extends View {
             return false;
     }
 
+    public void tt_set_subpn_text(String number_str)
+    {
+        tt_navi_subpg_string = number_str;
+        while (tt_navi_subpg_string.length() < 4) {
+            tt_navi_subpg_string = '0' + tt_navi_subpg_string;
+        }
+    }
+
     private static final int TT_MODE_NORMAL = 0;
     private static final int TT_MODE_SUBPG = 1;
     private void draw_navigation_bar(Canvas canvas, Paint paint,
@@ -1164,7 +1184,7 @@ public class DTVSubtitleView extends View {
                 paint.setColor(Color.BLUE);
                 canvas.drawRect(blue_left, top, blue_right, top + row_height, paint);
             } else {
-                paint.setColor(Color.WHITE);
+                paint.setColor(Color.YELLOW);
                 canvas.drawRect(yellow_left, top, blue_right, top + row_height, paint);
             }
         }
@@ -1176,10 +1196,19 @@ public class DTVSubtitleView extends View {
                 canvas.drawText("-", red_left + digit_start_in_bar, text_bottom, paint);
                 paint.setColor(Color.GREEN);
                 canvas.drawText("+", green_left + digit_start_in_bar, text_bottom, paint);
+                paint.setColor(Color.YELLOW);
+                canvas.drawText(Integer.toString(tt_curr_pgno) + " / " + tt_navi_subpg_string,
+                        yellow_left + color_bar_width/2,
+                        text_bottom,
+                        paint);
             } else {
                 paint.setColor(Color.BLACK);
                 canvas.drawText("-", red_left + digit_start_in_bar, text_bottom, paint);
                 canvas.drawText("+", green_left + digit_start_in_bar, text_bottom, paint);
+                canvas.drawText(Integer.toString(tt_curr_pgno) + " / " + tt_navi_subpg_string,
+                        yellow_left + color_bar_width/2,
+                        text_bottom,
+                        paint);
             }
         } else {
             if (valid_page_no(red))
