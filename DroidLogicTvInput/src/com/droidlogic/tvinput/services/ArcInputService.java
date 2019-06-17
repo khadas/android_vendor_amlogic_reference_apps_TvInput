@@ -55,7 +55,7 @@ public class ArcInputService extends DroidLogicTvInputService {
     public Session onCreateSession(String inputId) {
         super.onCreateSession(inputId);
         Utils.logd(TAG, "onCreateSession:"+inputId);
-        mCurrentSession = new ArcInputSession(getApplicationContext(), inputId, getHardwareDeviceId(inputId));
+        mCurrentSession = new ArcInputSession(this, inputId, getHardwareDeviceId(inputId));
         mCurrentSession.setSessionId(id);
         registerInputSession(mCurrentSession);
         sessionMap.put(id, mCurrentSession);
@@ -113,7 +113,6 @@ public class ArcInputService extends DroidLogicTvInputService {
         }
         @Override
         public void doRelease() {
-            super.doRelease();
             if (sessionMap.containsKey(getSessionId())) {
                 sessionMap.remove(getSessionId());
                 if (mCurrentSession == this) {
@@ -121,6 +120,8 @@ public class ArcInputService extends DroidLogicTvInputService {
                     registerInputSession(null);
                 }
             }
+
+            super.doRelease();
         }
 
         @Override

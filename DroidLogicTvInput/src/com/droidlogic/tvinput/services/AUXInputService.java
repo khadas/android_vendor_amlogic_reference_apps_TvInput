@@ -119,7 +119,7 @@ public class AUXInputService extends DroidLogicTvInputService {
     public Session onCreateSession(String inputId) {
         super.onCreateSession(inputId);
         Utils.logd(TAG, "onCreateSession:"+inputId);
-        mCurrentSession = new AUXInputSession(getApplicationContext(), inputId, getHardwareDeviceId(inputId));
+        mCurrentSession = new AUXInputSession(this, inputId, getHardwareDeviceId(inputId));
         mCurrentSession.setSessionId(id);
         registerInputSession(mCurrentSession);
         sessionMap.put(id, mCurrentSession);
@@ -299,7 +299,6 @@ public class AUXInputService extends DroidLogicTvInputService {
 
         @Override
         public void doRelease() {
-            super.doRelease();
             mUnblockedRatingSet.clear();
             //stopSubtitle();
             releaseWorkThread();
@@ -319,6 +318,7 @@ public class AUXInputService extends DroidLogicTvInputService {
             }
            // mSubtitleView = null;
 
+            super.doRelease();
         }
 
         protected void releaseWorkThread() {

@@ -575,8 +575,6 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
 
         public void doRelease() {
             Log.d(TAG, "doRelease:"+this);
-            super.doRelease();
-
             if (mHandler != null) {
                 mIsSessionReleasing = true;
                 mHandler.removeCallbacksAndMessages(null);
@@ -592,6 +590,8 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
             } finally {
                 releaseWorkThread();
             }
+
+            super.doRelease();
         }
 
 
@@ -1082,6 +1082,9 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
         }
 
         protected void checkIsNeedClearUnblockRating() {
+            if (mTvInputManager == null)
+                mTvInputManager = (TvInputManager)getSystemService(Context.TV_INPUT_SERVICE);
+
             boolean isParentControlEnabled = mTvInputManager.isParentalControlsEnabled();
             Log.d(TAG, "checkIsNeedClearUnblockRating  isParentControlEnabled = " + isParentControlEnabled);
             if (isParentControlEnabled) {
@@ -1248,7 +1251,12 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
                     mUpdateTsFlag = false;
                 }
             }
-            mTvControlManager.TvSetFrontEnd(new TvControlManager.FEParas(info.getFEParas()));
+           if (!mSystemControlManager.getPropertyBoolean(DroidLogicTvUtils.PROP_NEED_FAST_SWITCH, false)) {
+                mTvControlManager.TvSetFrontEnd(new TvControlManager.FEParas(info.getFEParas()));
+            } else {
+                onSigChange(mTvControlManager.GetCurrentSignalInfo());
+            }
+
             setMonitor(info);
             mLastChannel = mCurrentChannel;
             checkContentBlockNeeded(info);

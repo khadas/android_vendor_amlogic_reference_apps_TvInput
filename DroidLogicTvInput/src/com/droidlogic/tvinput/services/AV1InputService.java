@@ -160,7 +160,7 @@ public class AV1InputService extends DroidLogicTvInputService {
     public Session onCreateSession(String inputId) {
         super.onCreateSession(inputId);
 
-        mCurrentSession = new AV1InputSession(getApplicationContext(), inputId, getHardwareDeviceId(inputId));
+        mCurrentSession = new AV1InputSession(this, inputId, getHardwareDeviceId(inputId));
         mCurrentSession.setSessionId(id);
         registerInputSession(mCurrentSession);
         sessionMap.put(id, mCurrentSession);
@@ -451,7 +451,6 @@ public class AV1InputService extends DroidLogicTvInputService {
         }
 
         public void doRelease() {
-            super.doRelease();
             mUnblockedRatingSet.clear();
             stopSubtitle();
             releaseWorkThread();
@@ -470,6 +469,7 @@ public class AV1InputService extends DroidLogicTvInputService {
                 }
             }
             mSubtitleView = null;
+            super.doRelease();
         }
 
         protected void releaseWorkThread() {

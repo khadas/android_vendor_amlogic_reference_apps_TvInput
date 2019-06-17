@@ -56,7 +56,7 @@ public class Hdmi4InputService extends DroidLogicTvInputService {
     public Session onCreateSession(String inputId) {
         super.onCreateSession(inputId);
 
-        mCurrentSession = new Hdmi4InputSession(getApplicationContext(), inputId, getHardwareDeviceId(inputId));
+        mCurrentSession = new Hdmi4InputSession(this, inputId, getHardwareDeviceId(inputId));
         mCurrentSession.setSessionId(id);
         registerInputSession(mCurrentSession);
         sessionMap.put(id, mCurrentSession);
@@ -97,7 +97,6 @@ public class Hdmi4InputService extends DroidLogicTvInputService {
 
         @Override
         public void doRelease() {
-            super.doRelease();
             if (sessionMap.containsKey(getSessionId())) {
                 sessionMap.remove(getSessionId());
                 if (mCurrentSession == this) {
@@ -105,6 +104,7 @@ public class Hdmi4InputService extends DroidLogicTvInputService {
                     registerInputSession(null);
                 }
             }
+            super.doRelease();
         }
 
         @Override

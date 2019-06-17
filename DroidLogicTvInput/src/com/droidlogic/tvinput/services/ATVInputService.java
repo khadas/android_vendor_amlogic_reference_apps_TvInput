@@ -148,12 +148,12 @@ public class ATVInputService extends DroidLogicTvInputService {
 
 
         public void doRelease() {
-            super.doRelease();
             if (sessionMap.containsKey(getSessionId())) {
                 sessionMap.remove(getSessionId());
                 mCurrentSession = null;
                 registerInputSession(null);
             }
+            super.doRelease();
         }
 
         @Override

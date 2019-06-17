@@ -52,7 +52,7 @@ public class SPDIFInputService extends DroidLogicTvInputService {
     public Session onCreateSession(String inputId) {
         super.onCreateSession(inputId);
 
-        mCurrentSession = new SPDIFInputSession(getApplicationContext(), inputId, getHardwareDeviceId(inputId));
+        mCurrentSession = new SPDIFInputSession(this, inputId, getHardwareDeviceId(inputId));
         mCurrentSession.setSessionId(id);
         registerInputSession(mCurrentSession);
         sessionMap.put(id, mCurrentSession);
@@ -113,7 +113,6 @@ public class SPDIFInputService extends DroidLogicTvInputService {
 
         @Override
         public void doRelease() {
-            super.doRelease();
             if (sessionMap.containsKey(getSessionId())) {
                 sessionMap.remove(getSessionId());
                 if (mCurrentSession == this) {
@@ -121,6 +120,8 @@ public class SPDIFInputService extends DroidLogicTvInputService {
                     registerInputSession(null);
                 }
             }
+
+            super.doRelease();
         }
 
         @Override

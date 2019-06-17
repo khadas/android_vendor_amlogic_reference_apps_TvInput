@@ -175,24 +175,25 @@ public class ADTVInputService extends DTVInputService {
 
             int audioAuto = getAudioAuto(info);
             ChannelInfo.Audio audio = null;
-            if (mCurrentAudios != null && mCurrentAudios.size() > 0 && audioAuto >= 0)
+            if (mCurrentAudios != null && mCurrentAudios.size() > 0 && audioAuto >= 0) {
                 audio = mCurrentAudios.get(audioAuto);
+            }
 
-            if (info.isAnalogChannel()) {
-                if (info.isNtscChannel())
-                    muteVideo(false);
-
-                /* open atv audio and mute when notify Video Available */
-                openTvAudio(DroidLogicTvUtils.SOURCE_TYPE_ATV);
-                if (false) {
-                    mTvControlManager.PlayATVProgram(info.getFrequency() + info.getFineTune(),
-                        info.getVideoStd(),
-                        info.getAudioStd(),
-                        info.getVfmt(),
-                        info.getAudioOutPutMode(),
-                        0,
-                        info.getAudioCompensation());
+            if (mSystemControlManager.getPropertyBoolean(DroidLogicTvUtils.PROP_NEED_FAST_SWITCH, false)) {
+                Log.d(TAG, "fast switch mode, no need replay channel");
+                mSystemControlManager.setProperty(DroidLogicTvUtils.PROP_NEED_FAST_SWITCH, "false");
+                if (info.isAnalogChannel()) {
+                    openTvAudio(DroidLogicTvUtils.SOURCE_TYPE_ATV);
                 } else {
+                    //openTvAudio(DroidLogicTvUtils.SOURCE_TYPE_DTV);
+                }
+            } else {
+                if (info.isAnalogChannel()) {
+                    if (info.isNtscChannel())
+                        muteVideo(false);
+
+                    /* open atv audio and mute when notify Video Available */
+                    openTvAudio(DroidLogicTvUtils.SOURCE_TYPE_ATV);
                     TvControlManager.FEParas fe = new TvControlManager.FEParas();
                     fe.setFrequency(info.getFrequency() + info.getFineTune());
                     fe.setVideoStd(info.getVideoStd());
@@ -201,68 +202,53 @@ public class ADTVInputService extends DTVInputService {
                     fe.setAudioOutPutMode(info.getAudioOutPutMode());
                     fe.setAfc(0);
                     StringBuilder param = new StringBuilder("{")
-                        .append("\"type\":\"atv\"")
-                        .append("," + fe.toString("fe"))
-                        .append(",\"a\":{\"AudComp\":"+info.getAudioCompensation()+"}")
-                        .append("}");
+                            .append("\"type\":\"atv\"")
+                            .append("," + fe.toString("fe"))
+                            .append(",\"a\":{\"AudComp\":"+info.getAudioCompensation()+"}")
+                            .append("}");
 
                     mTvControlManager.startPlay("ntsc", param.toString());
-                }
-            } else {
-                String subPidString = new String("\"pid\":0");
-                int subCount = (info.getSubtitlePids() == null)? 0 : info.getSubtitlePids().length;
-                if (subCount != 0) {
-                    subPidString = new String("");
-                    for (int i = 0; i < subCount; i++) {
-                        subPidString = subPidString + "\"pid" + i+ "\":" + info.getSubtitlePids()[i];
-                        if (i != (subCount - 1 ))
-                            subPidString = subPidString + ",";
-                    }
-                    Log.e(TAG, "subpid string: " + subPidString);
-                }
-                TvControlManager.FEParas fe = new TvControlManager.FEParas(info.getFEParas());
-                int mixingLevel = mAudioADMixingLevel;
-                if (mixingLevel < 0)
-                    mixingLevel = mTvControlDataManager.getInt(mContext.getContentResolver(), DroidLogicTvUtils.TV_KEY_AD_MIX, AD_MIXING_LEVEL_DEF);
-
-                Log.d(TAG, "v:"+info.getVideoPid()+" a:"+(audio!=null?audio.mPid:"null")+" p:"+info.getPcrPid());
-                mTvControlManager.SetAVPlaybackListener(this);
-                mTvControlManager.SetAudioEventListener(this);
-                openTvAudio(DroidLogicTvUtils.SOURCE_TYPE_DTV);
-                if (false) {
-                    mTvControlManager.PlayDTVProgram(
-                        fe,
-                        info.getVideoPid(),
-                        info.getVfmt(),
-                        (audio != null) ? audio.mPid : -1,
-                        (audio != null) ? audio.mFormat : -1,
-                        info.getPcrPid(),
-                        info.getAudioCompensation(),
-                        DroidLogicTvUtils.hasAudioADTracks(info),
-                        mixingLevel);
                 } else {
-                    //("{\"fe\":{\"mod\":7,\"freq\":785028615,\"mode\":16777219},\"v\":{\"pid\":33,\"fmt\":0},\"a\":{\"pid\":36,\"fmt\":3},\"p\":{\"pid\":33}}")
+                    String subPidString = new String("\"pid\":0");
+                    int subCount = (info.getSubtitlePids() == null)? 0 : info.getSubtitlePids().length;
+                    if (subCount != 0) {
+                        subPidString = new String("");
+                        for (int i = 0; i < subCount; i++) {
+                            subPidString = subPidString + "\"pid" + i+ "\":" + info.getSubtitlePids()[i];
+                            if (i != (subCount - 1 ))
+                                subPidString = subPidString + ",";
+                        }
+                        Log.e(TAG, "subpid string: " + subPidString);
+                    }
+                    TvControlManager.FEParas fe = new TvControlManager.FEParas(info.getFEParas());
+                    int mixingLevel = mAudioADMixingLevel;
+                    if (mixingLevel < 0)
+                        mixingLevel = mTvControlDataManager.getInt(mContext.getContentResolver(), DroidLogicTvUtils.TV_KEY_AD_MIX, AD_MIXING_LEVEL_DEF);
+
+                    mTvControlManager.SetAVPlaybackListener(this);
+                    mTvControlManager.SetAudioEventListener(this);
+                    openTvAudio(DroidLogicTvUtils.SOURCE_TYPE_DTV);
                     int timeshiftMaxTime = mSystemControlManager.getPropertyInt("tv.dtv.tf.max.time", 10*60);/*seconds*/
                     int timeshiftMaxSize = mSystemControlManager.getPropertyInt(MAX_CACHE_SIZE_KEY, MAX_CACHE_SIZE_DEF * 1024);/*bytes*/
                     String timeshiftPath = mSystemControlManager.getPropertyString("tv.dtv.tf.path", getCacheStoragePath());
                     StringBuilder param = new StringBuilder("{")
-                        .append("\"fe\":" + info.getFEParas())
-                        .append(",\"v\":{\"pid\":"+info.getVideoPid()+",\"fmt\":"+info.getVfmt()+"}")
-                        .append(",\"a\":{\"pid\":"+(audio != null ? audio.mPid : -1)+",\"fmt\":"+(audio != null ? audio.mFormat : -1)+",\"AudComp\":"+info.getAudioCompensation()+"}")
-                        .append(",\"p\":{\"pid\":"+info.getPcrPid()+"}")
-                        //.append(",\"para\":{"+"\"disableTimeShifting\":1"+"}")
-                        .append(",\"para\":{")
-                        .append("\"max\":{"+"\"time\":"+timeshiftMaxTime+"}")//",\"size\":"+timeshiftMaxSize+
-                        .append(",\"path\":\""+timeshiftPath+"\"")
-                        .append(",\"subpid\":{" + subPidString)
-                        .append("},\"subcnt\":" + subCount)
-                        .append("}}");
+                            .append("\"fe\":" + info.getFEParas())
+                            .append(",\"v\":{\"pid\":"+info.getVideoPid()+",\"fmt\":"+info.getVfmt()+"}")
+                            .append(",\"a\":{\"pid\":"+(audio != null ? audio.mPid : -1)+",\"fmt\":"+(audio != null ? audio.mFormat : -1)+",\"AudComp\":"+info.getAudioCompensation()+"}")
+                            .append(",\"p\":{\"pid\":"+info.getPcrPid()+"}")
+                            //.append(",\"para\":{"+"\"disableTimeShifting\":1"+"}")
+                            .append(",\"para\":{")
+                            .append("\"max\":{"+"\"time\":"+timeshiftMaxTime+"}")//",\"size\":"+timeshiftMaxSize+
+                            .append(",\"path\":\""+timeshiftPath+"\"")
+                            .append(",\"subpid\":{" + subPidString)
+                            .append("},\"subcnt\":" + subCount)
+                            .append("}}");
                     Log.d(TAG, "playProgram adtvparam: " + param.toString());
 
                     mTvControlManager.startPlay("atsc", param.toString());
                     initTimeShiftStatus();
+                    mTvControlManager.DtvSetAudioChannleMod(info.getAudioChannel());
                 }
-                mTvControlManager.DtvSetAudioChannleMod(info.getAudioChannel());
             }
 
             mSystemControlManager.setProperty(DTV_AUDIO_TRACK_IDX,
