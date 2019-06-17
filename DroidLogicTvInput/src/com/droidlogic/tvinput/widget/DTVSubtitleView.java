@@ -25,6 +25,7 @@ import android.graphics.PorterDuff;
 import android.graphics.PorterDuffXfermode;
 import android.os.Handler;
 import android.os.Message;
+import android.provider.Settings;
 import android.text.TextUtils;
 import android.util.DisplayMetrics;
 import android.view.KeyEvent;
@@ -166,6 +167,7 @@ public class DTVSubtitleView extends View {
     private static boolean draw_no_subpg_notification = false;
 
     private static int tt_page_type;
+    public static String TT_REGION_DB = "teletext_region_id";
 
     private boolean need_clear_canvas;
     private boolean tt_refresh_switch = true;
@@ -182,7 +184,7 @@ public class DTVSubtitleView extends View {
     private native int native_sub_clear();
     private native int native_sub_start_dvb_sub(int dmx_id, int pid, int page_id, int anc_page_id);
     private native int native_sub_start_dtv_tt(int dmx_id, int region_id, int pid, int page, int sub_page, boolean is_sub);
-    private native int native_sub_start_atv_tt(int page_no, int sub_page_no, int region_id, boolean is_sub);
+    private native int native_sub_start_atv_tt(int region_id, int page_no, int sub_page_no, boolean is_sub);
     private native int native_sub_stop_dvb_sub();
     private native int native_sub_stop_dtv_tt();
     private native int native_sub_stop_atv_tt();
@@ -899,6 +901,7 @@ public class DTVSubtitleView extends View {
     public int setTTRegion(int region_id)
     {
         Log.e(TAG, "setTTRegion " + region_id);
+        Settings.Global.putInt(getContext().getContentResolver(), TT_REGION_DB, region_id);
         return native_sub_tt_set_region(region_id);
     }
 

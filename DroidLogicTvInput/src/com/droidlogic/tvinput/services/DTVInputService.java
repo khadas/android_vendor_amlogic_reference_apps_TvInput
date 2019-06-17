@@ -2927,7 +2927,20 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
                  this.font_style = font_style;
                  this.font_size = font_size;
              }
-         }
+        }
+
+        protected int getDbTeletextRegionID()
+        {
+            int region_id;
+            try {
+                region_id = Settings.Global.getInt(mContext.getContentResolver(), mSubtitleView.TT_REGION_DB);
+            } catch (Exception e) {
+                region_id = getTeletextRegionID("English");
+                Settings.Global.putInt(mContext.getContentResolver(), mSubtitleView.TT_REGION_DB, region_id);
+            }
+            Log.e(TAG, "region_id in db " + region_id);
+            return region_id;
+        }
 
         protected void setSubtitleParam(int vfmt, int type, int pid, int stype, int id1, int id2, String lang) {
             if (type == ChannelInfo.Subtitle.TYPE_DVB_SUBTITLE) {
@@ -2940,7 +2953,7 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
                 pgno = (id1 == 0) ? 800 : id1 * 100;
                 pgno += (id2 & 15) + ((id2 >> 4) & 15) * 10 + ((id2 >> 8) & 15) * 100;
                 DTVSubtitleView.DTVTTParams params =
-                    new DTVSubtitleView.DTVTTParams(0, pid, pgno, 0x3F7F, getTeletextRegionID("English"), type, stype);
+                    new DTVSubtitleView.DTVTTParams(0, pid, pgno, 0x3F7F, getDbTeletextRegionID(), type, stype);
                 mSubtitleView.setSubParams(params);
 
             } else if (type == ChannelInfo.Subtitle.TYPE_ATV_TELETEXT) {
@@ -2948,7 +2961,7 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
                 pgno = (id1 == 0) ? 800 : id1 * 100;
                 pgno += (id2 & 15) + ((id2 >> 4) & 15) * 10 + ((id2 >> 8) & 15) * 100;
                 DTVSubtitleView.ATVTTParams params =
-                        new DTVSubtitleView.ATVTTParams(pgno, 0x3F7F, getTeletextRegionID("English"));
+                        new DTVSubtitleView.ATVTTParams(pgno, 0x3F7F, getDbTeletextRegionID());
                 mSubtitleView.setSubParams(params);
             } else if (type == ChannelInfo.Subtitle.TYPE_DTV_CC) {
                 CCStyleParams ccParam = getCaptionStyle();
@@ -2984,7 +2997,7 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
                 pgno = (id1 == 0) ? 800 : id1 * 100;
                 pgno += (id2 & 15) + ((id2 >> 4) & 15) * 10 + ((id2 >> 8) & 15) * 100;
                 DTVSubtitleView.DTVTTParams params =
-                        new DTVSubtitleView.DTVTTParams(0, pid, pgno, 0x3F7F, getTeletextRegionID("English"), type, stype);
+                        new DTVSubtitleView.DTVTTParams(0, pid, pgno, 0x3F7F, getDbTeletextRegionID(), type, stype);
                 mSubtitleView.setSubParams(params);
             } else if (type == ChannelInfo.Subtitle.TYPE_ISDB_SUB) {
                 DTVSubtitleView.ISDBParams params = new DTVSubtitleView.ISDBParams(0, pid, 0);

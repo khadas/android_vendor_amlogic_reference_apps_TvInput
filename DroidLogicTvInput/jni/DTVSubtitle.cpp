@@ -1032,7 +1032,7 @@ error:
         }
 
         AM_TT2_GotoPage(data->tt_handle, page, sub_page);
-        AM_TT2_Start(data->tt_handle);
+        AM_TT2_Start(data->tt_handle, region_id);
 
         memset(&pesp, 0, sizeof(pesp));
         pesp.packet    = pes_tt_cb;
@@ -1056,9 +1056,8 @@ error:
         return -1;
     }
 
-    int sub_start_atv_tt(JNIEnv *env, jobject obj, jint page, jint sub_page, jint region_id, jboolean is_sub)
+    int sub_start_atv_tt(JNIEnv *env, jobject obj, jint region_id, jint page, jint sub_page, jboolean is_sub)
     {
-        LOGE("jni sub_start_atv_tt");
 #ifdef SUPPORT_ADTV
         TVSubtitleData *data = sub_get_data(env, obj);
         AM_TT2_Para_t ttp;
@@ -1067,7 +1066,6 @@ error:
         setDvbDebugLogLevel();
 
         bitmap_init(obj);
-
 
         if (!data->tt_handle) {
             memset(&ttp, 0, sizeof(ttp));
@@ -1088,7 +1086,7 @@ error:
         }
 
         AM_TT2_GotoPage(data->tt_handle, page, sub_page);
-        AM_TT2_Start(data->tt_handle);
+        AM_TT2_Start(data->tt_handle, region_id);
 #endif
         return 0;
     }
