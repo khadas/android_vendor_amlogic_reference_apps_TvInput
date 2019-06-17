@@ -1849,7 +1849,8 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
                     mSubtitleView.goHome();
                     break;
                 case KEY_ZOOM: //Zoom in
-                    mSubtitleView.tt_zoom_in();
+                    if (tt_display_mode == DTVSubtitleView.TT_DISP_NORMAL)
+                        mSubtitleView.tt_zoom_in();
                     break;
                 case KEY_SUBPG: //Stop
                     int sub_pg_count = mSubtitleView.get_teletext_subpg_count();
