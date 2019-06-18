@@ -87,7 +87,7 @@ typedef void* AM_SUB2_Handle_t;
     static uint8_t *lock_bitmap(JNIEnv *env, jobject bitmap)
     {
         int attached = 0;
-        uint8_t *buf;
+        uint8_t *buf = NULL;
         if (!env) {
             int ret;
             ret = gJavaVM->GetEnv((void **) &env, JNI_VERSION_1_4);
@@ -201,17 +201,25 @@ typedef void* AM_SUB2_Handle_t;
         pthread_mutex_lock(&sub->lock);
 
         sub->buffer = lock_bitmap(NULL, sub->obj_bitmap);
-        clear_bitmap(sub);
+        //clear_bitmap(sub);
     }
 
     static void tt_draw_end_cb(AM_TT2_Handle_t handle, int page_type, int pgno, char* subs, int sub_cnt, int red, int green, int yellow, int blue, int curr_subpg)
     {
         TVSubtitleData *sub = (TVSubtitleData *)AM_TT2_GetUserData(handle);
-        unlock_bitmap(NULL, sub->obj_bitmap);
+
+        int bitmap_inited;
+        if (sub->buffer)
+            bitmap_inited = 1;
+        else
+            bitmap_inited = 0;
+
+        if (bitmap_inited)
+            unlock_bitmap(NULL, sub->obj_bitmap);
 
         pthread_mutex_unlock(&sub->lock);
-
-        tt_update(sub->obj, page_type, pgno, subs, sub_cnt, red, green, yellow, blue, curr_subpg);
+        if (bitmap_inited)
+            tt_update(sub->obj, page_type, pgno, subs, sub_cnt, red, green, yellow, blue, curr_subpg);
     }
 
     static void cc_draw_begin_cb(AM_CC_Handle_t handle, AM_CC_DrawPara_t *draw_para)
@@ -613,30 +621,6 @@ error:
 
     }
 
-    static void notify_teletext_have_data(AM_TT2_Handle_t handle, int have_data)
-    {
-        TVSubtitleData *sub = (TVSubtitleData *)AM_TT2_GetUserData(handle);
-        JNIEnv *env;
-        int ret;
-        int attached = 0;
-        ret = gJavaVM->GetEnv((void **) &env, JNI_VERSION_1_4);
-
-        if (ret < 0) {
-            ret = gJavaVM->AttachCurrentThread(&env, NULL);
-            if (ret < 0) {
-                LOGE("Can't attach thread");
-                return;
-            }
-            attached = 1;
-        }
-
-        env->CallVoidMethod(sub->obj, gTeletextNotifyID, 1);
-
-        if (attached) {
-            gJavaVM->DetachCurrentThread();
-        }
-    }
-
     static void json_isdb_update_cb(AM_ISDB_Handle_t handle)
     {
         TVSubtitleData *sub = (TVSubtitleData *)handle;
@@ -1019,7 +1003,7 @@ error:
             ttp.draw_begin = tt_draw_begin_cb;
             ttp.draw_end  = tt_draw_end_cb;
             ttp.is_subtitle = is_sub;
-            ttp.bitmap    = data->buffer;
+            ttp.bitmap    = &data->buffer;
             ttp.pitch     = data->bmp_pitch;
             ttp.user_data = data;
             ttp.default_region = region_id;
@@ -1072,8 +1056,7 @@ error:
             ttp.draw_begin = tt_draw_begin_cb;
             ttp.draw_end  = tt_draw_end_cb;
             ttp.is_subtitle = is_sub;
-            ttp.notify_tt_data = notify_teletext_have_data;
-            ttp.bitmap	  = data->buffer;
+            ttp.bitmap	  = &data->buffer;
             ttp.pitch	  = data->bmp_pitch;
             ttp.user_data = data;
             ttp.default_region = region_id;
@@ -1126,7 +1109,8 @@ error:
 
         pthread_mutex_lock(&data->lock);
         data->buffer = lock_bitmap(env, data->obj_bitmap);
-        clear_bitmap(data);
+        if (data->buffer)
+            clear_bitmap(data);
         unlock_bitmap(env, data->obj_bitmap);
         if (data->obj)
             sub_update(data->obj);
@@ -1145,7 +1129,8 @@ error:
 
         pthread_mutex_lock(&data->lock);
         data->buffer = lock_bitmap(env, data->obj_bitmap);
-        clear_bitmap(data);
+        if (data->buffer)
+            clear_bitmap(data);
         unlock_bitmap(env, data->obj_bitmap);
         if (data->obj)
             sub_update(data->obj);
@@ -1597,7 +1582,6 @@ error:
 
 
             gUpdateID = env->GetMethodID(clazz, "update", "()V");
-            gTeletextNotifyID = env->GetMethodID(clazz, "tt_data_notify", "(I)V");
             gTTUpdateID = env->GetMethodID(clazz, "tt_update", "(II[BIIIII)V");
             gPassJsonStr = env->GetMethodID(clazz, "saveJsonStr", "(Ljava/lang/String;)V");
             gBitmapID = env->GetStaticFieldID(clazz, "bitmap", "Landroid/graphics/Bitmap;");

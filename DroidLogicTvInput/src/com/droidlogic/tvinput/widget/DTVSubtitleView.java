@@ -461,6 +461,11 @@ public class DTVSubtitleView extends View {
                 clear_paint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.CLEAR));
                 mSystemControlManager = SystemControlManager.getInstance();
                 mXfermode = new PorterDuffXfermode(PorterDuff.Mode.SRC);
+                for (int i=0; i<bitmap.getWidth(); i++) {
+                    for (int j=0; j<bitmap.getHeight(); j++) {
+                        bitmap.setPixel(i, j, Color.BLACK);
+                    }
+                }
                 paint_flag = new PaintFlagsDrawFilter(0, Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG);
                 captioningManager = (CaptioningManager) context.getSystemService(Context.CAPTIONING_SERVICE);
                 captioningManager.addCaptioningChangeListener(new CaptioningManager.CaptioningChangeListener() {
@@ -658,12 +663,6 @@ public class DTVSubtitleView extends View {
 
         handler.obtainMessage(SUB_VIEW_SHOW, false).sendToTarget();
         update();
-    }
-
-    private void tt_data_notify(int have_data)
-    {
-        if (have_data != 0)
-            teletext_have_data = true;
     }
 
     public void startSub() {
@@ -1442,6 +1441,8 @@ public class DTVSubtitleView extends View {
         dispose();
         Log.e(TAG, "Finalize");
         super.finalize();
+        if (bitmap != null)
+            bitmap.recycle();
         init_count --;
     }
 
