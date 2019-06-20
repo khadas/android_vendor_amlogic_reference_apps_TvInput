@@ -717,7 +717,6 @@ error:
         data->sub_h = 576;
         LOGI("init_bitmap w:%d h:%d p:%d", data->bmp_w, data->bmp_h, data->bmp_pitch);
         if (!data->buffer) {
-            env->DeleteGlobalRef(data->obj);
             env->DeleteGlobalRef(data->obj_bitmap);
             pthread_mutex_destroy(&data->lock);
             return;

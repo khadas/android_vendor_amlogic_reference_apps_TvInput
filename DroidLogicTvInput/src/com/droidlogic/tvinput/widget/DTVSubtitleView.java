@@ -1441,8 +1441,6 @@ public class DTVSubtitleView extends View {
         dispose();
         Log.e(TAG, "Finalize");
         super.finalize();
-        if (bitmap != null)
-            bitmap.recycle();
         init_count --;
     }
 
