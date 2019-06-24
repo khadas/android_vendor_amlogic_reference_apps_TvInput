@@ -461,11 +461,6 @@ public class DTVSubtitleView extends View {
                 clear_paint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.CLEAR));
                 mSystemControlManager = SystemControlManager.getInstance();
                 mXfermode = new PorterDuffXfermode(PorterDuff.Mode.SRC);
-                for (int i=0; i<bitmap.getWidth(); i++) {
-                    for (int j=0; j<bitmap.getHeight(); j++) {
-                        bitmap.setPixel(i, j, Color.BLACK);
-                    }
-                }
                 paint_flag = new PaintFlagsDrawFilter(0, Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG);
                 captioningManager = (CaptioningManager) context.getSystemService(Context.CAPTIONING_SERVICE);
                 captioningManager.addCaptioningChangeListener(new CaptioningManager.CaptioningChangeListener() {
@@ -516,6 +511,17 @@ public class DTVSubtitleView extends View {
             Log.e(TAG, "subtitle view init");
             init_count += 1;
             teletext_have_data = false;
+        }
+    }
+
+    private void reset_bitmap_to_black()
+    {
+        if (bitmap != null) {
+            for (int i = 0; i < bitmap.getWidth(); i++) {
+                for (int j = 0; j < bitmap.getHeight(); j++) {
+                    bitmap.setPixel(i, j, Color.BLACK);
+                }
+            }
         }
     }
 
@@ -666,6 +672,7 @@ public class DTVSubtitleView extends View {
     }
 
     public void startSub() {
+        Log.e(TAG, "startSub" + play_mode + " " + sub_params.mode);
         synchronized(lock) {
             if (activeView != this)
                 return;
@@ -674,7 +681,7 @@ public class DTVSubtitleView extends View {
 
             if (sub_params.mode == MODE_NONE)
                 return;
-
+            reset_bitmap_to_black();
             int ret = 0;
             switch (sub_params.mode) {
                 case MODE_DVB_SUB:
@@ -687,6 +694,7 @@ public class DTVSubtitleView extends View {
                     }
                     break;
                 case MODE_ATV_TT:
+                    Log.e(TAG, "native_sub_start_atv_tt");
                     ret = native_sub_start_atv_tt(
                             sub_params.atv_tt.region_id,
                             sub_params.atv_tt.page_no,
@@ -780,8 +788,11 @@ public class DTVSubtitleView extends View {
 
     public void stop() {
         synchronized(lock) {
-            if (activeView != this)
+            Log.e(TAG, "subtitleView stop");
+            if (activeView != this) {
+                Log.e(TAG, "activeView not this");
                 return;
+            }
             stopDecoder();
         }
     }
@@ -1282,6 +1293,7 @@ public class DTVSubtitleView extends View {
             need_clear_canvas = false;
             return;
         }
+        Log.e(TAG, "onDraw active " + active + " visible " + visible + " pm " + play_mode + " tt " + tt_show_switch);
         if (!active || !visible || (play_mode == PLAY_NONE) || !tt_show_switch) {
             return;
         }
@@ -1314,6 +1326,8 @@ public class DTVSubtitleView extends View {
             case MODE_DTV_TT:
             case MODE_DVB_SUB:
             case MODE_ATV_TT:
+                if (!teletext_have_data)
+                    return;
                 if (play_mode == PLAY_TT || sub_params.mode == MODE_DTV_TT || sub_params.mode == MODE_ATV_TT) {
                     int src_tt_bottom_ori = 10*24;
                     int src_tt_bottom;
@@ -1441,7 +1455,6 @@ public class DTVSubtitleView extends View {
         dispose();
         Log.e(TAG, "Finalize");
         super.finalize();
-        init_count --;
     }
 
     public void setVisible(boolean value) {

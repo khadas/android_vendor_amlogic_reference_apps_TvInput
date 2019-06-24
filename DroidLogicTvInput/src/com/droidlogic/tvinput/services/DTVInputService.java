@@ -206,13 +206,13 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
     protected final BroadcastReceiver mChannelScanStartReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
-                String action = intent.getAction();
-                  Log.d(TAG, "-----onReceive:"+action);
-                    if (mCurrentSession != null) {
-                        mCurrentSession.notifyUpdateUnblockRatingSet();
-                        //mCurrentSession.doRelease();
-                  }
+            String action = intent.getAction();
+            Log.d(TAG, "-----onReceive:"+action);
+            if (mCurrentSession != null) {
+                mCurrentSession.notifyUpdateUnblockRatingSet();
+                //mCurrentSession.doRelease();
             }
+        }
     };
 
     protected final BroadcastReceiver mParentalControlsBroadcastReceiver = new BroadcastReceiver() {
@@ -982,6 +982,7 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
         public static final int MSG_CC_DATA = 12;
         public static final int MSG_CC_TRY_PREFERRED = 14;
         public static final int MSG_UPDATE_UNBLOCK_SET = 15;
+        public static final int MSG_NO_TELETEXT_FOUND = 16;
 
         public static final int MSG_MIX_AD_MAIN = 20;
         public static final int MSG_MIX_AD_LEVEL = 21;
@@ -1035,7 +1036,7 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
                                     notifyTimeShiftStatusChanged(TvInputManager.TIME_SHIFT_STATUS_AVAILABLE);
                                     Log.d(TAG, "[timeshift] status available");
                                     break;
-                              case MSG_UPDATETS_PLAY:
+                                case MSG_UPDATETS_PLAY:
                                     Uri channelUriP = TvContract.buildChannelUri(msg.arg1);
                                     Log.d(TAG, "initWorkThread channelUriT:" + channelUriP + "msg.arg1:" + msg.arg1);
                                     mUpdateTsFlag = true;
@@ -1057,6 +1058,12 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
                                 case MSG_MIX_AD_LEVEL:
                                     Log.d(TAG, "receive MSG_MIX_AD_LEVEL arg1 = " + msg.arg1);
                                     HandleAudioEvent(22, msg.arg1, 0);
+                                    break;
+                                case MSG_NO_TELETEXT_FOUND:
+                                    if (mSubtitleView.tt_have_data() == false) {
+                                        Toast.makeText(mContext, "No teletext found", Toast.LENGTH_SHORT).show();
+                                        stop_teletext();
+                                    }
                                     break;
                                 default:
                                     break;
@@ -1706,7 +1713,7 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
 
         @Override
         public boolean onKeyUp(int keyCode, KeyEvent event) {
-            if (!teletext_switch && keyCode != 169)
+            if (!pal_teletext || (!teletext_switch && keyCode != KEY_TELETEXT_SWITCH))
                 return super.onKeyUp(keyCode, event);
             else {
                 switch (keyCode) {
@@ -1746,6 +1753,7 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
 
         public void reset_atv_status()
         {
+            mHandler.removeMessages(MSG_NO_TELETEXT_FOUND);
             tt_display_mode = DTVSubtitleView.TT_DISP_NORMAL;
             tt_subpg_walk_mode = false;
             layoutSurface(0,0,1920,1080);
@@ -1761,7 +1769,7 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
         public boolean onKeyDown(int keyCode, KeyEvent event) {
             Log.e(TAG, "keycode down: " + keyCode + " tt_switch " + teletext_switch);
             //Teletext is not opened.
-            if (!teletext_switch && keyCode != 169)
+            if (!pal_teletext || (!teletext_switch && keyCode != KEY_TELETEXT_SWITCH))
                 return super.onKeyDown(keyCode, event);
 
             switch (keyCode) {
@@ -1844,7 +1852,7 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
                     break;
                 case KEY_NEXT_PAGE: //Next program
                     reset_atv_status();
-                        mSubtitleView.nextPage();
+                    mSubtitleView.nextPage();
                     break;
                 case KEY_PRIOR_PAGE: //Prior program
                     reset_atv_status();
@@ -1889,18 +1897,32 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
                     mSubtitleView.setTTSubpgLock(tt_lock_subpg);
                     break;
                 case KEY_TELETEXT_SWITCH: //Zoom out
-                    boolean tt_status = mSubtitleView.tt_have_data();
-                    reset_atv_status();
-                    if (tt_status) {
-                        teletext_switch = !teletext_switch;
-                        mSubtitleView.setTTSwitch(teletext_switch);
-                            if (teletext_switch)
-                                notifyTrackSelected(TvTrackInfo.TYPE_SUBTITLE, generateSubtitleIdString(mCurrentSubtitle));
-                            else
-                                notifyTrackSelected(TvTrackInfo.TYPE_SUBTITLE, null);
+                    teletext_switch = !teletext_switch;
+                    Log.e(TAG, "KEY_TELETEXT_SWITCH pressed teletext_switch " + teletext_switch);
+                    if (teletext_switch) {
+                        if (mCurrentChannel != null) {
+                            Toast.makeText(mContext, "Searching teletext", Toast.LENGTH_SHORT).show();
+                            setSubtitleParam(mCurrentChannel.getVfmt(),
+                                    ChannelInfo.Subtitle.TYPE_ATV_TELETEXT,
+                                    0,
+                                    0,
+                                    1,
+                                    0,
+                                    "");
+                            enableSubtitleShow(true);
+                            mSubtitleView.setActive(true);
+                            mSubtitleView.startSub();
+                            mHandler.sendEmptyMessageDelayed(MSG_NO_TELETEXT_FOUND, 5000);
+                            String subid = generateSubtitleIdString(pal_teletext_subtitle);
+                            Log.e(TAG, "teletext_switch " + teletext_switch + " id: " + subid);
+                            notifyTrackSelected(TvTrackInfo.TYPE_SUBTITLE, subid);
+                        } else {
+                            Toast.makeText(mContext, "No teletext, no channel info", Toast.LENGTH_SHORT).show();
+                        }
                     } else {
-                        Toast.makeText(getApplicationContext(), "No teletext", Toast.LENGTH_SHORT).show();
+                        stop_teletext();
                     }
+                    mSubtitleView.setTTSwitch(teletext_switch);
                     break;
                 case KEY_REVEAL: //FAV
                     mSubtitleView.setTTRevealMode();
@@ -1954,6 +1976,15 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
                     return super.onKeyDown(keyCode, event);
             }
             return true;
+        }
+
+        private void stop_teletext()
+        {
+            teletext_switch = false;
+            enableSubtitleShow(false);
+            reset_atv_status();
+            mSubtitleView.stop();
+            notifyTrackSelected(TvTrackInfo.TYPE_SUBTITLE, null);
         }
 
         @Override
@@ -2139,14 +2170,6 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
             } else {
                 mIsChannelScrambled = false;
             }
-
-            if (mCurrentChannel != null &&
-                    mCurrentChannel.isAnalogChannel() &&
-                    !mCurrentChannel.isNtscChannel() &&
-                    pal_teletext_subtitle != null) {
-                startSubtitle(pal_teletext_subtitle, mCurrentChannel.getVfmt());
-                mSubtitleView.setTTSwitch(false);
-            }
         }
 
         @Override
@@ -2186,12 +2209,8 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
                 }
 
                 //Pal teletext request that unplug then plug in, close tt
-                if (mCurrentChannel != null && pal_teletext_subtitle != null && !mCurrentChannel.isNtscChannel() && mCurrentChannel.isAnalogChannel()) {
-                    teletext_switch = false;
-                    mSubtitleView.setTTSwitch(false);
-                    stopSubtitle();
-                    mSubtitleView.tt_reset_status();
-                    notifyTrackSelected(TvTrackInfo.TYPE_SUBTITLE, null);
+                if (pal_teletext_subtitle != null && pal_teletext) {
+                    stop_teletext();
                 }
             }
         }
@@ -2379,26 +2398,19 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
 
         protected List<ChannelInfo.Subtitle> getChannelFixedTeletext(ChannelInfo channel) {
             ArrayList<ChannelInfo.Subtitle> SubtitleList = new ArrayList<ChannelInfo.Subtitle>();
-            int CaptionTeletextMax = 1;//TYPE_ATV_TELETEXT
             boolean notNtsc = channel.isAnalogChannel() && !channel.isNtscChannel();
             if (!notNtsc) {
                 return SubtitleList;
             }
-            int[] CaptionType = new int[CaptionTeletextMax];
-            CaptionType[0] = ChannelInfo.Subtitle.TYPE_ATV_TELETEXT;
-//            CaptionType[1] = ChannelInfo.Subtitle.TYPE_DTV_TELETEXT_IMG;
-            int count = 0;
-            for (int i = 0; i < CaptionTeletextMax; i++) {
-                ChannelInfo.Subtitle s
-                    = new ChannelInfo.Subtitle(CaptionType[i],
-                                            i,
-                                            CaptionType[i],
-                                            0,
-                                            0,
-                                            "TELETEXT"+(i+1),
-                                            count++);
-                SubtitleList.add(s);
-            }
+            ChannelInfo.Subtitle s
+                    = new ChannelInfo.Subtitle(ChannelInfo.Subtitle.TYPE_ATV_TELETEXT,
+                    0,
+                    0,
+                    0,
+                    0,
+                    "ATV_TELETEXT",
+                    0);
+            SubtitleList.add(s);
             return SubtitleList;
         }
 
@@ -2971,11 +2983,13 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
                 mSubtitleView.setSubParams(params);
 
             } else if (type == ChannelInfo.Subtitle.TYPE_ATV_TELETEXT) {
-                int pgno;
-                pgno = (id1 == 0) ? 800 : id1 * 100;
-                pgno += (id2 & 15) + ((id2 >> 4) & 15) * 10 + ((id2 >> 8) & 15) * 100;
+//                int pgno;
+//                pgno = (id1 == 0) ? 800 : id1 * 100;
+//                pgno += (id2 & 15) + ((id2 >> 4) & 15) * 10 + ((id2 >> 8) & 15) * 100;
                 DTVSubtitleView.ATVTTParams params =
-                        new DTVSubtitleView.ATVTTParams(pgno, 0x3F7F, getDbTeletextRegionID());
+                        new DTVSubtitleView.ATVTTParams(100, 0x3F7F, getDbTeletextRegionID());
+//                DTVSubtitleView.ATVTTParams params =
+//                        new DTVSubtitleView.ATVTTParams(pgno, 0x3F7F, getDbTeletextRegionID());
                 mSubtitleView.setSubParams(params);
             } else if (type == ChannelInfo.Subtitle.TYPE_DTV_CC) {
                 CCStyleParams ccParam = getCaptionStyle();
