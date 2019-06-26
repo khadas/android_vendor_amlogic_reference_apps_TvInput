@@ -155,6 +155,8 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
     protected static final int KEY_REVEAL = 2018;
     protected static final int KEY_CANCEL = 2019;
     protected static final int KEY_SUBTITLE = 175;
+    protected static final int KEY_LEFT = 21;
+    protected static final int KEY_RIGHT = 22;
 
     protected static final int DTV_COLOR_WHITE = 1;
     protected static final int DTV_COLOR_BLACK = 2;
@@ -1777,6 +1779,18 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
                         dealTeletextPageNumber(keyCode - 7);
                     else
                         dealTeletextSubPageNumber(keyCode - 7);
+                    break;
+                case KEY_LEFT:
+                    if (tt_subpg_walk_mode) {
+                        int sub_no = mSubtitleView.tt_subpg_updown(false);
+                        mSubtitleView.tt_set_subpn_text(Integer.toString(sub_no));
+                    }
+                    break;
+                case KEY_RIGHT:
+                    if (tt_subpg_walk_mode) {
+                        int sub_no = mSubtitleView.tt_subpg_updown(true);
+                        mSubtitleView.tt_set_subpn_text(Integer.toString(sub_no));
+                    }
                     break;
                 case KEY_RED: //Red
                     if (!tt_subpg_walk_mode)
