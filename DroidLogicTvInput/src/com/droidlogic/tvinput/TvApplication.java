@@ -22,6 +22,8 @@ import java.util.zip.ZipException;
 import java.util.zip.ZipEntry;
 import java.util.Enumeration;
 
+import com.droidlogic.app.tv.TvControlManager;
+
 public class TvApplication extends Application{
     private static Context mContext;
     private static String unZipDirStr = "vendorfont";
@@ -33,6 +35,7 @@ public class TvApplication extends Application{
     public void onCreate() {
         super.onCreate();
         mContext = getApplicationContext();
+        TvControlManager.getInstance().registerTvserverListener();
         File uncryteDir = new File(mContext.getDataDir(),uncryptDirStr);
         if (uncryteDir == null || uncryteDir.listFiles() == null || uncryteDir.listFiles().length == 0 ) {
             try {
