@@ -120,8 +120,8 @@ public class AUXInputService extends DroidLogicTvInputService {
         super.onCreateSession(inputId);
         Utils.logd(TAG, "onCreateSession:"+inputId);
         mCurrentSession = new AUXInputSession(getApplicationContext(), inputId, getHardwareDeviceId(inputId));
-        registerInputSession(mCurrentSession);
         mCurrentSession.setSessionId(id);
+        registerInputSession(mCurrentSession);
         sessionMap.put(id, mCurrentSession);
         id++;
 

@@ -53,8 +53,8 @@ public class SPDIFInputService extends DroidLogicTvInputService {
         super.onCreateSession(inputId);
 
         mCurrentSession = new SPDIFInputSession(getApplicationContext(), inputId, getHardwareDeviceId(inputId));
-        registerInputSession(mCurrentSession);
         mCurrentSession.setSessionId(id);
+        registerInputSession(mCurrentSession);
         sessionMap.put(id, mCurrentSession);
         id++;
 

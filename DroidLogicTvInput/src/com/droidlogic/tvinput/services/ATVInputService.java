@@ -85,8 +85,8 @@ public class ATVInputService extends DroidLogicTvInputService {
         super.onCreateSession(inputId);
 
         mCurrentSession = new ATVSessionImpl(this, inputId, getHardwareDeviceId(inputId));
-        registerInputSession(mCurrentSession);
         mCurrentSession.setSessionId(id);
+        registerInputSession(mCurrentSession);
         sessionMap.put(id, mCurrentSession);
         id++;
         return mCurrentSession;

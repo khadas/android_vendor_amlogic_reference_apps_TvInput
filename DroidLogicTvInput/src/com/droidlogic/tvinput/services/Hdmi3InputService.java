@@ -57,8 +57,8 @@ public class Hdmi3InputService extends DroidLogicTvInputService {
         super.onCreateSession(inputId);
 
         mCurrentSession = new Hdmi3InputSession(getApplicationContext(), inputId, getHardwareDeviceId(inputId));
-        registerInputSession(mCurrentSession);
         mCurrentSession.setSessionId(id);
+        registerInputSession(mCurrentSession);
         sessionMap.put(id, mCurrentSession);
         id++;
 

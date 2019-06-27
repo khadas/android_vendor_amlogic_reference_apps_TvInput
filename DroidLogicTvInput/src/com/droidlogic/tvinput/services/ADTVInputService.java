@@ -132,8 +132,8 @@ public class ADTVInputService extends DTVInputService {
     public Session onCreateSession(String inputId) {
         registerInput(inputId);
         mCurrentSession = new ADTVSessionImpl(this, inputId, getHardwareDeviceId(inputId));
-        registerInputSession(mCurrentSession);
         mCurrentSession.setSessionId(id);
+        registerInputSession(mCurrentSession);
         sessionMap.put(id, mCurrentSession);
         id++;
 
