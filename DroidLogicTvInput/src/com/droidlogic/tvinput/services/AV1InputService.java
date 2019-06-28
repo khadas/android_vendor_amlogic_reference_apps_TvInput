@@ -221,6 +221,8 @@ public class AV1InputService extends DroidLogicTvInputService {
         }
         else
             signalFmt = SIGNAL_NOT_KNOWN;
+
+        super.onSigChange(signal_info);
     }
 
     public class AV1InputSession extends TvInputBaseSession  implements DTVSubtitleView.SubtitleDataListener{
