@@ -1132,7 +1132,7 @@ public class AV2InputService extends DroidLogicTvInputService {
                     teletext_switch = !teletext_switch;
                     Log.e(TAG, "KEY_TELETEXT_SWITCH pressed teletext_switch " + teletext_switch);
                     if (teletext_switch) {
-                        Toast.makeText(mContext, "Searching teletext", Toast.LENGTH_SHORT).show();
+//                        Toast.makeText(mContext, "Searching teletext", Toast.LENGTH_SHORT).show();
                         setSubtitleParam(
                                 ChannelInfo.Subtitle.TYPE_ATV_TELETEXT,
                                 0,
@@ -1140,10 +1140,8 @@ public class AV2InputService extends DroidLogicTvInputService {
                                 1,
                                 0,
                                 "");
-                        enableSubtitleShow(true);
                         mSubtitleView.setActive(true);
                         mSubtitleView.startSub();
-                        mHandler.sendEmptyMessageDelayed(MSG_NO_TELETEXT_FOUND, 5000);
                         String subid = generateSubtitleIdString(mCurrentSubtitles.get(0));
                         Log.e(TAG, "teletext_switch " + teletext_switch + " id: " + subid);
                         notifyTrackSelected(TvTrackInfo.TYPE_SUBTITLE, subid);
@@ -1209,7 +1207,6 @@ public class AV2InputService extends DroidLogicTvInputService {
         private void stop_teletext()
         {
             teletext_switch = false;
-            enableSubtitleShow(false);
             reset_atv_status();
             mSubtitleView.stop();
             notifyTrackSelected(TvTrackInfo.TYPE_SUBTITLE, null);

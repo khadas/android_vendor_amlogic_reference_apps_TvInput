@@ -1901,7 +1901,7 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
                     Log.e(TAG, "KEY_TELETEXT_SWITCH pressed teletext_switch " + teletext_switch);
                     if (teletext_switch) {
                         if (mCurrentChannel != null) {
-                            Toast.makeText(mContext, "Searching teletext", Toast.LENGTH_SHORT).show();
+//                            Toast.makeText(mContext, "Searching teletext", Toast.LENGTH_SHORT).show();
                             setSubtitleParam(mCurrentChannel.getVfmt(),
                                     ChannelInfo.Subtitle.TYPE_ATV_TELETEXT,
                                     0,
@@ -1909,15 +1909,14 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
                                     1,
                                     0,
                                     "");
-                            enableSubtitleShow(true);
                             mSubtitleView.setActive(true);
                             mSubtitleView.startSub();
-                            mHandler.sendEmptyMessageDelayed(MSG_NO_TELETEXT_FOUND, 5000);
                             String subid = generateSubtitleIdString(pal_teletext_subtitle);
                             Log.e(TAG, "teletext_switch " + teletext_switch + " id: " + subid);
                             notifyTrackSelected(TvTrackInfo.TYPE_SUBTITLE, subid);
                         } else {
-                            Toast.makeText(mContext, "No teletext, no channel info", Toast.LENGTH_SHORT).show();
+//                            Toast.makeText(mContext, "No teletext, no channel info", Toast.LENGTH_SHORT).show();
+                            //TODO: Remove subtitle notification.
                         }
                     } else {
                         stop_teletext();
@@ -1981,7 +1980,6 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
         private void stop_teletext()
         {
             teletext_switch = false;
-            enableSubtitleShow(false);
             reset_atv_status();
             mSubtitleView.stop();
             notifyTrackSelected(TvTrackInfo.TYPE_SUBTITLE, null);
