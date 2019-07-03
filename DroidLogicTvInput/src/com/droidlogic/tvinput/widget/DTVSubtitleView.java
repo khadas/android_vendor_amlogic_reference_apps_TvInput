@@ -159,7 +159,6 @@ public class DTVSubtitleView extends View {
     private static Bitmap bitmap = null;
     private static Paint mPaint;
     private static Paint clear_paint;
-    private static boolean atv_tt_switch = true;
     private static boolean teletext_have_data = false;
     private static boolean tt_reveal_mode = false;
     private static int tt_zoom_state = 0;
@@ -1131,12 +1130,6 @@ public class DTVSubtitleView extends View {
         super.onSizeChanged(w, h, oldw, oldh);
         ci.caption_screen.updateCaptionScreen(w, h);
     }
-    public void atv_display(boolean show)
-    {
-        atv_tt_switch = show;
-        postInvalidate();
-        Log.e(TAG, "atv_display "+show);
-    }
 
     boolean valid_page_no(int pgno)
     {
@@ -1296,13 +1289,9 @@ public class DTVSubtitleView extends View {
             return;
         }
         Log.e(TAG, "onDraw active " + active + " visible " + visible + " pm " + play_mode + " tt " + tt_show_switch);
-        if (!active || !visible || (play_mode == PLAY_NONE) || !tt_show_switch) {
+        if (!active || !visible || (play_mode == PLAY_NONE)) {
             return;
         }
-
-        if (!atv_tt_switch)
-            return;
-
 
         switch (sub_params.mode)
         {
@@ -1326,71 +1315,61 @@ public class DTVSubtitleView extends View {
                     cw.draw(canvas);
                 break;
             case MODE_DTV_TT:
-            case MODE_DVB_SUB:
             case MODE_ATV_TT:
                 if (!teletext_have_data)
                     return;
-                if (play_mode == PLAY_TT || sub_params.mode == MODE_DTV_TT || sub_params.mode == MODE_ATV_TT) {
-                    int src_tt_bottom_ori = 10*24;
-                    int src_tt_bottom;
-                    int src_tt_top;
+                int src_tt_bottom_ori = 10*24;
+                int src_tt_bottom;
+                int src_tt_top;
 
-                    switch (tt_zoom_state)
-                    {
-                        case 0:
-                            src_tt_bottom = src_tt_bottom_ori;
-                            src_tt_top = 0;
-                            disp_left = (int)(getWidth() * 0.20);
-                            disp_right = getWidth() - disp_left;
-                            disp_top = (int)(getHeight() * 0.05);
-                            disp_bottom = getHeight() - disp_top;
-                            break;
-                        case 1:
-                            src_tt_bottom = src_tt_bottom_ori/2;
-                            src_tt_top = 0;
-                            disp_left = 0;
-                            disp_right = getWidth() - disp_left;
-                            disp_top = (int)(getHeight() * 0.05);
-                            disp_bottom = getHeight() - disp_top;
-                            break;
-                        case 2:
-                            src_tt_bottom = src_tt_bottom_ori;
-                            src_tt_top = src_tt_bottom_ori/2;
-                            disp_left = 0;
-                            disp_right = getWidth() - disp_left;
-                            disp_top = (int)(getHeight() * 0.05);
-                            disp_bottom = getHeight() - disp_top;
-                            break;
-                        case 3:
-                            src_tt_bottom = src_tt_bottom_ori;
-                            src_tt_top = 0;
-                            disp_left = (int)(getWidth() * 0.50);
-                            disp_right = getWidth();
-                            disp_top = (int)(getHeight() * 0.05);
-                            disp_bottom = getHeight() - disp_top;
-                            break;
-                        default:
-                            src_tt_bottom = src_tt_bottom_ori;
-                            src_tt_top = 0;
-                            disp_left = (int)(getWidth() * 0.20);
-                            disp_right = getWidth() - disp_left;
-                            disp_top = (int)(getHeight() * 0.05);
-                            disp_bottom = getHeight() - disp_top;
-                            break;
-                    }
-
-                    //bottom edge of original bitmap is not clean, so cut a little bit,
-                    //that is why src_tt_bottom minus one.
-                    row_height = (int)(disp_bottom / 26);
-                    sr = new Rect(1, src_tt_top + 1, 12 * 41 - 1, src_tt_bottom - 1);
-                    dr = new Rect(disp_left, disp_top, disp_right, row_height*25);
-                } else if (play_mode == PLAY_SUB) {
-                    sr = new Rect(0, 0, native_get_subtitle_picture_width(), native_get_subtitle_picture_height());
-                    dr = new Rect(disp_left, disp_top, getWidth() - disp_right, getHeight() - disp_bottom);
-                } else {
-                    sr = new Rect(0, 0, BUFFER_W, BUFFER_H);
-                    dr = new Rect(disp_left, disp_top, getWidth() - disp_right, getHeight() - disp_bottom);
+                switch (tt_zoom_state)
+                {
+                    case 0:
+                        src_tt_bottom = src_tt_bottom_ori;
+                        src_tt_top = 0;
+                        disp_left = (int)(getWidth() * 0.20);
+                        disp_right = getWidth() - disp_left;
+                        disp_top = (int)(getHeight() * 0.05);
+                        disp_bottom = getHeight() - disp_top;
+                        break;
+                    case 1:
+                        src_tt_bottom = src_tt_bottom_ori/2;
+                        src_tt_top = 0;
+                        disp_left = 0;
+                        disp_right = getWidth() - disp_left;
+                        disp_top = (int)(getHeight() * 0.05);
+                        disp_bottom = getHeight() - disp_top;
+                        break;
+                    case 2:
+                        src_tt_bottom = src_tt_bottom_ori;
+                        src_tt_top = src_tt_bottom_ori/2;
+                        disp_left = 0;
+                        disp_right = getWidth() - disp_left;
+                        disp_top = (int)(getHeight() * 0.05);
+                        disp_bottom = getHeight() - disp_top;
+                        break;
+                    case 3:
+                        src_tt_bottom = src_tt_bottom_ori;
+                        src_tt_top = 0;
+                        disp_left = (int)(getWidth() * 0.50);
+                        disp_right = getWidth();
+                        disp_top = (int)(getHeight() * 0.05);
+                        disp_bottom = getHeight() - disp_top;
+                        break;
+                    default:
+                        src_tt_bottom = src_tt_bottom_ori;
+                        src_tt_top = 0;
+                        disp_left = (int)(getWidth() * 0.20);
+                        disp_right = getWidth() - disp_left;
+                        disp_top = (int)(getHeight() * 0.05);
+                        disp_bottom = getHeight() - disp_top;
+                        break;
                 }
+                //bottom edge of original bitmap is not clean, so cut a little bit,
+                //that is why src_tt_bottom minus one.
+                row_height = (int)(disp_bottom / 26);
+                sr = new Rect(1, src_tt_top + 1, 12 * 41 - 1, src_tt_bottom - 1);
+                dr = new Rect(disp_left, disp_top, disp_right, row_height*25);
 
                 canvas.setDrawFilter(paint_flag);
                 mPaint.setXfermode(mXfermode);
@@ -1408,6 +1387,7 @@ public class DTVSubtitleView extends View {
                     }
                 }
                 native_sub_lock();
+                canvas.setDrawFilter(new PaintFlagsDrawFilter(0, Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG));
                 canvas.drawBitmap(bitmap, sr, dr, mPaint);
                 native_sub_unlock();
                 if (tt_zoom_state != TT_ZOOM_RIGHT) {
@@ -1424,6 +1404,20 @@ public class DTVSubtitleView extends View {
                         tt_red_value, tt_green_value, tt_yellow_value, tt_blue_value,
                         tt_curr_pgno, tt_subs, tt_curr_subpg,
                         0, tt_mix_mode == TT_DISP_MIX_TRANSPARENT);
+                break;
+            case MODE_DVB_SUB:
+                Log.e(TAG, "ondraw MODE_DVB_SUB");
+                if (play_mode == PLAY_SUB) {
+                    sr = new Rect(0, 0, native_get_subtitle_picture_width(), native_get_subtitle_picture_height());
+                    dr = new Rect(disp_left, disp_top, getWidth() - disp_right, getHeight() - disp_bottom);
+                } else {
+                    sr = new Rect(0, 0, BUFFER_W, BUFFER_H);
+                    dr = new Rect(disp_left, disp_top, getWidth() - disp_right, getHeight() - disp_bottom);
+                }
+                native_sub_lock();
+                canvas.setDrawFilter(new PaintFlagsDrawFilter(0, Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG));
+                canvas.drawBitmap(bitmap, sr, dr, mPaint);
+                native_sub_unlock();
                 break;
             case MODE_ISDB_CC:
                 screen_mode = mSystemControlManager.readSysFs("/sys/class/video/screen_mode");
