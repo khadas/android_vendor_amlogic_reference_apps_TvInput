@@ -685,6 +685,33 @@ error:
         }
     }
 
+    static void notify_contain_tt_data(AM_TT2_Handle_t handle, int have_data)
+    {
+        JNIEnv *env;
+        int ret;
+        int attached = 0;
+        TVSubtitleData *sub = (TVSubtitleData *)AM_TT2_GetUserData(handle);
+        jobject obj = sub->obj;
+
+        if (!obj)
+            return;
+
+        ret = gJavaVM->GetEnv((void **) &env, JNI_VERSION_1_4);
+
+        if (ret < 0) {
+            ret = gJavaVM->AttachCurrentThread(&env, NULL);
+            if (ret < 0) {
+                LOGE("Can't attach thread");
+                return;
+            }
+            attached = 1;
+        }
+        env->CallVoidMethod(obj, gTeletextNotifyID, have_data);
+        if (attached) {
+            gJavaVM->DetachCurrentThread();
+        }
+    }
+
     static void bitmap_init(jobject obj)
     {
         JNIEnv *env;
@@ -1005,6 +1032,7 @@ error:
             ttp.bitmap    = &data->buffer;
             ttp.pitch     = data->bmp_pitch;
             ttp.user_data = data;
+            ttp.notify_contain_data = notify_contain_tt_data;
             ttp.default_region = region_id;
             ttp.input = AM_TT_INPUT_PES;
             ret = AM_TT2_Create(&data->tt_handle, &ttp);
@@ -1059,6 +1087,7 @@ error:
             ttp.pitch	  = data->bmp_pitch;
             ttp.user_data = data;
             ttp.default_region = region_id;
+            ttp.notify_contain_data = notify_contain_tt_data;
             ttp.input = AM_TT_INPUT_VBI;
             ret = AM_TT2_Create(&data->tt_handle, &ttp);
             if (ret != AM_SUCCESS)
@@ -1586,6 +1615,7 @@ error:
             gBitmapID = env->GetStaticFieldID(clazz, "bitmap", "Landroid/graphics/Bitmap;");
             gUpdateDataID = env->GetMethodID(clazz, "updateData", "(Ljava/lang/String;)V");
             gReadSysfsID = env->GetMethodID(clazz, "readSysFs", "(Ljava/lang/String;)Ljava/lang/String;");
+            gTeletextNotifyID = env->GetMethodID(clazz, "tt_data_notify", "(Z)V");
             gWriteSysfsID = env->GetMethodID(clazz, "writeSysFs", "(Ljava/lang/String;Ljava/lang/String;)V");
 
             LOGI("load jnitvsubtitle ok");

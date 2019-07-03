@@ -374,7 +374,6 @@ public class DTVSubtitleView extends View {
         if (!tt_subpg_walk_mode)
             tt_set_subpn_text(Integer.toString(tt_curr_subpg));
 
-        teletext_have_data = true;
         if (!tt_refresh_switch)
             return;
         handler.obtainMessage(TT_PAGE_TYPE, page_type).sendToTarget();
@@ -517,11 +516,8 @@ public class DTVSubtitleView extends View {
     private void reset_bitmap_to_black()
     {
         if (bitmap != null) {
-            for (int i = 0; i < bitmap.getWidth(); i++) {
-                for (int j = 0; j < bitmap.getHeight(); j++) {
-                    bitmap.setPixel(i, j, Color.BLACK);
-                }
-            }
+            Canvas newcan = new Canvas(bitmap);
+            newcan.drawColor(Color.BLACK);
         }
     }
 
@@ -1035,6 +1031,12 @@ public class DTVSubtitleView extends View {
     public void tt_reset_status()
     {
     }
+
+    public void tt_data_notify(boolean have_data)
+    {
+        teletext_have_data = have_data;
+    }
+
     public boolean tt_have_data()
     {
         return teletext_have_data;
