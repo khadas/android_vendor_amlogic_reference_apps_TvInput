@@ -29,6 +29,7 @@ import android.provider.Settings;
 import android.text.TextUtils;
 import android.util.Log;
 
+import com.droidlogic.app.tv.AudioEffectManager;
 import com.droidlogic.tvinput.settings.SoundEffectManager;
 
 /**
@@ -44,13 +45,6 @@ public class AudioEffectsService extends PersistentService {
 
     // Service actions
     public static final String ACTION_STARTUP = "com.droidlogic.tvinput.services.AudioEffectsService.STARTUP";
-
-    public static final String SOUND_EFFECT_SOUND_MODE            = "sound_effect_sound_mode";
-    public static final String SOUND_EFFECT_SOUND_MODE_TYPE       = "sound_effect_sound_mode_type";
-    public static final String SOUND_EFFECT_SOUND_MODE_TYPE_DAP   = "type_dap";
-    public static final String SOUND_EFFECT_SOUND_MODE_TYPE_EQ    = "type_eq";
-    public static final String SOUND_EFFECT_SOUND_MODE_DAP_VALUE  = "sound_effect_sound_mode_dap";
-    public static final String SOUND_EFFECT_SOUND_MODE_EQ_VALUE   = "sound_effect_sound_mode_eq";
     public static final int MODE_STANDARD = 0;
 
     public AudioEffectsService() {
@@ -64,6 +58,7 @@ public class AudioEffectsService extends PersistentService {
         if (DEBUG) Log.d(TAG, "AudioEffectsService onCreate");
         mContext = this;
         mHandler.sendEmptyMessage(MSG_CHECK_BOOTVIDEO_FINISHED);
+        mSoundEffectManager = SoundEffectManager.getInstance(mContext);
     }
 
     @Override
@@ -71,7 +66,7 @@ public class AudioEffectsService extends PersistentService {
         super.onDestroy();
         if (DEBUG) Log.d(TAG, "onDestroy");
         if (mSoundEffectManager != null) {
-            mSoundEffectManager.getInstance(mContext).cleanupAudioEffects();
+            mSoundEffectManager.cleanupAudioEffects();
         }
         unregisterCommandReceiver(this);
     }
@@ -131,148 +126,173 @@ public class AudioEffectsService extends PersistentService {
     };
 
     private final IAudioEffectsService.Stub mBinder = new IAudioEffectsService.Stub(){
+        public void createAudioEffects() {
+            mSoundEffectManager.createAudioEffects();
+        }
+
+        public boolean isSupportVirtualX() {
+            return mSoundEffectManager.isSupportVirtualX();
+        }
+
+        public void setDtsVirtualXMode(int virtalXMode) {
+            mSoundEffectManager.setDtsVirtualXMode(virtalXMode);
+        }
+
+        public int getDtsVirtualXMode() {
+            return mSoundEffectManager.getDtsVirtualXMode();
+        }
+
+        public void setDtsTruVolumeHdEnable(boolean enable) {
+            mSoundEffectManager.setDtsTruVolumeHdEnable(enable);
+        }
+
+        public boolean getDtsTruVolumeHdEnable() {
+            return mSoundEffectManager.getDtsTruVolumeHdEnable();
+        }
+
         public int getSoundModeStatus () {
-            return mSoundEffectManager.getInstance(mContext).getSoundModeStatus();
+            return mSoundEffectManager.getSoundModeStatus();
         }
 
         //return current is eq or dap
         public int getSoundModule() {
-            return mSoundEffectManager.getInstance(mContext).getSoundModule();
+            return mSoundEffectManager.getSoundModule();
         }
 
         public int getTrebleStatus () {
-            return mSoundEffectManager.getInstance(mContext).getTrebleStatus();
+            return mSoundEffectManager.getTrebleStatus();
         }
 
         public int getBassStatus () {
-            return mSoundEffectManager.getInstance(mContext).getBassStatus();
+            return mSoundEffectManager.getBassStatus();
         }
 
         public int getBalanceStatus () {
-            return mSoundEffectManager.getInstance(mContext).getBalanceStatus();
-        }
-
-        public int getSurroundStatus () {
-            return mSoundEffectManager.getInstance(mContext).getSurroundStatus();
-        }
-
-        public int getDialogClarityStatus () {
-            return mSoundEffectManager.getInstance(mContext).getDialogClarityStatus();
-        }
-
-        public int getBassBoostStatus () {
-            return mSoundEffectManager.getInstance(mContext).getBassBoostStatus();
+            return mSoundEffectManager.getBalanceStatus();
         }
 
         public boolean getAgcEnableStatus () {
-            return mSoundEffectManager.getInstance(mContext).getAgcEnableStatus();
+            return mSoundEffectManager.getAgcEnableStatus();
         }
 
         public int getAgcMaxLevelStatus () {
-            return mSoundEffectManager.getInstance(mContext).getAgcMaxLevelStatus();
+            return mSoundEffectManager.getAgcMaxLevelStatus();
         }
 
         public int getAgcAttrackTimeStatus () {
-            return mSoundEffectManager.getInstance(mContext).getAgcAttrackTimeStatus();
+            return mSoundEffectManager.getAgcAttrackTimeStatus();
         }
 
         public int getAgcReleaseTimeStatus () {
-            return mSoundEffectManager.getInstance(mContext).getAgcReleaseTimeStatus();
+            return mSoundEffectManager.getAgcReleaseTimeStatus();
         }
 
         public int getAgcSourceIdStatus () {
-            return mSoundEffectManager.getInstance(mContext).getAgcSourceIdStatus();
+            return mSoundEffectManager.getAgcSourceIdStatus();
         }
 
         public int getVirtualSurroundStatus() {
-            return mSoundEffectManager.getInstance(mContext).getVirtualSurroundStatus();
+            return mSoundEffectManager.getVirtualSurroundStatus();
         }
 
         public void setSoundMode (int mode) {
-            mSoundEffectManager.getInstance(mContext).setSoundMode(mode);
+            mSoundEffectManager.setSoundMode(mode);
         }
 
         public void setSoundModeByObserver (int mode) {
-            mSoundEffectManager.getInstance(mContext).setSoundModeByObserver(mode);
+            mSoundEffectManager.setSoundModeByObserver(mode);
         }
 
         public void setDifferentBandEffects(int bandnum, int value, boolean needsave) {
-            mSoundEffectManager.getInstance(mContext).setDifferentBandEffects(bandnum, value, needsave);
+            mSoundEffectManager.setDifferentBandEffects(bandnum, value, needsave);
         }
 
         public void setTreble (int step) {
-            mSoundEffectManager.getInstance(mContext).setTreble (step);
+            mSoundEffectManager.setTreble (step);
         }
 
         public void setBass (int step) {
-            mSoundEffectManager.getInstance(mContext).setBass (step);
+            mSoundEffectManager.setBass (step);
         }
 
         public void setBalance (int step) {
-            mSoundEffectManager.getInstance(mContext).setBalance (step);
+            mSoundEffectManager.setBalance (step);
         }
 
-        public void setSurround (int mode) {
-            mSoundEffectManager.getInstance(mContext).setSurround (mode);
+        public void setSurroundEnable(boolean enable) {
+            mSoundEffectManager.setSurroundEnable(enable);
         }
 
-        public void setDialogClarity (int mode) {
-            mSoundEffectManager.getInstance(mContext).setDialogClarity (mode);
+        public boolean getSurroundEnable() {
+            return mSoundEffectManager.getSurroundEnable();
         }
 
-        public void setBassBoost (int mode) {
-            mSoundEffectManager.getInstance(mContext).setBassBoost (mode);
+        public void setDialogClarityMode(int mode) {
+            mSoundEffectManager.setDialogClarityMode(mode);
+        }
+
+        public int getDialogClarityMode() {
+            return mSoundEffectManager.getDialogClarityMode();
+        }
+
+        public void setTruBassEnable(boolean enable) {
+            mSoundEffectManager.setTruBassEnable(enable);
+        }
+
+        public boolean getTruBassEnable() {
+            return mSoundEffectManager.getTruBassEnable();
         }
 
         public void setAgsEnable (int mode) {
-            mSoundEffectManager.getInstance(mContext).setAgsEnable (mode);
+            mSoundEffectManager.setAgsEnable (mode);
         }
 
         public void setAgsMaxLevel (int step) {
-            mSoundEffectManager.getInstance(mContext).setAgsMaxLevel (step);
+            mSoundEffectManager.setAgsMaxLevel (step);
         }
 
         public void setAgsAttrackTime (int step) {
-            mSoundEffectManager.getInstance(mContext).setAgsAttrackTime (step);
+            mSoundEffectManager.setAgsAttrackTime (step);
         }
 
         public void setAgsReleaseTime (int step) {
-            mSoundEffectManager.getInstance(mContext).setAgsReleaseTime (step);
+            mSoundEffectManager.setAgsReleaseTime (step);
         }
 
         public void setSourceIdForAvl (int step) {
-            mSoundEffectManager.getInstance(mContext).setSourceIdForAvl (step);
+            mSoundEffectManager.setSourceIdForAvl (step);
         }
 
         public void setVirtualSurround (int mode) {
-            mSoundEffectManager.getInstance(mContext).setVirtualSurround (mode);
+            mSoundEffectManager.setVirtualSurround (mode);
         }
 
         public void setParameters(int order, int value) {
-            mSoundEffectManager.getInstance(mContext).setParameters(order, value);
+            mSoundEffectManager.setParameters(order, value);
         }
 
         public int getParameters(int order) {
-            return mSoundEffectManager.getInstance(mContext).getParameters(order);
+            return mSoundEffectManager.getParameters(order);
         }
 
         public void cleanupAudioEffects() {
-            mSoundEffectManager.getInstance(mContext).cleanupAudioEffects();
+            mSoundEffectManager.cleanupAudioEffects();
         }
 
         public void initSoundEffectSettings() {
-            mSoundEffectManager.getInstance(mContext).initSoundEffectSettings();
+            mSoundEffectManager.initSoundEffectSettings();
         }
 
         public void resetSoundEffectSettings() {
             Log.d(TAG, "resetSoundEffectSettings");
-            mSoundEffectManager.getInstance(mContext).resetSoundEffectSettings();
+            mSoundEffectManager.resetSoundEffectSettings();
         }
     };
 
     private void handleActionStartUp() {
         // This will apply the saved audio settings on boot
-        mSoundEffectManager.getInstance(mContext).initSoundEffectSettings();
+        mSoundEffectManager.createAudioEffects();
+        mSoundEffectManager.initSoundEffectSettings();
         registerCommandReceiver(this);
     }
 
@@ -284,11 +304,11 @@ public class AudioEffectsService extends PersistentService {
         intentFilter.addAction(RESET_ACTION);
         intentFilter.addAction(AVL_SOURCE_ACTION);
         context.registerReceiver(mSoundEffectSettingsReceiver, intentFilter);
-        context.getContentResolver().registerContentObserver(Settings.Global.getUriFor(SOUND_EFFECT_SOUND_MODE), false,
+        context.getContentResolver().registerContentObserver(Settings.Global.getUriFor(AudioEffectManager.DB_ID_SOUND_EFFECT_SOUND_MODE), false,
                 mSoundEffectParametersObserver);
-        context.getContentResolver().registerContentObserver(Settings.Global.getUriFor(SOUND_EFFECT_SOUND_MODE_EQ_VALUE), false,
+        context.getContentResolver().registerContentObserver(Settings.Global.getUriFor(AudioEffectManager.DB_ID_SOUND_EFFECT_SOUND_MODE_EQ_VALUE), false,
                 mSoundEffectParametersObserver);
-        context.getContentResolver().registerContentObserver(Settings.Global.getUriFor(SOUND_EFFECT_SOUND_MODE_DAP_VALUE), false,
+        context.getContentResolver().registerContentObserver(Settings.Global.getUriFor(AudioEffectManager.DB_ID_SOUND_EFFECT_SOUND_MODE_DAP_VALUE), false,
                 mSoundEffectParametersObserver);
     }
 
@@ -301,11 +321,12 @@ public class AudioEffectsService extends PersistentService {
         @Override
         public void onChange(boolean selfChange, Uri uri) {
             if (uri != null) {
-                if (uri.equals(Settings.Global.getUriFor(SOUND_EFFECT_SOUND_MODE)) || uri.equals(Settings.Global.getUriFor(SOUND_EFFECT_SOUND_MODE_EQ_VALUE))
-                        || uri.equals(Settings.Global.getUriFor(SOUND_EFFECT_SOUND_MODE_DAP_VALUE))) {
+                if (uri.equals(Settings.Global.getUriFor(AudioEffectManager.DB_ID_SOUND_EFFECT_SOUND_MODE))
+                        || uri.equals(Settings.Global.getUriFor(AudioEffectManager.DB_ID_SOUND_EFFECT_SOUND_MODE_EQ_VALUE))
+                        || uri.equals(Settings.Global.getUriFor(AudioEffectManager.DB_ID_SOUND_EFFECT_SOUND_MODE_DAP_VALUE))) {
                     int mode = Settings.Global.getInt(mContext.getContentResolver(), uri.getLastPathSegment(), MODE_STANDARD);
                     Log.d(TAG, "onChange setSoundMode " + uri.getLastPathSegment() + ":" + mode);
-                    mSoundEffectManager.getInstance(mContext).setSoundModeByObserver(mode);
+                    mSoundEffectManager.setSoundModeByObserver(mode);
                 }
             }
         }
@@ -317,9 +338,9 @@ public class AudioEffectsService extends PersistentService {
             if (DEBUG) Log.d(TAG, "intent = " + intent);
             if (intent != null) {
                 if (RESET_ACTION.equals(intent.getAction())) {
-                    mSoundEffectManager.getInstance(mContext).resetSoundEffectSettings();
+                    mSoundEffectManager.resetSoundEffectSettings();
                 } else if (AVL_SOURCE_ACTION.equals(intent.getAction())) {
-                    mSoundEffectManager.getInstance(mContext).setSourceIdForAvl(intent.getIntExtra("source_id", SoundEffectManager.DEFAULT_AGC_SOURCE_ID));
+                    mSoundEffectManager.setSourceIdForAvl(intent.getIntExtra("source_id", SoundEffectManager.DEFAULT_AGC_SOURCE_ID));
                 }
             }
         }
