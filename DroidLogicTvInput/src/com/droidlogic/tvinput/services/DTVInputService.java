@@ -983,7 +983,6 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
         public static final int MSG_CC_DATA = 12;
         public static final int MSG_CC_TRY_PREFERRED = 14;
         public static final int MSG_UPDATE_UNBLOCK_SET = 15;
-        public static final int MSG_NO_TELETEXT_FOUND = 16;
 
         public static final int MSG_MIX_AD_MAIN = 20;
         public static final int MSG_MIX_AD_LEVEL = 21;
@@ -1059,12 +1058,6 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
                                 case MSG_MIX_AD_LEVEL:
                                     Log.d(TAG, "receive MSG_MIX_AD_LEVEL arg1 = " + msg.arg1);
                                     HandleAudioEvent(22, msg.arg1, 0);
-                                    break;
-                                case MSG_NO_TELETEXT_FOUND:
-                                    if (mSubtitleView.tt_have_data() == false) {
-                                        Toast.makeText(mContext, "No teletext found", Toast.LENGTH_SHORT).show();
-                                        stop_teletext();
-                                    }
                                     break;
                                 default:
                                     break;
@@ -1270,6 +1263,7 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
                 startSubtitleCCBackground(info);
             }
             mCurrentCCEnabled = mCaptioningManager == null? false : mCaptioningManager.isEnabled();
+            Log.e(TAG, "start subtitle " + "isAnalogChannel " + info.isAnalogChannel() + " isNtscChannel " + info.isNtscChannel());
 
             if (info != null && info.isAnalogChannel() && !info.isNtscChannel())
             {
@@ -1283,8 +1277,11 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
                     }
                 }
                 pal_teletext = true;
-            } else if (subtitleAutoStart)
+                start_teletext();
+            } else if (subtitleAutoStart) {
                 startSubtitle(info);
+                pal_teletext = false;
+            }
 
             return 0;
         }
@@ -1754,8 +1751,6 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
 
         public void reset_atv_status()
         {
-            mHandler.removeMessages(MSG_NO_TELETEXT_FOUND);
-            tt_display_mode = DTVSubtitleView.TT_DISP_NORMAL;
             tt_subpg_walk_mode = false;
             if (tt_display_mode == DTVSubtitleView.TT_DISP_MIX_RIGHT) {
                 Rect rect = new Rect();
@@ -1766,6 +1761,10 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
             mSubtitleView.reset_atv_status();
             mSubtitleView.setTTSubpgLock(DTVSubtitleView.TT_LOCK_MODE_NORMAL);
             mSubtitleView.setTTSubpgWalk(false);
+            if (tt_display_mode != DTVSubtitleView.TT_DISP_NORMAL) {
+                mSubtitleView.setTTDisplayMode(tt_display_mode);
+                tt_display_mode = DTVSubtitleView.TT_DISP_NORMAL;
+            }
             Log.e(TAG, "reset_atv_status done");
         }
 
@@ -1853,7 +1852,7 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
                     Rect rect = new Rect();
                     mSubtitleView.getGlobalVisibleRect(rect);
                     if (tt_display_mode == DTVSubtitleView.TT_DISP_MIX_RIGHT) {
-                        layoutSurface(rect.left, rect.top, (rect.left + rect.right) / 2,  (rect.top + rect.bottom) /2);
+                        layoutSurface(rect.left, rect.top, (rect.left + rect.right) / 2,  rect.top + rect.bottom);
                     } else {
                         layoutSurface(rect.left, rect.top, rect.right,  rect.bottom);
                     }
@@ -1906,29 +1905,6 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
                     break;
                 case KEY_TELETEXT_SWITCH: //Zoom out
                     teletext_switch = !teletext_switch;
-                    Log.e(TAG, "KEY_TELETEXT_SWITCH pressed teletext_switch " + teletext_switch);
-                    if (teletext_switch) {
-                        if (mCurrentChannel != null) {
-//                            Toast.makeText(mContext, "Searching teletext", Toast.LENGTH_SHORT).show();
-                            setSubtitleParam(mCurrentChannel.getVfmt(),
-                                    ChannelInfo.Subtitle.TYPE_ATV_TELETEXT,
-                                    0,
-                                    0,
-                                    1,
-                                    0,
-                                    "");
-                            mSubtitleView.setActive(true);
-                            mSubtitleView.startSub();
-                            String subid = generateSubtitleIdString(pal_teletext_subtitle);
-                            Log.e(TAG, "teletext_switch " + teletext_switch + " id: " + subid);
-                            notifyTrackSelected(TvTrackInfo.TYPE_SUBTITLE, subid);
-                        } else {
-//                            Toast.makeText(mContext, "No teletext, no channel info", Toast.LENGTH_SHORT).show();
-                            //TODO: Remove subtitle notification.
-                        }
-                    } else {
-                        stop_teletext();
-                    }
                     mSubtitleView.setTTSwitch(teletext_switch);
                     break;
                 case KEY_REVEAL: //FAV
@@ -1984,13 +1960,39 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
             }
             return true;
         }
+        private void start_teletext()
+        {
+            reset_atv_status();
+            if (mCurrentChannel != null && pal_teletext_subtitle != null) {
+//                            Toast.makeText(mContext, "Searching teletext", Toast.LENGTH_SHORT).show();
+                setSubtitleParam(mCurrentChannel.getVfmt(),
+                        ChannelInfo.Subtitle.TYPE_ATV_TELETEXT,
+                        0,
+                        0,
+                        1,
+                        0,
+                        "");
+                mSubtitleView.setActive(true);
+                mSubtitleView.startSub();
+                mSubtitleView.setTTSwitch(false);
+                String subid = generateSubtitleIdString(pal_teletext_subtitle);
+                Log.e(TAG, "teletext_switch " + teletext_switch + " id: " + subid);
+                notifyTrackSelected(TvTrackInfo.TYPE_SUBTITLE, subid);
+            } else {
+                Toast.makeText(mContext, "No teletext, no channel info", Toast.LENGTH_SHORT).show();
+                //TODO: Remove subtitle notification.
+            }
+        }
 
         private void stop_teletext()
         {
+            Log.e(TAG, "stop_teletext");
             teletext_switch = false;
             reset_atv_status();
             mSubtitleView.stop();
+            mSubtitleView.setTTSwitch(false);
             notifyTrackSelected(TvTrackInfo.TYPE_SUBTITLE, null);
+            enableSubtitleShow(false);
         }
 
         @Override
@@ -2176,6 +2178,7 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
             } else {
                 mIsChannelScrambled = false;
             }
+
         }
 
         @Override
@@ -2215,8 +2218,9 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
                 }
 
                 //Pal teletext request that unplug then plug in, close tt
-                if (pal_teletext_subtitle != null && pal_teletext) {
-                    stop_teletext();
+                if (pal_teletext) {
+                    teletext_switch = false;
+                    mSubtitleView.setTTSwitch(teletext_switch);
                 }
             }
         }
@@ -3251,6 +3255,9 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
 
                 if (stopRetry && mHandler != null)
                     mHandler.removeMessages(MSG_CC_TRY_PREFERRED);
+
+                if (pal_teletext == true)
+                    stop_teletext();
 
                 mCurrentSubtitle = null;
 

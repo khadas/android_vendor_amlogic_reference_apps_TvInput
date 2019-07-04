@@ -152,6 +152,8 @@ public class DTVSubtitleView extends View {
     public static final int TT_PAGE_TYPE = 5;
     public static final int TT_NO_SIGAL = 6;
 
+    private static final int TT_DETECT_TIMEOUT = 5 * 1000;
+
     private static int init_count = 0;
     private static CaptioningManager captioningManager = null;
     private static CcImplement.CaptionWindow cw = null;
@@ -170,6 +172,7 @@ public class DTVSubtitleView extends View {
     private static boolean hide_reveal_state = false;
     private static boolean draw_no_subpg_notification = false;
     private static int tt_notify_status = TT_NOTIFY_CANCEL;
+    private static int notify_pgno = 0;
 
     private static int tt_page_type;
     public static String TT_REGION_DB = "teletext_region_id";
@@ -367,7 +370,7 @@ public class DTVSubtitleView extends View {
     private static byte[] tt_subs;
 
     private void tt_update(int page_type, int pgno, byte subs[], int red, int green, int yellow, int blue, int curr_subpg) {
-        Log.e(TAG, "page_type " + page_type + " subno " + subs.length + " red " + red + " green " + green + " yellow " + yellow + " blue " + blue +
+        Log.i(TAG, "page_type " + page_type + " subno " + subs.length + " red " + red + " green " + green + " yellow " + yellow + " blue " + blue +
                 " currsub " + curr_subpg);
         tt_subs = subs;
         tt_red_value = red;
@@ -383,7 +386,6 @@ public class DTVSubtitleView extends View {
             return;
         handler.obtainMessage(TT_PAGE_TYPE, page_type).sendToTarget();
 
-        tt_notify_status = TT_NOTIFY_CANCEL;
         postInvalidate();
     }
 
@@ -392,7 +394,7 @@ public class DTVSubtitleView extends View {
     }
 
     private void stopDecoder() {
-        Log.e(TAG, "subtitleView stopSub cc:" + cc_is_started + " playmode " + play_mode + " sub_mode " + sub_params.mode);
+        Log.d(TAG, "subtitleView stopSub cc:" + cc_is_started + " playmode " + play_mode + " sub_mode " + sub_params.mode);
         synchronized(lock) {
             if (!cc_is_started)
                 return;
@@ -703,8 +705,9 @@ public class DTVSubtitleView extends View {
                 case MODE_ATV_TT:
                     Log.e(TAG, "native_sub_start_atv_tt");
                     tt_notify_status = TT_NOTIFY_SEARCHING;
+                    notify_pgno = 0;
                     postInvalidate();
-                    handler.sendEmptyMessageDelayed(TT_NO_SIGAL, 10*1000);
+                    handler.sendEmptyMessageDelayed(TT_NO_SIGAL, TT_DETECT_TIMEOUT);
                     ret = native_sub_start_atv_tt(
                             sub_params.atv_tt.region_id,
                             sub_params.atv_tt.page_no,
@@ -722,7 +725,7 @@ public class DTVSubtitleView extends View {
                         is_subtitle = true;
                     tt_notify_status = TT_NOTIFY_SEARCHING;
                     postInvalidate();
-                    handler.sendEmptyMessageDelayed(TT_NO_SIGAL, 10*1000);
+                    handler.sendEmptyMessageDelayed(TT_NO_SIGAL, TT_DETECT_TIMEOUT);
                     ret = native_sub_start_dtv_tt(sub_params.dtv_tt.dmx_id,
                             sub_params.dtv_tt.region_id,
                             sub_params.dtv_tt.pid,
@@ -1049,10 +1052,19 @@ public class DTVSubtitleView extends View {
     {
     }
 
-    public void tt_data_notify(boolean have_data)
+    public void tt_data_notify(int pgno)
     {
-        teletext_have_data = have_data;
+//        Log.i(TAG, "tt_data_notify pgno: " + pgno);
+        notify_pgno = pgno;
+        teletext_have_data = true;
+        if (tt_notify_status == TT_NOTIFY_SEARCHING) {
+            postInvalidate();
+        }
         handler.removeMessages(TT_NO_SIGAL);
+        if (pgno == 100) {
+            tt_notify_status = TT_NOTIFY_CANCEL;
+            postInvalidate();
+        }
     }
 
     public boolean tt_have_data()
@@ -1335,25 +1347,35 @@ public class DTVSubtitleView extends View {
                 break;
             case MODE_DTV_TT:
             case MODE_ATV_TT:
+                if (!tt_show_switch)
+                    return;
+
                 if (tt_notify_status == TT_NOTIFY_NOSIG) {
                     canvas.drawColor(Color.BLACK);
                     mPaint.setColor(Color.RED);
                     mPaint.setTextSize(60);
                     String notify_str = "No teletext";
                     float strlen = mPaint.measureText(notify_str);
-                    canvas.drawText(notify_str, getWidth()/2 - strlen/2, getHeight()/2, mPaint);
+                    canvas.drawText(notify_str, getWidth() / 2 - strlen / 2, getHeight() / 2, mPaint);
                     return;
                 } else if (tt_notify_status == TT_NOTIFY_SEARCHING) {
                     canvas.drawColor(Color.BLACK);
                     mPaint.setColor(Color.RED);
                     mPaint.setTextSize(60);
-                    String notify_str = "Searching teletext";
+                    String notify_str = "Searching teletext: ";
+                    String pg_status = Integer.toString(notify_pgno);
+                    if (notify_pgno == 0)
+                        pg_status = "no page";
+                    else
+                        pg_status = Integer.toString(notify_pgno);
                     float strlen = mPaint.measureText(notify_str);
-                    canvas.drawText(notify_str, getWidth()/2 - strlen/2, getHeight()/2, mPaint);
+                    canvas.drawText(notify_str + pg_status,  getWidth() / 2 - strlen / 2, getHeight() / 2, mPaint);
                     return;
                 }
+
                 if (!teletext_have_data)
                     return;
+
                 int src_tt_bottom_ori = 10*24;
                 int src_tt_bottom;
                 int src_tt_top;

@@ -685,7 +685,7 @@ error:
         }
     }
 
-    static void notify_contain_tt_data(AM_TT2_Handle_t handle, int have_data)
+    static void notify_contain_tt_data(AM_TT2_Handle_t handle, int pgno)
     {
         JNIEnv *env;
         int ret;
@@ -706,7 +706,7 @@ error:
             }
             attached = 1;
         }
-        env->CallVoidMethod(obj, gTeletextNotifyID, have_data);
+        env->CallVoidMethod(obj, gTeletextNotifyID, pgno);
         if (attached) {
             gJavaVM->DetachCurrentThread();
         }
@@ -1615,7 +1615,7 @@ error:
             gBitmapID = env->GetStaticFieldID(clazz, "bitmap", "Landroid/graphics/Bitmap;");
             gUpdateDataID = env->GetMethodID(clazz, "updateData", "(Ljava/lang/String;)V");
             gReadSysfsID = env->GetMethodID(clazz, "readSysFs", "(Ljava/lang/String;)Ljava/lang/String;");
-            gTeletextNotifyID = env->GetMethodID(clazz, "tt_data_notify", "(Z)V");
+            gTeletextNotifyID = env->GetMethodID(clazz, "tt_data_notify", "(I)V");
             gWriteSysfsID = env->GetMethodID(clazz, "writeSysFs", "(Ljava/lang/String;Ljava/lang/String;)V");
 
             LOGI("load jnitvsubtitle ok");

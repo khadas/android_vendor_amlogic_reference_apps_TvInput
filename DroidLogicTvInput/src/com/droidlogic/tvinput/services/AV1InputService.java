@@ -75,15 +75,13 @@ public class AV1InputService extends DroidLogicTvInputService {
     private TvDataBaseManager mTvDataBaseManager;
     private TvControlDataManager mTvControlDataManager = null;
     protected List<ChannelInfo.Subtitle> mCurrentSubtitles;
+    ChannelInfo.Subtitle pal_teletext_subtitle = null;
     protected final Object mLock = new Object();
     protected static int signalFmt = 0;
 
     protected static final int SIGNAL_PAL_FMT = 0;
     protected static final int SIGNAL_NTSC_FMT = 1;
     protected static final int SIGNAL_NOT_KNOWN = 2;
-    private static final int MSG_SIGNAL_STABLE = 0;
-    private static final int MSG_TELETEXT_STATUS = 1;
-    private static final int MSG_NO_TELETEXT_FOUND = 2;
 
     protected static final int DTV_CC_STYLE_WHITE_ON_BLACK = 0;
     protected static final int DTV_CC_STYLE_BLACK_ON_WHITE = 1;
@@ -407,6 +405,10 @@ public class AV1InputService extends DroidLogicTvInputService {
             if (mSubtitleView != null) {
                 mSubtitleView.setVisible(is_subtitle_enable);
             }
+
+            if (signalFmt == SIGNAL_PAL_FMT) {
+                start_teletext();
+            }
         }
 
         @Override
@@ -417,10 +419,7 @@ public class AV1InputService extends DroidLogicTvInputService {
                 mSubtitleView.setVisible(false);
             }
             if (signalFmt == SIGNAL_PAL_FMT) {
-                notifyTrackSelected(TvTrackInfo.TYPE_SUBTITLE, null);
-                mSubtitleView.stop();
-                teletext_switch = false;
-                mSubtitleView.setTTSwitch(false);
+                stop_teletext();
             }
         }
 
@@ -596,9 +595,6 @@ public class AV1InputService extends DroidLogicTvInputService {
 
             index = subtitle.id;
             Log.d(TAG, "onSelectTrack: [type:" + type + "] [id:" + trackId + "] " + "index" + index);
-//            startSubtitleAnalog(subtitle.mPid);
-//            mCurrentChannel.setSubtitleTrackIndex(index);
-//            mTvDataBaseManager.updateChannelInfo(mCurrentChannel);
             return true;
         }
 
@@ -613,16 +609,6 @@ public class AV1InputService extends DroidLogicTvInputService {
                 if (mHandler != null)
                     mHandler.sendMessage(mHandler.obtainMessage(MSG_PARENTAL_CONTROL_AV, this));
            }
-//
-//           int mask = DroidLogicTvUtils.getObjectValueInt(json, "cc", "data", -1);
-//           if (mask != -1 ) {
-//               sendCCDataInfoByTif(mask);
-//               if (mHandler != null) {
-//                   Message msg = mHandler.obtainMessage(MSG_CC_DATA, this);
-//                   msg.arg1 = mask;
-//                   msg.sendToTarget();
-//               }
-//           }
         }
 
         public String onReadSysFs(String node) {
@@ -749,8 +735,6 @@ public class AV1InputService extends DroidLogicTvInputService {
 
             mChannelBlocked = (needChannelBlock ? 1 : 0);
             if (needChannelBlock) {
-                // stopSubtitleBlock();
-                //releasePlayerBlock();
                 if (contentRating != null) {
                     Log.d(TAG, "notifyBlock:"+contentRating.flattenToString());
                     notifyContentBlocked(contentRating);
@@ -960,6 +944,28 @@ public class AV1InputService extends DroidLogicTvInputService {
             return true;
         }
 
+        private void start_teletext()
+        {
+            if (pal_teletext_subtitle != null) {
+//                            Toast.makeText(mContext, "Searching teletext", Toast.LENGTH_SHORT).show();
+                setSubtitleParam(ChannelInfo.Subtitle.TYPE_ATV_TELETEXT,
+                        0,
+                        0,
+                        1,
+                        0,
+                        "");
+                mSubtitleView.setActive(true);
+                mSubtitleView.startSub();
+                mSubtitleView.setTTSwitch(false);
+                String subid = generateSubtitleIdString(pal_teletext_subtitle);
+                Log.e(TAG, "teletext_switch " + teletext_switch + " id: " + subid);
+                notifyTrackSelected(TvTrackInfo.TYPE_SUBTITLE, subid);
+            } else {
+                Toast.makeText(mContext, "No teletext, no channel info", Toast.LENGTH_SHORT).show();
+                //TODO: Remove subtitle notification.
+            }
+        }
+
         protected void startSubtitle() {
             Log.d(TAG, "start Subtitle:");
             startSubtitleAutoAnalog();
@@ -967,13 +973,21 @@ public class AV1InputService extends DroidLogicTvInputService {
 
         public void reset_atv_status()
         {
-            tt_display_mode = DTVSubtitleView.TT_DISP_NORMAL;
+            tt_subpg_walk_mode = false;
             if (tt_display_mode == DTVSubtitleView.TT_DISP_MIX_RIGHT) {
                 Rect rect = new Rect();
                 mSubtitleView.getGlobalVisibleRect(rect);
                 layoutSurface(rect.left, rect.top, rect.right, rect.bottom);
             }
+            mSubtitleView.setTTMixMode(tt_display_mode);
             mSubtitleView.reset_atv_status();
+            mSubtitleView.setTTSubpgLock(DTVSubtitleView.TT_LOCK_MODE_NORMAL);
+            mSubtitleView.setTTSubpgWalk(false);
+            if (tt_display_mode != DTVSubtitleView.TT_DISP_NORMAL) {
+                mSubtitleView.setTTDisplayMode(tt_display_mode);
+                tt_display_mode = DTVSubtitleView.TT_DISP_NORMAL;
+            }
+            Log.e(TAG, "reset_atv_status done");
         }
 
         boolean teletext_switch = false;
@@ -1085,7 +1099,7 @@ public class AV1InputService extends DroidLogicTvInputService {
                     Rect rect = new Rect();
                     mSubtitleView.getGlobalVisibleRect(rect);
                     if (tt_display_mode == DTVSubtitleView.TT_DISP_MIX_RIGHT) {
-                        layoutSurface(rect.left, rect.top, (rect.left + rect.right) / 2,  (rect.top + rect.bottom) /2);
+                        layoutSurface(rect.left, rect.top, (rect.left + rect.right) / 2,  rect.top + rect.bottom);
                     } else {
                         layoutSurface(rect.left, rect.top, rect.right,  rect.bottom);
                     }
@@ -1138,24 +1152,7 @@ public class AV1InputService extends DroidLogicTvInputService {
                     break;
                 case KEY_TELETEXT_SWITCH: //Zoom out
                     teletext_switch = !teletext_switch;
-                    Log.e(TAG, "KEY_TELETEXT_SWITCH pressed teletext_switch " + teletext_switch);
-                    if (teletext_switch) {
-//                        Toast.makeText(mContext, "Searching teletext", Toast.LENGTH_SHORT).show();
-                        setSubtitleParam(
-                                ChannelInfo.Subtitle.TYPE_ATV_TELETEXT,
-                                0,
-                                0,
-                                1,
-                                0,
-                                "");
-                        mSubtitleView.setActive(true);
-                        mSubtitleView.startSub();
-                        String subid = generateSubtitleIdString(mCurrentSubtitles.get(0));
-                        Log.e(TAG, "teletext_switch " + teletext_switch + " id: " + subid);
-                        notifyTrackSelected(TvTrackInfo.TYPE_SUBTITLE, subid);
-                    } else {
-                        stop_teletext();
-                    }
+                    enableSubtitleShow(teletext_switch);
                     mSubtitleView.setTTSwitch(teletext_switch);
                     break;
                 case KEY_REVEAL: //FAV
@@ -1214,6 +1211,7 @@ public class AV1InputService extends DroidLogicTvInputService {
 
         private void stop_teletext()
         {
+            enableSubtitleShow(false);
             teletext_switch = false;
             reset_atv_status();
             mSubtitleView.stop();
@@ -1222,7 +1220,7 @@ public class AV1InputService extends DroidLogicTvInputService {
 
         protected void prepareTeletext(List<ChannelInfo.Subtitle> subtitles)
         {
-            ChannelInfo.Subtitle s
+            pal_teletext_subtitle
                     = new ChannelInfo.Subtitle(ChannelInfo.Subtitle.TYPE_ATV_TELETEXT,
                     1,
                     ChannelInfo.Subtitle.TYPE_ATV_TELETEXT,
@@ -1230,14 +1228,14 @@ public class AV1InputService extends DroidLogicTvInputService {
                     0,
                     "TELETEXT",
                     0);
-            subtitles.add(s);
+            subtitles.add(pal_teletext_subtitle);
         }
 
 
         protected void startSubtitleAutoAnalog() {
             Log.d(TAG, "start Subtitle AutoAnalog");
 
-            if (mSubtitleView == null || mCurrentChannel == null) {
+            if (mSubtitleView == null) {
                 Log.d(TAG, "subtitle view current channel is null");
                 return;
             }
@@ -1257,7 +1255,7 @@ public class AV1InputService extends DroidLogicTvInputService {
                 enableSubtitleShow(true);
             } else if (signalFmt == SIGNAL_PAL_FMT) {
                 Log.d(TAG, "SIGNAL_PAL_FMT startSubtitleAutoAnalog");
-                setSubtitleParam(ChannelInfo.Subtitle.TYPE_ATV_TELETEXT, 0, 0, 0, 0, "");
+                start_teletext();
             }
 
         }
@@ -1398,32 +1396,6 @@ public class AV1InputService extends DroidLogicTvInputService {
                 return 2.0f;//AM_CC_FONTSIZE_DEFAULT
             }
         }
-
-        /*private int getRawUserStyle(){
-            try {
-                Class clazz = ClassLoader.getSystemClassLoader().loadClass("android.view.accessibility.CaptioningManager");
-                Method method = clazz.getMethod("getUserStyle");
-                Object objInt = method.invoke(clazz);
-                return Integer.parseInt(String.valueOf(objInt));
-            } catch (Exception e) {
-                    // TODO Auto-generated catch block
-                e.printStackTrace();
-            }
-            return -1;
-        }
-
-        private String getRawTypeface(CaptioningManager.CaptionStyle captionstyle) {
-            try {
-                Class<?> cls = Class.forName("android.view.accessibility.CaptioningManager.CaptionStyle");
-                Object obj = cls.newInstance();
-                obj = captionstyle;
-                Field rawTypeface = cls.getDeclaredField("mRawTypeface");
-                return rawTypeface.get(obj).toString();
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-            return null;
-        }*/
 
         protected String generateSubtitleIdString(ChannelInfo.Subtitle subtitle) {
             if (subtitle == null)
