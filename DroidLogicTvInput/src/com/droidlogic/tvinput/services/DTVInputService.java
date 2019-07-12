@@ -44,6 +44,7 @@ import android.database.ContentObserver;
 //import android.database.IContentObserver;
 import android.provider.Settings;
 import android.graphics.Color;
+import android.graphics.Rect;
 import android.widget.Toast;
 import android.annotation.NonNull;
 import java.lang.reflect.Method;
@@ -1756,7 +1757,11 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
             mHandler.removeMessages(MSG_NO_TELETEXT_FOUND);
             tt_display_mode = DTVSubtitleView.TT_DISP_NORMAL;
             tt_subpg_walk_mode = false;
-            layoutSurface(0,0,1920,1080);
+            if (tt_display_mode == DTVSubtitleView.TT_DISP_MIX_RIGHT) {
+                Rect rect = new Rect();
+                mSubtitleView.getGlobalVisibleRect(rect);
+                layoutSurface(rect.left, rect.top, rect.right, rect.bottom);
+            }
             mSubtitleView.setTTMixMode(tt_display_mode);
             mSubtitleView.reset_atv_status();
             mSubtitleView.setTTSubpgLock(DTVSubtitleView.TT_LOCK_MODE_NORMAL);
@@ -1845,10 +1850,13 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
                             break;
                     };
                     mSubtitleView.setTTMixMode(tt_display_mode);
-                    if (tt_display_mode == DTVSubtitleView.TT_DISP_MIX_RIGHT)
-                        layoutSurface(0,0,1920/2,1080);
-                    else
-                        layoutSurface(0,0,1920,1080);
+                    Rect rect = new Rect();
+                    mSubtitleView.getGlobalVisibleRect(rect);
+                    if (tt_display_mode == DTVSubtitleView.TT_DISP_MIX_RIGHT) {
+                        layoutSurface(rect.left, rect.top, (rect.left + rect.right) / 2,  (rect.top + rect.bottom) /2);
+                    } else {
+                        layoutSurface(rect.left, rect.top, rect.right,  rect.bottom);
+                    }
                     break;
                 case KEY_NEXT_PAGE: //Next program
                     reset_atv_status();

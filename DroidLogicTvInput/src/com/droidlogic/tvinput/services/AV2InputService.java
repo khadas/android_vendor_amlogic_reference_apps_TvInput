@@ -27,6 +27,7 @@ import java.lang.reflect.Field;
 
 import android.content.Context;
 import android.content.pm.ResolveInfo;
+import android.graphics.Rect;
 import android.media.tv.TvInputHardwareInfo;
 import android.media.tv.TvInputInfo;
 import android.media.tv.TvStreamConfig;
@@ -967,7 +968,11 @@ public class AV2InputService extends DroidLogicTvInputService {
         public void reset_atv_status()
         {
             tt_display_mode = DTVSubtitleView.TT_DISP_NORMAL;
-            layoutSurface(0,0,1920,1080);
+            if (tt_display_mode == DTVSubtitleView.TT_DISP_MIX_RIGHT) {
+                Rect rect = new Rect();
+                mSubtitleView.getGlobalVisibleRect(rect);
+                layoutSurface(rect.left, rect.top, rect.right, rect.bottom);
+            }
             mSubtitleView.reset_atv_status();
         }
 
@@ -1077,10 +1082,13 @@ public class AV2InputService extends DroidLogicTvInputService {
                             break;
                     };
                     mSubtitleView.setTTMixMode(tt_display_mode);
-                    if (tt_display_mode == DTVSubtitleView.TT_DISP_MIX_RIGHT)
-                        layoutSurface(0,0,1920/2,1080);
-                    else
-                        layoutSurface(0,0,1920,1080);
+                    Rect rect = new Rect();
+                    mSubtitleView.getGlobalVisibleRect(rect);
+                    if (tt_display_mode == DTVSubtitleView.TT_DISP_MIX_RIGHT) {
+                        layoutSurface(rect.left, rect.top, (rect.left + rect.right) / 2,  (rect.top + rect.bottom) /2);
+                    } else {
+                        layoutSurface(rect.left, rect.top, rect.right,  rect.bottom);
+                    }
                     break;
                 case KEY_NEXT_PAGE: //Next program
                     reset_atv_status();
