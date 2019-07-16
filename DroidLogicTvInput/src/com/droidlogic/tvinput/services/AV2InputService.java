@@ -947,7 +947,6 @@ public class AV2InputService extends DroidLogicTvInputService {
         private void start_teletext()
         {
             if (pal_teletext_subtitle != null) {
-//                            Toast.makeText(mContext, "Searching teletext", Toast.LENGTH_SHORT).show();
                 setSubtitleParam(ChannelInfo.Subtitle.TYPE_ATV_TELETEXT,
                         0,
                         0,
@@ -957,9 +956,7 @@ public class AV2InputService extends DroidLogicTvInputService {
                 mSubtitleView.setActive(true);
                 mSubtitleView.startSub();
                 mSubtitleView.setTTSwitch(false);
-                String subid = generateSubtitleIdString(pal_teletext_subtitle);
-                Log.e(TAG, "teletext_switch " + teletext_switch + " id: " + subid);
-                notifyTrackSelected(TvTrackInfo.TYPE_SUBTITLE, subid);
+                Log.e(TAG, "teletext_switch " + teletext_switch + " id");
             } else {
                 Toast.makeText(mContext, "No teletext, no channel info", Toast.LENGTH_SHORT).show();
                 //TODO: Remove subtitle notification.
@@ -1154,6 +1151,10 @@ public class AV2InputService extends DroidLogicTvInputService {
                     teletext_switch = !teletext_switch;
                     enableSubtitleShow(teletext_switch);
                     mSubtitleView.setTTSwitch(teletext_switch);
+                    if (teletext_switch && mSubtitleView.tt_have_data()) {
+                        String subid = generateSubtitleIdString(pal_teletext_subtitle);
+                        notifyTrackSelected(TvTrackInfo.TYPE_SUBTITLE, subid);
+                    }
                     break;
                 case KEY_REVEAL: //FAV
                     mSubtitleView.setTTRevealMode();
