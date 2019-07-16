@@ -690,7 +690,6 @@ public class DTVSubtitleView extends View {
 
             if (sub_params.mode == MODE_NONE)
                 return;
-            reset_bitmap_to_black();
             int ret = 0;
             switch (sub_params.mode) {
                 case MODE_DVB_SUB:
@@ -703,6 +702,7 @@ public class DTVSubtitleView extends View {
                     }
                     break;
                 case MODE_ATV_TT:
+                    reset_bitmap_to_black();
                     Log.e(TAG, "native_sub_start_atv_tt");
                     tt_notify_status = TT_NOTIFY_SEARCHING;
                     notify_pgno = 0;
