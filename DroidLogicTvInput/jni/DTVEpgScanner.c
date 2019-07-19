@@ -100,6 +100,7 @@ typedef struct {
     AM_SI_TeletextInfo_t mTeletextInfo;
     AM_SI_CaptionInfo_t mCcapInfo;
     AM_SI_IsdbsubtitleInfo_t mIsdbInfo;
+    AM_SI_Scte27SubtitleInfo_t mScte27Info;
 #endif
     int mPcrPID;
     int mSdtVersion;
@@ -375,6 +376,10 @@ static void format_audio_strings(AM_SI_AudioInfo_t *ai, char *pids, char *fmts, 
         gen_type_n_string(array,lang,"%s",n,(strings)[2],n_s); \
         gen_type_n_string(array,audio_exten,"%d",n,(strings)[3],n_s); \
 }while(0)
+#define gen_scte27_1strings(array, n, strings, n_s) do { \
+        gen_type_n_string(array,pid,"%d",n,(strings)[0],n_s); \
+}while(0)
+
 #define gen_isdb_3strings(array, n, strings, n_s) do { \
         gen_type_n_string(array,pid,"%d",n,(strings)[0],n_s); \
         gen_type_n_string(array,type,"%d",n,(strings)[1],n_s); \
@@ -529,6 +534,23 @@ static int check_pmt_update(EPGChannelData *c1, EPGChannelData *c2)
             }
         }
     }
+    {
+            if (c1->mScte27Info.subtitle_count != c2->mScte27Info.subtitle_count)
+            ret |= 64;
+    }
+    {//check subtitle
+            for (i=0; i<c1->mScte27Info.subtitle_count; i++) {
+            for (j=0; j<c2->mScte27Info.subtitle_count; j++) {
+                if (c1->mScte27Info.subtitles[i].pid == c2->mScte27Info.subtitles[j].pid)
+                    break;
+            }
+            if (j >= c2->mScte27Info.subtitle_count) {
+                //notify
+                ret |= 64;
+                break;
+            }
+        }
+    }
 
     {
         if (ret & 1) {
@@ -586,6 +608,16 @@ static int check_pmt_update(EPGChannelData *c1, EPGChannelData *c2)
                 str_prev_tinfo[0], str_prev_tinfo[1], str_prev_tinfo[2]);
             log_info("changed to ->\npid [%s]\ntype [%s]\nlang [%s]",
                 str_cur_tinfo[0], str_cur_tinfo[1], str_cur_tinfo[2]);
+        }
+        if (ret & 64) {
+            char str_prev_tinfo[1][256], str_cur_tinfo[1][256];
+            gen_scte27_1strings(c1->mScte27Info.subtitles, c1->mScte27Info.subtitle_count, str_prev_tinfo, 256);
+            gen_scte27_1strings(c2->mScte27Info.subtitles, c2->mScte27Info.subtitle_count, str_cur_tinfo, 256);
+            log_info(">>> Scte27 changed pid");
+            log_info("pid [%s]\n",
+                str_prev_tinfo[0]);
+            log_info("changed to ->\npid [%s]",
+                str_cur_tinfo[0]);
         }
     }
     return ret;
@@ -736,6 +768,7 @@ static void PMT_Update(AM_EPG_Handle_t handle, dvbpsi_pmt_t *pmts)
             AM_SI_ExtractDVBTeletextFromES(es, &ch.mTeletextInfo);
             AM_SI_ExtractATSCCaptionFromES(es, &ch.mCcapInfo);
             AM_SI_ExtractDVBIsdbsubtitleFromES(es, &ch.mIsdbInfo);
+            AM_SI_ExtractScte27SubtitleFromES(es, &ch.mScte27Info);
             AM_SI_LIST_END()
     AM_SI_LIST_END()
     if (pch_cur->mServiceId == pmts->i_program_number
@@ -800,6 +833,22 @@ static void PMT_Update(AM_EPG_Handle_t handle, dvbpsi_pmt_t *pmts)
                 sub.subs[i].id2 = 0;
                 strncpy(sub.subs[i].lang, ch.mIsdbInfo.isdbs[i].lang, 10);
                 nsub++;
+            }
+            sub.sub_count = nsub;
+        }
+        {
+            int nsub = sub.sub_count;
+            int i;
+            for (i=0; i<ch.mScte27Info.subtitle_count; i++)
+            {
+                sub.subs[i].type = 8;
+                sub.subs[i].stype = 8;
+                sub.subs[i].pid = ch.mScte27Info.subtitles[i].pid;
+                sub.subs[i].id1 = 0;
+                sub.subs[i].id2 = 0;
+                strncpy(sub.subs[i].lang, "SCTE", 10);
+                nsub++;
+                log_error("scte27 add to sub %d", i);
             }
             sub.sub_count = nsub;
         }
@@ -1447,6 +1496,11 @@ static int get_channel_data(JNIEnv* env, jobject obj, jobject channel, EPGChanne
                 (*env)->ReleaseStringUTFChars(env, jstr, str);
                 (*env)->DeleteLocalRef(env, jstr);
                 pch->mIsdbInfo.isdb_count++;
+            }
+            else if (pstypes[i] == 8) {//scte27
+                int ii = pch->mScte27Info.subtitle_count;
+                pch->mScte27Info.subtitles[ii].pid = psids[i];
+                pch->mScte27Info.subtitle_count++;
             }
         }
         (*env)->ReleaseIntArrayElements(env, sids,    psids,    JNI_ABORT);

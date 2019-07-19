@@ -72,6 +72,7 @@ public class DTVSubtitleView extends View {
     private static final int MODE_ATV_CC = 5;
     private static final int MODE_AV_CC = 6;
     private static final int MODE_ISDB_CC = 7;
+    private static final int MODE_SCTE27_SUB = 8;
 
     private static final int EDGE_NONE = 0;
     private static final int EDGE_OUTLINE = 1;
@@ -216,6 +217,8 @@ public class DTVSubtitleView extends View {
     private native int native_sub_set_active(boolean active);
     private native int native_sub_start_isdbt(int dmx_id, int pid, int caption_id);
     private native int native_sub_stop_isdbt();
+    private native int native_sub_start_scte27(int dmx_id, int pid);
+    private native int native_sub_stop_scte27();
 
     static {
 //        System.loadLibrary("am_adp");
@@ -268,6 +271,16 @@ public class DTVSubtitleView extends View {
             this.region_id   = region_id;
             this.type = type;
             this.stype = stype;
+        }
+    }
+
+    static public class Scte27Params {
+        private int dmx_id;
+        private int pid;
+
+        public Scte27Params(int dmx_id, int pid) {
+            this.dmx_id      = dmx_id;
+            this.pid         = pid;
         }
     }
 
@@ -333,6 +346,7 @@ public class DTVSubtitleView extends View {
         ATVCCParams  atv_cc;
         AVCCParams  av_cc;
         ISDBParams isdb_cc;
+        Scte27Params scte27_sub;
 
         private SubParams() {
             mode = MODE_NONE;
@@ -439,6 +453,9 @@ public class DTVSubtitleView extends View {
                             break;
                         case MODE_ISDB_CC:
                             native_sub_stop_isdbt();
+                            break;
+                        case MODE_SCTE27_SUB:
+                            native_sub_stop_scte27();
                             break;
                         default:
                             break;
@@ -580,6 +597,16 @@ public class DTVSubtitleView extends View {
             sub_params.atv_tt = params;
 
             if (play_mode == PLAY_TT)
+                startSub();
+        }
+    }
+
+    public void setSubParams(Scte27Params params) {
+        synchronized(lock) {
+            sub_params.mode = MODE_SCTE27_SUB;
+            sub_params.scte27_sub = params;
+
+            if (play_mode == PLAY_SUB)
                 startSub();
         }
     }
@@ -787,6 +814,12 @@ public class DTVSubtitleView extends View {
                             sub_params.isdb_cc.dmx_id,
                             sub_params.isdb_cc.pid,
                             sub_params.isdb_cc.caption_id);
+                    if (ret >= 0) {
+                        play_mode = PLAY_SUB;
+                    }
+                    break;
+                case MODE_SCTE27_SUB:
+                    native_sub_start_scte27(sub_params.scte27_sub.dmx_id, sub_params.scte27_sub.pid);
                     if (ret >= 0) {
                         play_mode = PLAY_SUB;
                     }
@@ -1319,7 +1352,7 @@ public class DTVSubtitleView extends View {
             need_clear_canvas = false;
             return;
         }
-        Log.e(TAG, "onDraw active " + active + " visible " + visible + " pm " + play_mode + " tt " + tt_show_switch);
+//        Log.e(TAG, "onDraw active " + active + " visible " + visible + " pm " + play_mode);
         if (!active || !visible || (play_mode == PLAY_NONE)) {
             return;
         }
@@ -1472,6 +1505,17 @@ public class DTVSubtitleView extends View {
                     sr = new Rect(0, 0, BUFFER_W, BUFFER_H);
                     dr = new Rect(disp_left, disp_top, getWidth() - disp_right, getHeight() - disp_bottom);
                 }
+                native_sub_lock();
+                canvas.setDrawFilter(new PaintFlagsDrawFilter(0, Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG));
+                canvas.drawBitmap(bitmap, sr, dr, mPaint);
+                native_sub_unlock();
+                break;
+            case MODE_SCTE27_SUB:
+                int native_w = native_get_subtitle_picture_width();
+                int native_h = native_get_subtitle_picture_height();
+                int edge_l = (getWidth() - native_w * getHeight() / native_h) / 2;
+                sr = new Rect(0, 0, native_w, native_h);
+                dr = new Rect(edge_l, 0, getWidth(), getHeight());
                 native_sub_lock();
                 canvas.setDrawFilter(new PaintFlagsDrawFilter(0, Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG));
                 canvas.drawBitmap(bitmap, sr, dr, mPaint);

@@ -2133,6 +2133,7 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
                         mSystemControlManager.setProperty(DTV_SUBTITLE_CS_PREFER, String.valueOf(subtitle.mPid));
                         mSystemControlManager.setProperty(DTV_SUBTITLE_CC_PREFER, String.valueOf(-1));
                     } else {
+                        stopSubtitle();
                         startSubtitle(subtitle, mCurrentChannel.getVfmt());
                         mSystemControlManager.setProperty(DTV_SUBTITLE_TRACK_IDX, String.valueOf(subtitle.id));
                     }
@@ -2470,6 +2471,26 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
                 if (sub != null)
                     s = new ChannelInfo.Subtitle.Builder(sub).setId(s.id).setLang(s.mLang).setId1(sub.mId1).build();
                 subtitles.add(s);
+            }
+            //Add scte27 subtitle
+            if (channelSubs != null) {
+                iter = channelSubs.iterator();
+                while (iter.hasNext()) {
+                    ChannelInfo.Subtitle s = iter.next();
+                    Log.e(TAG, "channelSub " + s.mType);
+                    if (s.mType == ChannelInfo.Subtitle.TYPE_SCTE27_SUB)
+                        subtitles.add(s);
+                }
+            }
+
+            if (programSubs != null) {
+                iter = programSubs.iterator();
+                while (iter.hasNext()) {
+                    ChannelInfo.Subtitle s = iter.next();
+                    Log.e(TAG, "programSubs " + s.mType);
+                    if (s.mType == ChannelInfo.Subtitle.TYPE_SCTE27_SUB)
+                        subtitles.add(s);
+                }
             }
         }
 
@@ -3042,6 +3063,9 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
                 mSubtitleView.setSubParams(params);
             } else if (type == ChannelInfo.Subtitle.TYPE_ISDB_SUB) {
                 DTVSubtitleView.ISDBParams params = new DTVSubtitleView.ISDBParams(0, pid, 0);
+                mSubtitleView.setSubParams(params);
+            } else if (type == ChannelInfo.Subtitle.TYPE_SCTE27_SUB) {
+                DTVSubtitleView.Scte27Params params = new DTVSubtitleView.Scte27Params(0, pid);
                 mSubtitleView.setSubParams(params);
             }
         }

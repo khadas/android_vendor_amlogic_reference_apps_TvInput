@@ -17,7 +17,9 @@
 #include <am_pes.h>
 #include <am_misc.h>
 #include <am_cc.h>
+
 #include <am_isdb.h>
+#include <am_scte27.h>
 #endif
 #include <stdlib.h>
 #include <pthread.h>
@@ -42,6 +44,7 @@ typedef void* AM_SUB2_Handle_t;
         AM_TT2_Handle_t  tt_handle;
         AM_CC_Handle_t   cc_handle;
         AM_ISDB_Handle_t isdb_handle;
+        AM_SCTE27_Handle_t scte27_handle;
     #endif
         int              dmx_id;
         int              filter_handle;
@@ -186,6 +189,27 @@ typedef void* AM_SUB2_Handle_t;
     static void draw_end_cb(AM_TT2_Handle_t handle)
     {
         TVSubtitleData *sub = (TVSubtitleData *)AM_TT2_GetUserData(handle);
+
+        unlock_bitmap(NULL, sub->obj_bitmap);
+
+        pthread_mutex_unlock(&sub->lock);
+
+        sub_update(sub->obj);
+    }
+
+    static void scte27_draw_begin_cb(AM_TT2_Handle_t handle)
+    {
+        TVSubtitleData *sub = (TVSubtitleData *)AM_SCTE27_GetUserData(handle);
+
+        pthread_mutex_lock(&sub->lock);
+
+        sub->buffer = lock_bitmap(NULL, sub->obj_bitmap);
+        //clear_bitmap(sub);
+    }
+
+    static void scte27_draw_end_cb(AM_TT2_Handle_t handle)
+    {
+        TVSubtitleData *sub = (TVSubtitleData *)AM_SCTE27_GetUserData(handle);
 
         unlock_bitmap(NULL, sub->obj_bitmap);
 
@@ -712,7 +736,7 @@ error:
         }
     }
 
-    static void bitmap_init(jobject obj)
+    static void bitmap_init(jobject obj, int bitmap_w, int bitmap_h)
     {
         JNIEnv *env;
         int ret;
@@ -740,8 +764,8 @@ error:
             data->obj_bitmap = env->NewGlobalRef(bmp);
         if (!data->buffer)
             data->buffer = get_bitmap(env, data, &data->bmp_w, &data->bmp_h, &data->bmp_pitch);
-        data->sub_w = 720;
-        data->sub_h = 576;
+        data->sub_w = bitmap_w;
+        data->sub_h = bitmap_h;
         LOGI("init_bitmap w:%d h:%d p:%d", data->bmp_w, data->bmp_h, data->bmp_pitch);
         if (!data->buffer) {
             env->DeleteGlobalRef(data->obj_bitmap);
@@ -961,6 +985,138 @@ error:
         return 0;
     }
 
+    static void scte27_section_callback(int dev_no, int fid, const uint8_t *data, int len, void *user_data)
+    {
+        AM_SCTE27_Decode(user_data, data, len);
+    }
+
+    static jint sub_start_scte27(JNIEnv *env, jobject obj, jint dmx_id, jint pid)
+    {
+#ifdef SUPPORT_ADTV
+        int ret;
+        char read_buff[8];
+        int video_w, video_h;
+
+        TVSubtitleData *data = sub_get_data(env, obj);
+        AM_SCTE27_Para_t sctep;
+        struct dmx_sct_filter_params param;
+
+        setDvbDebugLogLevel();
+
+        AM_FileRead("/sys/class/video/frame_height", read_buff, sizeof(read_buff));
+        video_h = strtoul(read_buff, NULL, 10);
+
+        //Meet a case, 525x480. So we check height and get width
+        switch (video_h)
+        {
+            case 480:
+                video_w = 720;
+                break;
+            case 576:
+                video_w = 720;
+                break;
+            case 720:
+                video_w = 1280;
+                break;
+            case 1080:
+                video_w = 1920;
+                break;
+            default:
+                video_w = video_h /3 * 4;
+                break;
+        }
+
+        bitmap_init(obj, video_w, video_h);
+
+        data->dmx_id = dmx_id;
+
+        memset(&sctep, 0, sizeof(sctep));
+        sctep.width = video_w;
+        sctep.height = video_h;
+        sctep.draw_begin     = scte27_draw_begin_cb;
+        sctep.draw_end    = scte27_draw_end_cb;
+        sctep.bitmap    = &data->buffer;
+        sctep.pitch	  = data->bmp_pitch;
+        sctep.user_data = data;
+
+        ret = AM_SCTE27_Create(&data->scte27_handle, &sctep);
+        if (ret != AM_SUCCESS)
+            goto error;
+
+        ret = AM_SCTE27_Start(data->scte27_handle);
+        if (ret != AM_SUCCESS)
+            goto error;
+
+        AM_DMX_OpenPara_t op;
+        memset(&op, 0, sizeof(op));
+        ret = AM_DMX_Open(data->dmx_id, &op);
+        if (ret != AM_SUCCESS)
+            goto error;
+
+        ret = AM_DMX_AllocateFilter(data->dmx_id, &data->filter_handle);
+        if (ret != AM_SUCCESS)
+            goto error;
+
+        ret = AM_DMX_SetCallback(data->dmx_id, data->filter_handle, scte27_section_callback, (void*)data->scte27_handle);
+        if (ret != AM_SUCCESS)
+            goto error;
+
+        ret = AM_DMX_SetBufferSize(data->dmx_id, data->filter_handle, 1024*1024);
+        if (ret != AM_SUCCESS)
+            goto error;
+        memset(&param, 0, sizeof(param));
+
+        param.pid = pid;
+        param.filter.filter[0] = SCTE27_TID;
+        param.filter.mask[0] = 0xff;
+        param.flags = DMX_CHECK_CRC;
+
+        ret = AM_DMX_SetSecFilter(0, data->filter_handle, &param);
+        if (ret != AM_SUCCESS)
+            goto error;
+
+        ret = AM_DMX_StartFilter(0, data->filter_handle);
+        if (ret != AM_SUCCESS)
+            goto error;
+
+        return 0;
+error:
+        LOGE("scte start failed");
+        if (data->scte27_handle) {
+            AM_SCTE27_Destroy(data->scte27_handle);
+            data->scte27_handle = NULL;
+        }
+
+#endif
+        return 0;
+    }
+
+    static jint sub_stop_scte27(JNIEnv *env, jobject obj)
+    {
+#ifdef SUPPORT_ADTV
+        TVSubtitleData *data = sub_get_data(env, obj);
+
+        close_dmx(data);
+        AM_SCTE27_Destroy(data->sub_handle);
+
+        AM_DMX_StopFilter(data->dmx_id, data->filter_handle);
+        AM_DMX_FreeFilter(data->dmx_id, data->filter_handle);
+
+        pthread_mutex_lock(&data->lock);
+        data->buffer = lock_bitmap(env, data->obj_bitmap);
+        clear_bitmap(data);
+        unlock_bitmap(env, data->obj_bitmap);
+        if (data->obj)
+            sub_update(data->obj);
+        bitmap_deinit(obj);
+        pthread_mutex_unlock(&data->lock);
+
+        data->sub_handle = NULL;
+        data->pes_handle = NULL;
+#endif
+        return 0;
+    }
+
     static jint sub_start_dvb_sub(JNIEnv *env, jobject obj, jint dmx_id, jint pid, jint page_id, jint anc_page_id)
     {
     #ifdef SUPPORT_ADTV
@@ -971,7 +1127,7 @@ error:
 
         setDvbDebugLogLevel();
 
-        bitmap_init(obj);
+        bitmap_init(obj, 720, 576);
 
         memset(&pesp, 0, sizeof(pesp));
         pesp.packet    = pes_sub_cb;
@@ -1022,7 +1178,7 @@ error:
 
         setDvbDebugLogLevel();
 
-        bitmap_init(obj);
+        bitmap_init(obj, 720, 576);
 
         if (!data->tt_handle) {
             memset(&ttp, 0, sizeof(ttp));
@@ -1076,7 +1232,7 @@ error:
 
         setDvbDebugLogLevel();
 
-        bitmap_init(obj);
+        bitmap_init(obj, 720, 576);
 
         if (!data->tt_handle) {
             memset(&ttp, 0, sizeof(ttp));
@@ -1561,6 +1717,8 @@ error:
         {"native_sub_stop_dvb_sub", "()I", (void *)sub_stop_dvb_sub},
         {"native_sub_stop_dtv_tt", "()I", (void *)sub_stop_dtv_tt},
         {"native_sub_stop_atv_tt", "()I", (void *)sub_stop_atv_tt},
+        {"native_sub_start_scte27", "(II)I", (void *)sub_start_scte27},
+        {"native_sub_stop_scte27", "()I", (void *)sub_stop_scte27},
         {"native_sub_tt_goto", "(II)I", (void *)sub_tt_goto},
         {"native_sub_tt_color_link", "(I)I", (void *)sub_tt_color_link},
         {"native_sub_tt_home_link", "()I", (void *)sub_tt_home_link},
