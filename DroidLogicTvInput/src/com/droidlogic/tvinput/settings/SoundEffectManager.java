@@ -155,10 +155,10 @@ public class SoundEffectManager {
             Log.i(TAG, "current not support Virtual X, begin to create TruSurround effect");
             creatTruSurroundAudioEffects();
         }
-        creatBalanceAudioEffects();
         creatTrebleBassAudioEffects();
         creatSoundModeAudioEffects();
         creatVirtualSurroundAudioEffects();
+        creatBalanceAudioEffects();
     }
     private boolean creatVirtualXAudioEffects() {
         try {
