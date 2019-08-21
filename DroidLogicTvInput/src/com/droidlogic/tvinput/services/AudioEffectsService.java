@@ -203,8 +203,12 @@ public class AudioEffectsService extends PersistentService {
             mSoundEffectManager.setSoundModeByObserver(mode);
         }
 
-        public void setDifferentBandEffects(int bandnum, int value, boolean needsave) {
-            mSoundEffectManager.setDifferentBandEffects(bandnum, value, needsave);
+        public void setUserSoundModeParam(int bandNumber, int value) {
+            mSoundEffectManager.setUserSoundModeParam(bandNumber, value);
+        }
+
+        public int getUserSoundModeParam(int bandNumber) {
+            return mSoundEffectManager.getUserSoundModeParam(bandNumber);
         }
 
         public void setTreble (int step) {
@@ -267,12 +271,28 @@ public class AudioEffectsService extends PersistentService {
             mSoundEffectManager.setVirtualSurround (mode);
         }
 
-        public void setParameters(int order, int value) {
-            mSoundEffectManager.setParameters(order, value);
+        public void setDbxEnable(boolean enable) {
+            mSoundEffectManager.setDbxEnable(enable);
         }
 
-        public int getParameters(int order) {
-            return mSoundEffectManager.getParameters(order);
+        public boolean getDbxEnable() {
+            return mSoundEffectManager.getDbxEnable();
+        }
+
+        public void setDbxSoundMode(int dbxMode) {
+            mSoundEffectManager.setDbxSoundMode(dbxMode);
+        }
+
+        public int getDbxSoundMode() {
+            return mSoundEffectManager.getDbxSoundMode();
+        }
+
+        public void setDbxAdvancedModeParam(int paramType, int value) {
+            mSoundEffectManager.setDbxAdvancedModeParam(paramType, value);
+        }
+
+        public int getDbxAdvancedModeParam(int paramType) {
+            return mSoundEffectManager.getDbxAdvancedModeParam(paramType);
         }
 
         public void cleanupAudioEffects() {
@@ -304,11 +324,11 @@ public class AudioEffectsService extends PersistentService {
         intentFilter.addAction(RESET_ACTION);
         intentFilter.addAction(AVL_SOURCE_ACTION);
         context.registerReceiver(mSoundEffectSettingsReceiver, intentFilter);
-        context.getContentResolver().registerContentObserver(Settings.Global.getUriFor(AudioEffectManager.DB_ID_SOUND_EFFECT_SOUND_MODE), false,
+        context.getContentResolver().registerContentObserver(Settings.Global.getUriFor(SoundEffectManager.DB_ID_SOUND_EFFECT_SOUND_MODE), false,
                 mSoundEffectParametersObserver);
-        context.getContentResolver().registerContentObserver(Settings.Global.getUriFor(AudioEffectManager.DB_ID_SOUND_EFFECT_SOUND_MODE_EQ_VALUE), false,
+        context.getContentResolver().registerContentObserver(Settings.Global.getUriFor(SoundEffectManager.DB_ID_SOUND_EFFECT_SOUND_MODE_EQ_VALUE), false,
                 mSoundEffectParametersObserver);
-        context.getContentResolver().registerContentObserver(Settings.Global.getUriFor(AudioEffectManager.DB_ID_SOUND_EFFECT_SOUND_MODE_DAP_VALUE), false,
+        context.getContentResolver().registerContentObserver(Settings.Global.getUriFor(SoundEffectManager.DB_ID_SOUND_EFFECT_SOUND_MODE_DAP_VALUE), false,
                 mSoundEffectParametersObserver);
     }
 
@@ -321,9 +341,9 @@ public class AudioEffectsService extends PersistentService {
         @Override
         public void onChange(boolean selfChange, Uri uri) {
             if (uri != null) {
-                if (uri.equals(Settings.Global.getUriFor(AudioEffectManager.DB_ID_SOUND_EFFECT_SOUND_MODE))
-                        || uri.equals(Settings.Global.getUriFor(AudioEffectManager.DB_ID_SOUND_EFFECT_SOUND_MODE_EQ_VALUE))
-                        || uri.equals(Settings.Global.getUriFor(AudioEffectManager.DB_ID_SOUND_EFFECT_SOUND_MODE_DAP_VALUE))) {
+                if (uri.equals(Settings.Global.getUriFor(SoundEffectManager.DB_ID_SOUND_EFFECT_SOUND_MODE))
+                        || uri.equals(Settings.Global.getUriFor(SoundEffectManager.DB_ID_SOUND_EFFECT_SOUND_MODE_EQ_VALUE))
+                        || uri.equals(Settings.Global.getUriFor(SoundEffectManager.DB_ID_SOUND_EFFECT_SOUND_MODE_DAP_VALUE))) {
                     int mode = Settings.Global.getInt(mContext.getContentResolver(), uri.getLastPathSegment(), MODE_STANDARD);
                     Log.d(TAG, "onChange setSoundMode " + uri.getLastPathSegment() + ":" + mode);
                     mSoundEffectManager.setSoundModeByObserver(mode);
