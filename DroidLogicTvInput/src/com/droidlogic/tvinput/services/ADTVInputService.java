@@ -80,6 +80,8 @@ public class ADTVInputService extends DTVInputService {
     private IAudioService mAudioService;
     private AudioRoutesInfo mCurAudioRoutesInfo;
     private ChannelInfo.Audio mCurrentAudio;
+    private Runnable mHandleTvAudioRunnable;
+    private int mDelayTime;
     final IAudioRoutesObserver.Stub mAudioRoutesObserver = new IAudioRoutesObserver.Stub() {
         @Override
         public void dispatchAudioRoutesChanged(final AudioRoutesInfo newRoutes) {
@@ -88,7 +90,9 @@ public class ADTVInputService extends DTVInputService {
                     ((newRoutes.mainType != mCurAudioRoutesInfo.mainType) ||
                         (!newRoutes.toString().equals(mCurAudioRoutesInfo.toString())))) {
                 mCurAudioRoutesInfo = newRoutes;
-                mCurrentSession.mHandler.postDelayed(new Runnable() {
+                mCurrentSession.mHandler.removeCallbacks(mHandleTvAudioRunnable);
+                mDelayTime = newRoutes.mainType != AudioRoutesInfo.MAIN_HDMI ? 500 : 1500;
+                mHandleTvAudioRunnable = new Runnable() {
                     public void run() {
                         if (mCurrentSession.mCurrentChannel.isAnalogChannel()) {
                             mCurrentSession.openTvAudio(DroidLogicTvUtils.SOURCE_TYPE_ATV);
@@ -108,7 +112,13 @@ public class ADTVInputService extends DTVInputService {
                             AudioSystem.setParameters("cmd=1");
                         }
                     }
-                }, newRoutes.mainType != AudioRoutesInfo.MAIN_HDMI ? 500 : 1500);
+                };
+                try {
+                    mCurrentSession.mHandler.postDelayed(mHandleTvAudioRunnable,
+                            mAudioService.isBluetoothA2dpOn() ? mDelayTime + 2000 : mDelayTime);
+                } catch (RemoteException e) {
+                    e.printStackTrace();
+                }
             } else if (mCurrentSession == null) {
                 mCurAudioRoutesInfo = newRoutes;
             }
