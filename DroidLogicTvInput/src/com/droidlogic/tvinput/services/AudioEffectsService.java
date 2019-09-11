@@ -45,7 +45,6 @@ public class AudioEffectsService extends PersistentService {
 
     // Service actions
     public static final String ACTION_STARTUP = "com.droidlogic.tvinput.services.AudioEffectsService.STARTUP";
-    public static final int MODE_STANDARD = 0;
 
     public AudioEffectsService() {
         super("AudioEffectsService");
@@ -247,24 +246,24 @@ public class AudioEffectsService extends PersistentService {
             return mSoundEffectManager.getTruBassEnable();
         }
 
-        public void setAgsEnable (int mode) {
-            mSoundEffectManager.setAgsEnable (mode);
+        public void setAgcEnable (boolean enable) {
+            mSoundEffectManager.setAgcEnable(enable);
         }
 
-        public void setAgsMaxLevel (int step) {
-            mSoundEffectManager.setAgsMaxLevel (step);
+        public void setAgcMaxLevel (int step) {
+            mSoundEffectManager.setAgcMaxLevel(step);
         }
 
-        public void setAgsAttrackTime (int step) {
-            mSoundEffectManager.setAgsAttrackTime (step);
+        public void setAgcAttrackTime (int step) {
+            mSoundEffectManager.setAgcAttrackTime(step);
         }
 
-        public void setAgsReleaseTime (int step) {
-            mSoundEffectManager.setAgsReleaseTime (step);
+        public void setAgcReleaseTime (int step) {
+            mSoundEffectManager.setAgcReleaseTime(step);
         }
 
         public void setSourceIdForAvl (int step) {
-            mSoundEffectManager.setSourceIdForAvl (step);
+            mSoundEffectManager.setSourceIdForAvl(step);
         }
 
         public void setVirtualSurround (int mode) {
@@ -295,6 +294,24 @@ public class AudioEffectsService extends PersistentService {
             return mSoundEffectManager.getDbxAdvancedModeParam(paramType);
         }
 
+        public void setAudioOutputSpeakerDelay(int source, int delayMs) {
+            mSoundEffectManager.setAudioOutputSpeakerDelay(source, delayMs);
+        }
+        public int getAudioOutputSpeakerDelay(int source) {
+            return mSoundEffectManager.getAudioOutputSpeakerDelay(source);
+        }
+        public void setAudioOutputSpdifDelay(int source, int delayMs) {
+            mSoundEffectManager.setAudioOutputSpdifDelay(source, delayMs);
+        }
+        public int getAudioOutputSpdifDelay(int source) {
+            return mSoundEffectManager.getAudioOutputSpdifDelay(source);
+        }
+        public void setAudioPrescale(int source, int value) {
+            mSoundEffectManager.setAudioPrescale(source, value);
+        }
+        public int getAudioPrescale(int source) {
+            return mSoundEffectManager.getAudioPrescale(source);
+        }
         public void cleanupAudioEffects() {
             mSoundEffectManager.cleanupAudioEffects();
         }
@@ -344,7 +361,7 @@ public class AudioEffectsService extends PersistentService {
                 if (uri.equals(Settings.Global.getUriFor(SoundEffectManager.DB_ID_SOUND_EFFECT_SOUND_MODE))
                         || uri.equals(Settings.Global.getUriFor(SoundEffectManager.DB_ID_SOUND_EFFECT_SOUND_MODE_EQ_VALUE))
                         || uri.equals(Settings.Global.getUriFor(SoundEffectManager.DB_ID_SOUND_EFFECT_SOUND_MODE_DAP_VALUE))) {
-                    int mode = Settings.Global.getInt(mContext.getContentResolver(), uri.getLastPathSegment(), MODE_STANDARD);
+                    int mode = Settings.Global.getInt(mContext.getContentResolver(), uri.getLastPathSegment(), AudioEffectManager.EQ_SOUND_MODE_STANDARD);
                     Log.d(TAG, "onChange setSoundMode " + uri.getLastPathSegment() + ":" + mode);
                     mSoundEffectManager.setSoundModeByObserver(mode);
                 }

@@ -36,8 +36,11 @@ import android.media.AudioFormat;
 import android.media.AudioTrack;
 
 import java.util.*;
+import java.math.BigDecimal;
+import java.text.DecimalFormat;
 import com.droidlogic.app.OutputModeManager;
 import com.droidlogic.app.tv.AudioEffectManager;
+import com.droidlogic.app.tv.DroidLogicTvUtils;
 
 public class SoundEffectManager {
 
@@ -86,6 +89,27 @@ public class SoundEffectManager {
     public static final String DB_ID_SOUND_EFFECT_DBX_ADVANCED_MODE_SONICS      = "db_id_sound_effect_dbx_advanced_mode_sonics";
     public static final String DB_ID_SOUND_EFFECT_DBX_ADVANCED_MODE_VOLUME      = "db_id_sound_effect_dbx_advanced_mode_volume";
     public static final String DB_ID_SOUND_EFFECT_DBX_ADVANCED_MODE_SURROUND    = "db_id_sound_effect_dbx_advanced_mode_surround";
+    private static final String[] DB_ID_AUDIO_OUTPUT_SPEAKER_DELAY_ARRAY    = {
+            "db_id_audio_output_speaker_delay_atv",
+            "db_id_audio_output_speaker_delay_dtv",
+            "db_id_audio_output_speaker_delay_av",
+            "db_id_audio_output_speaker_delay_hdmi",
+            "db_id_audio_output_speaker_delay_media",
+    };
+    private static final String[] DB_ID_AUDIO_OUTPUT_SPDIF_DELAY_ARRAY       = {
+            "db_id_audio_output_spdif_delay_atv",
+            "db_id_audio_output_spdif_delay_dtv",
+            "db_id_audio_output_spdif_delay_av",
+            "db_id_audio_output_spdif_delay_hdmi",
+            "db_id_audio_output_spdif_delay_media",
+    };
+    private static final String[] DB_ID_AUDIO_PRESCALE_ARRAY       = {
+            "db_id_audio_prescale_atv",
+            "db_id_audio_prescale_dtv",
+            "db_id_audio_prescale_av",
+            "db_id_audio_prescale_hdmi",
+            "db_id_audio_prescale_media",
+    };
 
     //set id
     public static final int SET_BASS                                    = 0;
@@ -145,10 +169,7 @@ public class SoundEffectManager {
     public static final int DEFAULT_AGC_SOURCE_ID                       = 3;
     //virtual surround
     public static final int PARAM_VIRTUALSURROUND                       = 0;
-    /* Modes of dialog clarity */
-    public static final int DIALOG_CLARITY_OFF                          = 0;
-    public static final int DIALOG_CLARITY_LOW                          = 1;
-    public static final int DIALOG_CLARITY_HIGH                         = 2;
+
     //definition off and on
     private static final int PARAMETERS_SWITCH_OFF                      = 1;
     private static final int PARAMETERS_SWITCH_ON                       = 0;
@@ -171,6 +192,22 @@ public class SoundEffectManager {
     // DBX effect param type
     private static final int PARAM_DBX_PARAM_ENABLE                     = 0;
     private static final int PARAM_DBX_SET_MODE                         = 1;
+
+    private static final String PARAM_HAL_AUDIO_OUTPUT_SPEAKER_DELAY    = "hal_param_speaker_delay_time_ms";
+    private static final String PARAM_HAL_AUDIO_OUTPUT_SPDIF_DELAY      = "hal_param_spdif_delay_time_ms";
+    private static final String PARAM_HAL_AUDIO_PRESCALE                = "SOURCE_GAIN";
+
+    private static final int AUDIO_OUTPUT_SPEAKER_DELAY_MIN             = 0;       // ms
+    private static final int AUDIO_OUTPUT_SPEAKER_DELAY_MAX             = 200;     // ms
+    private static final int AUDIO_OUTPUT_SPEAKER_DELAY_DEFAULT         = 0;       // ms
+
+    private static final int AUDIO_OUTPUT_SPDIF_DELAY_MIN               = 0;       // ms
+    private static final int AUDIO_OUTPUT_SPDIF_DELAY_MAX               = 200;     // ms
+    private static final int AUDIO_OUTPUT_SPPDIF_DELAY_DEFAULT          = 0;       // ms
+
+    private static final int AUDIO_PRESCALE_MIN                         = -150;    // -15 dB
+    private static final int AUDIO_PRESCALE_MAX                         = 150;     // 15 dB
+    private static final int[] AUDIO_PRESCALE_DEFAULT_ARRAY             = {0, 0, 0, 0, 0}; // ATV, DTV, AV, HDMI, MEDIA, range: [-150 - 150]
 
     private int mSoundModule = AudioEffectManager.DAP_MODULE;
     // Prefix to append to audio preferences file
@@ -436,7 +473,7 @@ public class SoundEffectManager {
         int saveresult = -1;
         if (!creatSoundModeAudioEffects()) {
             Log.e(TAG, "getSoundModeStatus creat fail");
-            return AudioEffectManager.MODE_STANDARD;
+            return AudioEffectManager.EQ_SOUND_MODE_STANDARD;
         }
         int[] value = new int[1];
         mSoundMode.getParameter(PARAM_EQ_EFFECT, value);
@@ -626,7 +663,7 @@ public class SoundEffectManager {
         if (result == AudioEffect.SUCCESS) {
             if (CanDebug()) Log.d(TAG, "setSoundMode = " + mode);
             mSoundMode.setParameter(PARAM_EQ_EFFECT, mode);
-            if (mode == AudioEffectManager.MODE_CUSTOM && (mSoundModule == AudioEffectManager.EQ_MODULE || mSoundModule == AudioEffectManager.DAP_MODULE)) {
+            if (mode == AudioEffectManager.EQ_SOUND_MODE_CUSTOM && (mSoundModule == AudioEffectManager.EQ_MODULE || mSoundModule == AudioEffectManager.DAP_MODULE)) {
                 //set one band, at the same time the others will be set
                 setDifferentBandEffects(AudioEffectManager.EQ_SOUND_MODE_EFFECT_BAND1, getSavedAudioParameters(SET_EFFECT_BAND1), false);
             }
@@ -809,53 +846,54 @@ public class SoundEffectManager {
         return enable;
     }
 
-    public void setAgsEnable (int mode) {
+    public void setAgcEnable (boolean enable) {
         if (!creatAgcAudioEffects()) {
-            Log.e(TAG, "setAgsEnable mAgc creat fail");
+            Log.e(TAG, "setAgcEnable mAgc creat fail");
             return;
         }
+        int dbSwitch = enable ? 1 : 0;
         int result = mAgc.setEnabled(true);
         if (result == AudioEffect.SUCCESS) {
-            if (CanDebug()) Log.d(TAG, "setAgsEnable = " + mode);
-            mAgc.setParameter(PARAM_AGC_ENABLE, mode);
-            saveAudioParameters(SET_AGC_ENABLE, mode);
+            if (CanDebug()) Log.d(TAG, "setAgcEnable = " + dbSwitch);
+            mAgc.setParameter(PARAM_AGC_ENABLE, dbSwitch);
+            saveAudioParameters(SET_AGC_ENABLE, dbSwitch);
         }
     }
 
-    public void setAgsMaxLevel (int step) {
+    public void setAgcMaxLevel (int step) {
         if (!creatAgcAudioEffects()) {
-            Log.e(TAG, "setAgsMaxLevel mAgc creat fail");
+            Log.e(TAG, "setAgcMaxLevel mAgc creat fail");
             return;
         }
         int result = mAgc.setEnabled(true);
         if (result == AudioEffect.SUCCESS) {
-            if (CanDebug()) Log.d(TAG, "setAgsMaxLevel = " + step);
+            if (CanDebug()) Log.d(TAG, "setAgcMaxLevel = " + step);
             mAgc.setParameter(PARAM_AGC_MAX_LEVEL, step);
             saveAudioParameters(SET_AGC_MAX_LEVEL, step);
         }
     }
 
-    public void setAgsAttrackTime (int step) {
+    public void setAgcAttrackTime (int step) {
         if (!creatAgcAudioEffects()) {
-            Log.e(TAG, "setAgsAttrackTime mAgc creat fail");
+            Log.e(TAG, "setAgcAttrackTime mAgc creat fail");
             return;
         }
         int result = mAgc.setEnabled(true);
         if (result == AudioEffect.SUCCESS) {
-            if (CanDebug()) Log.d(TAG, "setAgsAttrackTime = " + step);
+            if (CanDebug()) Log.d(TAG, "setAgcAttrackTime = " + step);
             mAgc.setParameter(PARAM_AGC_ATTRACK_TIME, step * 48);
             saveAudioParameters(SET_AGC_ATTRACK_TIME, step);
         }
     }
 
-    public void setAgsReleaseTime (int step) {
+    public void setAgcReleaseTime (int step) {
         if (!creatAgcAudioEffects()) {
-            Log.e(TAG, "setAgsReleaseTime mAgc creat fail");
+            Log.e(TAG, "setAgcReleaseTime mAgc creat fail");
             return;
         }
         int result = mAgc.setEnabled(true);
         if (result == AudioEffect.SUCCESS) {
-            if (CanDebug()) Log.d(TAG, "setAgsReleaseTime = " + step);
+            if (CanDebug()) Log.d(TAG, "setAgcReleaseTime = " + step);
             mAgc.setParameter(PARAM_AGC_RELEASE_TIME, step);
             saveAudioParameters(SET_AGC_RELEASE_TIME, step);
         }
@@ -997,18 +1035,164 @@ public class SoundEffectManager {
         return value;
     }
 
+    public void setAudioOutputSpeakerDelay(int source, int delayMs) {
+        if (source < AudioEffectManager.AUDIO_OUTPUT_DELAY_SOURCE_ATV || source >= AudioEffectManager.AUDIO_OUTPUT_DELAY_SOURCE_MAX) {
+            Log.w(TAG, "setAudioOutputSpeakerDelay: unsupport delay source:" + source + ", min:" + AudioEffectManager.AUDIO_OUTPUT_DELAY_SOURCE_ATV
+                    + ", max:" + (AudioEffectManager.AUDIO_OUTPUT_DELAY_SOURCE_MAX-1));
+            return;
+        }
+        if (delayMs < AUDIO_OUTPUT_SPEAKER_DELAY_MIN || delayMs > AUDIO_OUTPUT_SPEAKER_DELAY_MAX) {
+            Log.w(TAG, "unsupport speaker delay time:" + delayMs + "ms, min:" + AUDIO_OUTPUT_SPEAKER_DELAY_MIN + "ms, max:"
+                    + AUDIO_OUTPUT_SPEAKER_DELAY_MAX + "ms, now use max value");
+            delayMs = AUDIO_OUTPUT_SPEAKER_DELAY_MAX;
+        }
+        if (CanDebug()) Log.d(TAG, "setAudioOutputSpeakerDelay delay source:" + source + ", delayMs:" + delayMs);
+        int currentTvSource = DroidLogicTvUtils.getTvSourceType(mContext);
+        if (currentTvSource == source) {
+            mAudioManager.setParameters(PARAM_HAL_AUDIO_OUTPUT_SPEAKER_DELAY + "=" + delayMs);
+        } else {
+            Log.i(TAG, "setAudioOutputSpeakerDelay current source:" + currentTvSource + " is not the same as the set source:" + source + ", only save to DB");
+        }
+        Settings.Global.putInt(mContext.getContentResolver(), DB_ID_AUDIO_OUTPUT_SPEAKER_DELAY_ARRAY[source], delayMs);
+    }
+
+    public int getAudioOutputSpeakerDelay(int source) {
+        if (source < AudioEffectManager.AUDIO_OUTPUT_DELAY_SOURCE_ATV || source >= AudioEffectManager.AUDIO_OUTPUT_DELAY_SOURCE_MAX) {
+            Log.w(TAG, "getAudioOutputSpeakerDelay unsupport delay source:" + source + ", min:" + AudioEffectManager.AUDIO_OUTPUT_DELAY_SOURCE_ATV
+                    + ", max:" + (AudioEffectManager.AUDIO_OUTPUT_DELAY_SOURCE_MAX-1));
+            return -1;
+        }
+        int delayMs = Settings.Global.getInt(mContext.getContentResolver(), DB_ID_AUDIO_OUTPUT_SPEAKER_DELAY_ARRAY[source], AUDIO_OUTPUT_SPEAKER_DELAY_DEFAULT);
+        if (CanDebug()) Log.d(TAG, "getAudioOutputSpeakerDelay source:" + source + ", delayMs:" + delayMs);
+        return delayMs;
+    }
+
+    public void setAudioOutputSpdifDelay(int source, int delayMs) {
+        if (source < AudioEffectManager.AUDIO_OUTPUT_DELAY_SOURCE_ATV || source >= AudioEffectManager.AUDIO_OUTPUT_DELAY_SOURCE_MAX) {
+            Log.w(TAG, "setAudioOutputSpdifDelay unsupport delay source:" + source + ", min:" + AudioEffectManager.AUDIO_OUTPUT_DELAY_SOURCE_ATV
+                    + ", max:" + (AudioEffectManager.AUDIO_OUTPUT_DELAY_SOURCE_MAX-1));
+            return;
+        }
+        if (delayMs < AUDIO_OUTPUT_SPDIF_DELAY_MIN || delayMs > AUDIO_OUTPUT_SPDIF_DELAY_MAX) {
+            Log.w(TAG, "unsupport spdif delay time:" + delayMs + "ms, min:" + AUDIO_OUTPUT_SPDIF_DELAY_MIN + "ms, max:"
+                    + AUDIO_OUTPUT_SPDIF_DELAY_MAX + "ms, now use max value");
+            delayMs = AUDIO_OUTPUT_SPDIF_DELAY_MAX;
+        }
+        if (CanDebug()) Log.d(TAG, "setAudioOutputSpdifDelay delay source:" + source + ", delayMs:" + delayMs);
+        int currentTvSource = DroidLogicTvUtils.getTvSourceType(mContext);
+        if (currentTvSource == source) {
+            mAudioManager.setParameters(PARAM_HAL_AUDIO_OUTPUT_SPDIF_DELAY + "=" + delayMs);
+        } else {
+            Log.i(TAG, "setAudioOutputSpdifDelay current source:" + currentTvSource + " is not the same as the set source:" + source + ", only save to DB");
+        }
+        Settings.Global.putInt(mContext.getContentResolver(), DB_ID_AUDIO_OUTPUT_SPDIF_DELAY_ARRAY[source], delayMs);
+    }
+
+    public int getAudioOutputSpdifDelay(int source) {
+        if (source < AudioEffectManager.AUDIO_OUTPUT_DELAY_SOURCE_ATV || source >= AudioEffectManager.AUDIO_OUTPUT_DELAY_SOURCE_MAX) {
+            Log.w(TAG, "getAudioOutputSpdifDelay unsupport delay source:" + source + ", min:" + AudioEffectManager.AUDIO_OUTPUT_DELAY_SOURCE_ATV
+                    + ", max:" + (AudioEffectManager.AUDIO_OUTPUT_DELAY_SOURCE_MAX-1));
+            return -1;
+        }
+        int delayMs = Settings.Global.getInt(mContext.getContentResolver(), DB_ID_AUDIO_OUTPUT_SPDIF_DELAY_ARRAY[source], AUDIO_OUTPUT_SPPDIF_DELAY_DEFAULT);
+        if (CanDebug()) Log.d(TAG, "getAudioOutputSpdifDelay source:" + source + ", delayMs:" + delayMs);
+        return delayMs;
+    }
+
+    public void setAudioPrescale(int source,int value) {
+        if (source < AudioEffectManager.AUDIO_OUTPUT_DELAY_SOURCE_ATV || source >= AudioEffectManager.AUDIO_OUTPUT_DELAY_SOURCE_MAX) {
+            Log.w(TAG, "setAudioPrescale unsupport delay source:" + source + ", min:" + AudioEffectManager.AUDIO_OUTPUT_DELAY_SOURCE_ATV
+                    + ", max:" + (AudioEffectManager.AUDIO_OUTPUT_DELAY_SOURCE_MAX-1));
+            return;
+        }
+        if (value < AUDIO_PRESCALE_MIN || value > AUDIO_PRESCALE_MAX) {
+            Log.w(TAG, "unsupport audio prescale:" + value + ", min:" + AUDIO_PRESCALE_MIN + ", max:" + AUDIO_PRESCALE_MAX);
+            return;
+        }
+        if (CanDebug()) Log.d(TAG, "setAudioPrescale source:" + source + ", value:" + value);
+        try {
+            StringBuffer parameter;
+            String realValue = "";
+            DecimalFormat decimalFormat = new DecimalFormat("0.0");
+            Settings.Global.putInt(mContext.getContentResolver(), DB_ID_AUDIO_PRESCALE_ARRAY[source], value);
+
+            // packgeing "SOURCE_GAIN=1.0 1.0 1.0 1.0 1.0" [atv,dtv,hdmi,av,media]
+            parameter = new StringBuffer(PARAM_HAL_AUDIO_PRESCALE + "=");
+            //UI -150 - 150, audio_hal -15 - 15 db
+            int tempParamter = 1;
+            tempParamter = Settings.Global.getInt(mContext.getContentResolver(), DB_ID_AUDIO_PRESCALE_ARRAY[AudioEffectManager.AUDIO_OUTPUT_DELAY_SOURCE_ATV],
+                    AUDIO_PRESCALE_DEFAULT_ARRAY[AudioEffectManager.AUDIO_OUTPUT_DELAY_SOURCE_ATV]);
+            realValue = decimalFormat.format((float) tempParamter / 10);
+            parameter.append(realValue + " ");
+
+            tempParamter = Settings.Global.getInt(mContext.getContentResolver(), DB_ID_AUDIO_PRESCALE_ARRAY[AudioEffectManager.AUDIO_OUTPUT_DELAY_SOURCE_DTV],
+                    AUDIO_PRESCALE_DEFAULT_ARRAY[AudioEffectManager.AUDIO_OUTPUT_DELAY_SOURCE_DTV]);
+            realValue = decimalFormat.format((float) tempParamter / 10);
+            parameter.append(realValue + " ");
+
+            tempParamter = Settings.Global.getInt(mContext.getContentResolver(), DB_ID_AUDIO_PRESCALE_ARRAY[AudioEffectManager.AUDIO_OUTPUT_DELAY_SOURCE_HDMI],
+                    AUDIO_PRESCALE_DEFAULT_ARRAY[AudioEffectManager.AUDIO_OUTPUT_DELAY_SOURCE_HDMI]);
+            realValue = decimalFormat.format((float) tempParamter / 10);
+            parameter.append(realValue + " ");
+
+            tempParamter = Settings.Global.getInt(mContext.getContentResolver(), DB_ID_AUDIO_PRESCALE_ARRAY[AudioEffectManager.AUDIO_OUTPUT_DELAY_SOURCE_AV],
+                    AUDIO_PRESCALE_DEFAULT_ARRAY[AudioEffectManager.AUDIO_OUTPUT_DELAY_SOURCE_AV]);
+            realValue = decimalFormat.format((float) tempParamter / 10);
+            parameter.append(realValue + " ");
+
+            tempParamter = Settings.Global.getInt(mContext.getContentResolver(), DB_ID_AUDIO_PRESCALE_ARRAY[AudioEffectManager.AUDIO_OUTPUT_DELAY_SOURCE_MEDIA],
+                    AUDIO_PRESCALE_DEFAULT_ARRAY[AudioEffectManager.AUDIO_OUTPUT_DELAY_SOURCE_MEDIA]);
+            realValue = decimalFormat.format((float) tempParamter / 10);
+                      parameter.append(realValue + " ");
+            if (CanDebug()) Log.d(TAG, "setAudioPrescale setParameters:" + parameter.toString());
+            mAudioManager.setParameters(parameter.toString());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public int getAudioPrescale(int source) {
+        if (source < AudioEffectManager.AUDIO_OUTPUT_DELAY_SOURCE_ATV || source >= AudioEffectManager.AUDIO_OUTPUT_DELAY_SOURCE_MAX) {
+            Log.w(TAG, "getAudioPrescaleStatus: unsupport delay source:" + source + ", min:" + AudioEffectManager.AUDIO_OUTPUT_DELAY_SOURCE_ATV
+                    + ", max:" + (AudioEffectManager.AUDIO_OUTPUT_DELAY_SOURCE_MAX-1));
+            return -1;
+        }
+
+        int saveResult = 0;
+        BigDecimal mBigDecimalBase = new BigDecimal(Float.toString(10.00f));
+        BigDecimal mBigDecimal = new BigDecimal(0.0f);
+        String value = mAudioManager.getParameters("SOURCE_GAIN");//atv,dtv,hdmi,av,media
+        value.trim();
+        if (CanDebug()) Log.d(TAG, "getAudioPrescale hal param:" + value);
+        saveResult = Settings.Global.getInt(mContext.getContentResolver(), DB_ID_AUDIO_PRESCALE_ARRAY[source],
+                AUDIO_PRESCALE_DEFAULT_ARRAY[AudioEffectManager.AUDIO_OUTPUT_DELAY_SOURCE_ATV]);
+        String[] subStrings = value.split(" ");//"source_gain = 1.0 1.0 1.0 1.0 1.0"
+        if (subStrings.length == 7) {
+            int driverValue = 0;
+            mBigDecimal = new BigDecimal(subStrings[subStrings.length - 5].substring(0,3));
+            driverValue = (int) mBigDecimal.multiply(mBigDecimalBase).floatValue();
+            if (driverValue != saveResult) {
+                Log.w(TAG, "getAudioPrescaleStatus driverValue:" + driverValue + ", saveResult:" + saveResult);
+            }
+        } else {
+            Log.w(TAG, "getAudioPrescaleStatus param length:" + subStrings.length + " invalid");
+        }
+        if (CanDebug()) Log.d(TAG, "getAudioPrescale source:" + source + ", value:" + saveResult);
+        return saveResult;
+    }
+
     private void saveAudioParameters(int id, int value) {
         if (CanDebug()) Log.d(TAG, "saveAudioParameters id:" + id+ ", value:" + value);
         switch (id) {
             case SET_BASS:
                 int soundModeBass = getSoundModeFromDb();
-                if (AudioEffectManager.MODE_CUSTOM == soundModeBass) {
+                if (AudioEffectManager.EQ_SOUND_MODE_CUSTOM == soundModeBass) {
                     Settings.Global.putInt(mContext.getContentResolver(), DB_ID_SOUND_EFFECT_BASS, value);
                 }
                 break;
             case SET_TREBLE:
                 int soundModeTreble = getSoundModeFromDb();
-                if (AudioEffectManager.MODE_CUSTOM == soundModeTreble) {
+                if (AudioEffectManager.EQ_SOUND_MODE_CUSTOM == soundModeTreble) {
                     Settings.Global.putInt(mContext.getContentResolver(), DB_ID_SOUND_EFFECT_TREBLE, value);
                 }
                 break;
@@ -1096,11 +1280,11 @@ public class SoundEffectManager {
     private int getSoundModeFromDb() {
         String soundmodetype = Settings.Global.getString(mContext.getContentResolver(), DB_ID_SOUND_EFFECT_SOUND_MODE_TYPE);
         if (soundmodetype == null || DB_ID_SOUND_EFFECT_SOUND_MODE_TYPE_EQ.equals(soundmodetype)) {
-            return Settings.Global.getInt(mContext.getContentResolver(), DB_ID_SOUND_EFFECT_SOUND_MODE_EQ_VALUE, AudioEffectManager.MODE_STANDARD);
+            return Settings.Global.getInt(mContext.getContentResolver(), DB_ID_SOUND_EFFECT_SOUND_MODE_EQ_VALUE, AudioEffectManager.EQ_SOUND_MODE_STANDARD);
         } else if ((DB_ID_SOUND_EFFECT_SOUND_MODE_TYPE_DAP.equals(soundmodetype))) {
-            return Settings.Global.getInt(mContext.getContentResolver(), DB_ID_SOUND_EFFECT_SOUND_MODE_DAP_VALUE, AudioEffectManager.MODE_STANDARD);
+            return Settings.Global.getInt(mContext.getContentResolver(), DB_ID_SOUND_EFFECT_SOUND_MODE_DAP_VALUE, AudioEffectManager.EQ_SOUND_MODE_STANDARD);
         } else {
-            return Settings.Global.getInt(mContext.getContentResolver(), DB_ID_SOUND_EFFECT_SOUND_MODE, AudioEffectManager.MODE_STANDARD);
+            return Settings.Global.getInt(mContext.getContentResolver(), DB_ID_SOUND_EFFECT_SOUND_MODE, AudioEffectManager.EQ_SOUND_MODE_STANDARD);
         }
     }
 
@@ -1110,7 +1294,7 @@ public class SoundEffectManager {
         switch (id) {
             case SET_BASS:
                 int soundModeBass = getSoundModeFromDb();
-                if (AudioEffectManager.MODE_CUSTOM == soundModeBass) {
+                if (AudioEffectManager.EQ_SOUND_MODE_CUSTOM == soundModeBass) {
                     result = Settings.Global.getInt(mContext.getContentResolver(), DB_ID_SOUND_EFFECT_BASS, AudioEffectManager.EFFECT_BASS_DEFAULT);
                 } else {
                     result = AudioEffectManager.EFFECT_BASS_DEFAULT;
@@ -1118,7 +1302,7 @@ public class SoundEffectManager {
                 break;
             case SET_TREBLE:
                 int soundModeTreble = getSoundModeFromDb();
-                if (AudioEffectManager.MODE_CUSTOM == soundModeTreble) {
+                if (AudioEffectManager.EQ_SOUND_MODE_CUSTOM == soundModeTreble) {
                     result = Settings.Global.getInt(mContext.getContentResolver(), DB_ID_SOUND_EFFECT_TREBLE, AudioEffectManager.EFFECT_TREBLE_DEFAULT);
                 } else {
                     result = AudioEffectManager.EFFECT_TREBLE_DEFAULT;
@@ -1267,10 +1451,10 @@ public class SoundEffectManager {
         setSoundModeByObserver(soundMode);
         setBass(getSavedAudioParameters(SET_BASS));
         setTreble(getSavedAudioParameters(SET_TREBLE));
-        setAgsEnable(getSavedAudioParameters(SET_AGC_ENABLE));
-        setAgsMaxLevel(getSavedAudioParameters(SET_AGC_MAX_LEVEL));
-        setAgsAttrackTime (getSavedAudioParameters(SET_AGC_ATTRACK_TIME));
-        setAgsReleaseTime(getSavedAudioParameters(SET_AGC_RELEASE_TIME));
+        setAgcEnable(getSavedAudioParameters(SET_AGC_ENABLE) != 0);
+        setAgcMaxLevel(getSavedAudioParameters(SET_AGC_MAX_LEVEL));
+        setAgcAttrackTime (getSavedAudioParameters(SET_AGC_ATTRACK_TIME));
+        setAgcReleaseTime(getSavedAudioParameters(SET_AGC_RELEASE_TIME));
         setSourceIdForAvl(getSavedAudioParameters(SET_AGC_SOURCE_ID));
         setVirtualSurround(getSavedAudioParameters(SET_VIRTUAL_SURROUND));
 
@@ -1301,6 +1485,12 @@ public class SoundEffectManager {
             setDbxEnable(dbxStatus);
             setDbxSoundMode(dbxMode);
         }
+
+        // refresh db delay of media to hal
+        setAudioOutputSpeakerDelay(AudioEffectManager.AUDIO_OUTPUT_DELAY_SOURCE_MEDIA, getAudioOutputSpeakerDelay(AudioEffectManager.AUDIO_OUTPUT_DELAY_SOURCE_MEDIA));
+        setAudioOutputSpdifDelay(AudioEffectManager.AUDIO_OUTPUT_DELAY_SOURCE_MEDIA, getAudioOutputSpdifDelay(AudioEffectManager.AUDIO_OUTPUT_DELAY_SOURCE_MEDIA));
+        // refresh db prescale of all source to hal (set one prescale, at the same time the others will be set)
+        setAudioPrescale(AudioEffectManager.AUDIO_OUTPUT_DELAY_SOURCE_ATV, getAudioPrescale(AudioEffectManager.AUDIO_OUTPUT_DELAY_SOURCE_ATV));
     }
 
     public void resetSoundEffectSettings() {
@@ -1313,9 +1503,9 @@ public class SoundEffectManager {
         Settings.Global.putInt(mContext.getContentResolver(), DB_ID_SOUND_EFFECT_SURROUND, AudioEffectManager.SOUND_EFFECT_SURROUND_ENABLE_DEFAULT);
         Settings.Global.putInt(mContext.getContentResolver(), DB_ID_SOUND_EFFECT_TRUBASS, AudioEffectManager.SOUND_EFFECT_TRUBASS_ENABLE_DEFAULT);
         Settings.Global.putString(mContext.getContentResolver(), DB_ID_SOUND_EFFECT_SOUND_MODE_TYPE, DB_ID_SOUND_EFFECT_SOUND_MODE_TYPE_EQ);
-        Settings.Global.putInt(mContext.getContentResolver(), DB_ID_SOUND_EFFECT_SOUND_MODE, AudioEffectManager.MODE_STANDARD);
-        Settings.Global.putInt(mContext.getContentResolver(), DB_ID_SOUND_EFFECT_SOUND_MODE_DAP_VALUE, AudioEffectManager.MODE_STANDARD);
-        Settings.Global.putInt(mContext.getContentResolver(), DB_ID_SOUND_EFFECT_SOUND_MODE_EQ_VALUE, AudioEffectManager.MODE_STANDARD);
+        Settings.Global.putInt(mContext.getContentResolver(), DB_ID_SOUND_EFFECT_SOUND_MODE, AudioEffectManager.EQ_SOUND_MODE_STANDARD);
+        Settings.Global.putInt(mContext.getContentResolver(), DB_ID_SOUND_EFFECT_SOUND_MODE_DAP_VALUE, AudioEffectManager.EQ_SOUND_MODE_STANDARD);
+        Settings.Global.putInt(mContext.getContentResolver(), DB_ID_SOUND_EFFECT_SOUND_MODE_EQ_VALUE, AudioEffectManager.EQ_SOUND_MODE_STANDARD);
         Settings.Global.putInt(mContext.getContentResolver(), DB_ID_SOUND_EFFECT_BAND1, EFFECT_SOUND_MODE_USER_BAND[AudioEffectManager.EQ_SOUND_MODE_EFFECT_BAND1]);
         Settings.Global.putInt(mContext.getContentResolver(), DB_ID_SOUND_EFFECT_BAND2, EFFECT_SOUND_MODE_USER_BAND[AudioEffectManager.EQ_SOUND_MODE_EFFECT_BAND2]);
         Settings.Global.putInt(mContext.getContentResolver(), DB_ID_SOUND_EFFECT_BAND3, EFFECT_SOUND_MODE_USER_BAND[AudioEffectManager.EQ_SOUND_MODE_EFFECT_BAND3]);
