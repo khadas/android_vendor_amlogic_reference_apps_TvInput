@@ -184,10 +184,10 @@ public class SoundEffectManager {
     private static final int EFFECT_SOUND_TYPE_NUM = 6;
 
     // Virtual X effect param type
-    private static final int PARAM_DTS_PARAM_MBHL_ENABLE_I32            = 3;
-    private static final int PARAM_DTS_PARAM_TBHDX_ENABLE_I32           = 36;
-    private static final int PARAM_DTS_PARAM_VX_ENABLE_I32              = 44;
-    private static final int PARAM_DTS_PARAM_LOUDNESS_CONTROL_ENABLE_I32= 65;
+    private static final int PARAM_DTS_PARAM_MBHL_ENABLE_I32            = 0;
+    private static final int PARAM_DTS_PARAM_TBHDX_ENABLE_I32           = 35;
+    private static final int PARAM_DTS_PARAM_VX_ENABLE_I32              = 46;
+    private static final int PARAM_DTS_PARAM_LOUDNESS_CONTROL_ENABLE_I32= 67;
 
     // DBX effect param type
     private static final int PARAM_DBX_PARAM_ENABLE                     = 0;
