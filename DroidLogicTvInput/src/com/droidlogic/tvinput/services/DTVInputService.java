@@ -4330,6 +4330,7 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
                                 Log.d(TAG, "EVENT_CHANNEL_UPDATE mUpdateFrequency:" + mUpdateFrequency);
                                 mTvControlManager.setStorDBListener(mMonitorStoreManager);
                                 setEpgAutoReset(false);
+                                mTvControlManager.DtvSetTextCoding("GB2312");
                                 mTvControlManager.DtvManualScan(mode, mUpdateFrequency);
                             }
                         }
