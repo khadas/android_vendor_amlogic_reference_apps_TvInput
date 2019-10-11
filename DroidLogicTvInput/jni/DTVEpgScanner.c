@@ -270,6 +270,53 @@ static jintArray get_int_array(JNIEnv* env, const int *array, int len)
     return intArray;
 }
 
+static bool is_utf8(const void* pBuffer, long size)
+{
+    bool IsUTF8 = true;
+    unsigned char* start = (unsigned char*)pBuffer;
+    unsigned char* end = (unsigned char*)pBuffer + size;
+    while (start < end)
+    {
+       if (*start < 0x80) // (10000000): value less then 0x80 ASCII char
+       {
+           start++;
+       }
+       else if (*start < (0xC0)) // (11000000): between 0x80 and 0xC0 UTF-8 char
+       {
+           IsUTF8 = false;
+           break;
+       }
+       else if (*start < (0xE0)) // (11100000): 2 bytes UTF-8 char
+       {
+           if (start >= end - 1)
+               break;
+           if ((start[1] & (0xC0)) != 0x80)
+           {
+               IsUTF8 = false;
+               break;
+           }
+           start += 2;
+       }
+       else if (*start < (0xF0)) // (11110000): 3 bytes UTF-8 char
+       {
+           if (start >= end - 2)
+               break;
+           if ((start[1] & (0xC0)) != 0x80 || (start[2] & (0xC0)) != 0x80)
+           {
+               IsUTF8 = false;
+               break;
+           }
+           start += 3;
+       }
+       else
+       {
+           IsUTF8 = false;
+           break;
+       }
+    }
+    return IsUTF8;
+}
+
 void Events_Update(AM_EPG_Handle_t handle, int event_count, AM_EPG_Event_t *pevents)
 {
     int i;
@@ -1035,8 +1082,10 @@ static void SDT_Update(AM_EPG_Handle_t handle, EPGChannelData *pch) {
             (*env)->GetFieldID(env, gChannelClass, "mSdtVersion", "I"), pch->mSdtVersion);
     (*env)->SetIntField(env,channel,\
             (*env)->GetFieldID(env, gChannelClass, "mOriginalNetworkId", "I"), pch->mOriginalNetworkId);
-    (*env)->SetObjectField(env,channel,\
-            (*env)->GetFieldID(env, gChannelClass, "mDisplayName", "Ljava/lang/String;"), (*env)->NewStringUTF(env, pch->name));
+    if (is_utf8(pch->name, strlen(pch->name))) {
+        (*env)->SetObjectField(env,channel,\
+                (*env)->GetFieldID(env, gChannelClass, "mDisplayName", "Ljava/lang/String;"), (*env)->NewStringUTF(env, pch->name));
+    }
     (*env)->SetIntField(env,channel,\
             (*env)->GetFieldID(env, gChannelClass, "mServiceId", "I"), pch->mServiceId);
 
@@ -1065,8 +1114,10 @@ static void SDT_Update(AM_EPG_Handle_t handle, EPGChannelData *pch) {
             (*env)->GetFieldID(env, gServiceInfoFromSDTClass, "mId", "I"), pservice->id);
         (*env)->SetIntField(env, service,\
             (*env)->GetFieldID(env, gServiceInfoFromSDTClass, "mType", "I"), pservice->type);
-        (*env)->SetObjectField(env,service,\
-            (*env)->GetFieldID(env, gServiceInfoFromSDTClass, "mName", "Ljava/lang/String;"), (*env)->NewStringUTF(env, pservice->name));
+        if (is_utf8(pservice->name, strlen(pservice->name))) {
+            (*env)->SetObjectField(env,service,\
+                 (*env)->GetFieldID(env, gServiceInfoFromSDTClass, "mName", "Ljava/lang/String;"), (*env)->NewStringUTF(env, pservice->name));
+        }
         (*env)->SetIntField(env, service,\
             (*env)->GetFieldID(env, gServiceInfoFromSDTClass, "mRunning", "I"), pservice->running);
         (*env)->SetIntField(env, service,\
