@@ -4026,11 +4026,12 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
                             try {
                                 long start = evt.start;
                                 long end = evt.end;
+                                String ext_descr = TvMultilingualText.getText((evt.ext_descr == null ? null : new String(evt.ext_descr)), languages);
                                 Program p = new Program.Builder()
                                     .setProgramId(evt.evt_id)
                                     .setChannelId(ContentUris.parseId(channelUri))
                                     .setTitle(TvMultilingualText.getText(new String(evt.name), languages))
-                                    .setDescription(TvMultilingualText.getText(new String(evt.desc), languages))
+                                    .setDescription(TvMultilingualText.getText(new String(evt.desc), languages) + (ext_descr == null ? "" : ext_descr))
                                     .setContentRatings(evt.parental_rating == 0 ? null : parseParentalRatings(evt.parental_rating,(evt.name == null ? null : new String(evt.name))))
                                     //.setCanonicalGenres(programInfo.genres)
                                     //.setPosterArtUri(programInfo.posterArtUri)
