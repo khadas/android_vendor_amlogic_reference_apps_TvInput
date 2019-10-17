@@ -197,7 +197,7 @@ typedef void* AM_SUB2_Handle_t;
         sub_update(sub->obj);
     }
 
-    static void scte27_draw_begin_cb(AM_TT2_Handle_t handle)
+    static void scte27_draw_begin_cb(AM_SCTE27_Handle_t handle)
     {
         TVSubtitleData *sub = (TVSubtitleData *)AM_SCTE27_GetUserData(handle);
 
@@ -207,7 +207,7 @@ typedef void* AM_SUB2_Handle_t;
         //clear_bitmap(sub);
     }
 
-    static void scte27_draw_end_cb(AM_TT2_Handle_t handle)
+    static void scte27_draw_end_cb(AM_SCTE27_Handle_t handle)
     {
         TVSubtitleData *sub = (TVSubtitleData *)AM_SCTE27_GetUserData(handle);
 
@@ -990,6 +990,16 @@ error:
         AM_SCTE27_Decode(user_data, data, len);
     }
 
+    static void scte27_update_size(AM_SCTE27_Handle_t handle, int width, int height)
+    {
+        TVSubtitleData *sub = (TVSubtitleData *)AM_SCTE27_GetUserData(handle);
+
+        pthread_mutex_lock(&sub->lock);
+        sub->sub_w = width;
+        sub->sub_h = height;
+        pthread_mutex_unlock(&sub->lock);
+    }
+
     static jint sub_start_scte27(JNIEnv *env, jobject obj, jint dmx_id, jint pid)
     {
 #ifdef SUPPORT_ADTV
@@ -1003,28 +1013,8 @@ error:
 
         setDvbDebugLogLevel();
 
-        AM_FileRead("/sys/class/video/frame_height", read_buff, sizeof(read_buff));
-        video_h = strtoul(read_buff, NULL, 10);
-
-        //Meet a case, 525x480. So we check height and get width
-        switch (video_h)
-        {
-            case 480:
-                video_w = 720;
-                break;
-            case 576:
-                video_w = 720;
-                break;
-            case 720:
-                video_w = 1280;
-                break;
-            case 1080:
-                video_w = 1920;
-                break;
-            default:
-                video_w = video_h /3 * 4;
-                break;
-        }
+        video_w = 1920;
+        video_h = 1080;
 
         bitmap_init(obj, video_w, video_h);
 
@@ -1037,6 +1027,7 @@ error:
         sctep.draw_end    = scte27_draw_end_cb;
         sctep.bitmap    = &data->buffer;
         sctep.pitch	  = data->bmp_pitch;
+        sctep.update_size = scte27_update_size;
         sctep.user_data = data;
 
         ret = AM_SCTE27_Create(&data->scte27_handle, &sctep);
