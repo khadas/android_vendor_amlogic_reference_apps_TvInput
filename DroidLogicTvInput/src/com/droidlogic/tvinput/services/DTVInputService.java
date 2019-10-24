@@ -1771,7 +1771,8 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
         private int reg_id = 0;
         @Override
         public boolean onKeyDown(int keyCode, KeyEvent event) {
-            Log.e(TAG, "keycode down: " + keyCode + " tt_switch " + teletext_switch);
+            float Time= (float) android.os.SystemClock.uptimeMillis() / 1000;
+            Log.d(TAG, "keycode down: " + keyCode + " tt_switch " + teletext_switch + "SwitchSourceTime = " + Time);
             //Teletext is not opened.
             if (!pal_teletext || (!teletext_switch && keyCode != KEY_TELETEXT_SWITCH))
                 return super.onKeyDown(keyCode, event);
