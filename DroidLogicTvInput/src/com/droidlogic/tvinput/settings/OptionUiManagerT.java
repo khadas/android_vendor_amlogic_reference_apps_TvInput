@@ -1496,10 +1496,10 @@ public class OptionUiManagerT implements  OnFocusChangeListener, TvControlManage
         mHandler.sendMessage(msg);
     }
 
-    private static final String AUTO_ATSC_C_PATH = "/sys/module/aml_fe/parameters/auto_search_std";
+    private static final String AUTO_ATSC_C_PATH = "/sys/module/dtvdemod/parameters/auto_search_std";
     private static final String AUTO_ATSC_C_MODE_ENABLE = "1";
     private static final String AUTO_ATSC_C_MODE_DISABLE = "0";
-    private static final String AUTO_ATSC_C_ATV_PATH = "/sys/module/aml_fe/parameters/slow_mode";
+    private static final String AUTO_ATSC_C_ATV_PATH = "/sys/kernel/debug/aml_atvdemod/slow_mode";
 
     public void callManualSearch () {
         mLiveTvManualSearch = true;
