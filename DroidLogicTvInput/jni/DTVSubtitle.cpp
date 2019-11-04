@@ -1088,7 +1088,7 @@ error:
         TVSubtitleData *data = sub_get_data(env, obj);
 
         close_dmx(data);
-        AM_SCTE27_Destroy(data->sub_handle);
+        AM_SCTE27_Destroy(data->scte27_handle);
 
         AM_DMX_StopFilter(data->dmx_id, data->filter_handle);
         AM_DMX_FreeFilter(data->dmx_id, data->filter_handle);

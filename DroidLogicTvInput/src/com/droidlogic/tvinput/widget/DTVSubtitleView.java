@@ -1513,7 +1513,8 @@ public class DTVSubtitleView extends View {
             case MODE_SCTE27_SUB:
                 int native_w = native_get_subtitle_picture_width();
                 int native_h = native_get_subtitle_picture_height();
-                int edge_l = (getWidth() - native_w * getHeight() / native_h) / 2;
+                //int edge_l = (getWidth() - native_w * getHeight() / native_h) / 2;
+                int edge_l = 0;
                 sr = new Rect(0, 0, native_w, native_h);
                 dr = new Rect(edge_l, 0, getWidth(), getHeight());
                 native_sub_lock();
