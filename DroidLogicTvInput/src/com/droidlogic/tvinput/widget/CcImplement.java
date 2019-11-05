@@ -1341,7 +1341,8 @@ public class CcImplement {
 //                             string_length_on_paint = (data.length()+1) * max_single_font_width;
                         } else {
 //                            string_length_on_paint = text_paint.measureText(data);
-                            string_length_on_paint = data.length() * caption_screen.fixed_char_width;
+//                            string_length_on_paint = data.length() * caption_screen.fixed_char_width;
+                            string_length_on_paint = window_paint.measureText(data);
                         }
                         /* Convert */
                         /*
@@ -1454,31 +1455,31 @@ public class CcImplement {
                     void draw_str(Canvas canvas, String str, float left, float bottom, Paint paint)
                     {
                         paint.setXfermode(porter_clear);
-                        if (ccVersion.matches("cea708")) {
+//                        if (ccVersion.matches("cea708")) {
                             canvas.drawText(str, left, bottom, paint);
-                        } else {
-                            int i, l = str.length();
-                            float x = left;
-
-                            for (i = 0; i < l; i++) {
-                                String sub = str.substring(i, i + 1);
-                                canvas.drawText(sub, x, bottom, paint);
-                                x += caption_screen.fixed_char_width;
-                            }
-                        }
+//                        } else {
+//                            int i, l = str.length();
+//                            float x = left;
+//
+//                            for (i = 0; i < l; i++) {
+//                                String sub = str.substring(i, i + 1);
+//                                canvas.drawText(sub, x, bottom, paint);
+//                                x += caption_screen.fixed_char_width;
+//                            }
+//                        }
                         paint.setXfermode(porter_add);
-                        if (ccVersion.matches("cea708")) {
+//                        if (ccVersion.matches("cea708")) {
                             canvas.drawText(str, left, bottom, paint);
-                        } else {
-                            int i, l = str.length();
-                            float x = left;
-
-                            for (i = 0; i < l; i++) {
-                                String sub = str.substring(i, i + 1);
-                                canvas.drawText(sub, x, bottom, paint);
-                                x += caption_screen.fixed_char_width;
-                            }
-                        }
+//                        } else {
+//                            int i, l = str.length();
+//                            float x = left;
+//
+//                            for (i = 0; i < l; i++) {
+//                                String sub = str.substring(i, i + 1);
+//                                canvas.drawText(sub, x, bottom, paint);
+//                                x += caption_screen.fixed_char_width;
+//                            }
+//                        }
                     }
 
                     void draw_text(Canvas canvas, String data,
