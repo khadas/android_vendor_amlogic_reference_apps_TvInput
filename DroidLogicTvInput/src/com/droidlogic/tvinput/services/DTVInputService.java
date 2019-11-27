@@ -2273,9 +2273,9 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
                 mMainHandler.post(new Runnable() {
                     @Override
                     public void run() {
-                        if (mOverlayView != null) {
+                        /*if (mOverlayView != null) {
                             mOverlayView.setTuningImageVisibility(status);
-                        }
+                        }*/
                     }
                 });
             }
