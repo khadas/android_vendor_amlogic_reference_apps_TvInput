@@ -132,47 +132,12 @@ public class SPDIFInputService extends DroidLogicTvInputService {
         }
     }
 
-    public TvInputInfo onHardwareAdded(TvInputHardwareInfo hardwareInfo) {
-        if (hardwareInfo.getDeviceId() != DroidLogicTvUtils.DEVICE_ID_SPDIF
-            || hasInfoExisted(hardwareInfo))
-            return null;
-
-        Utils.logd(TAG, "=====onHardwareAdded=====" + hardwareInfo.getDeviceId());
-
-        TvInputInfo info = null;
-        ResolveInfo rInfo = getResolveInfo(SPDIFInputService.class.getName());
-        if (rInfo != null) {
-            try {
-                info = TvInputInfo.createTvInputInfo(
-                           getApplicationContext(),
-                           rInfo,
-                           hardwareInfo,
-                           getTvInputInfoLabel(hardwareInfo.getDeviceId()),
-                           null);
-            } catch (XmlPullParserException e) {
-                // TODO: handle exception
-            } catch (IOException e) {
-                // TODO: handle exception
-            }
-        }
-        updateInfoListIfNeededLocked(hardwareInfo, info, false);
-        acquireHardware(info);
-        return info;
+    public String getDeviceClassName() {
+        return SPDIFInputService.class.getName();
     }
 
-    public String onHardwareRemoved(TvInputHardwareInfo hardwareInfo) {
-        if (hardwareInfo.getDeviceId() != DroidLogicTvUtils.DEVICE_ID_SPDIF
-            || !hasInfoExisted(hardwareInfo))
-            return null;
-
-        TvInputInfo info = getTvInputInfo(hardwareInfo);
-        String id = null;
-        if (info != null)
-            id = info.getId();
-        updateInfoListIfNeededLocked(hardwareInfo, info, true);
-        releaseHardware();
-        Utils.logd(TAG, "=====onHardwareRemoved=====" + id);
-        return id;
+    public int getDeviceSourceType() {
+        return DroidLogicTvUtils.DEVICE_ID_SPDIF;
     }
 
 }

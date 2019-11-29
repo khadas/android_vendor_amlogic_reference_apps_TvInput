@@ -115,70 +115,13 @@ public class Hdmi2InputService extends DroidLogicTvInputService {
                 }
             }
         }
-
-        /*@Override
-        public boolean onKeyUp(int keyCode, KeyEvent event) {
-            tils.logd(TAG, "=====onKeyUp=====");
-           if (isNavigationKey(keyCode)) {
-                Utils.logd(TAG, "=====dispatchKeyEventToHdmi=====");
-                mHardware.dispatchKeyEventToHdmi(event);
-                return true;
-            }
-            return false;
-        }
-
-        @Override
-        public boolean onKeyDown(int keyCode, KeyEvent event) {
-            Utils.logd(TAG, "=====onKeyDown=====");
-            if (isNavigationKey(keyCode)  && mHardware != null) {
-                Utils.logd(TAG, "=====dispatchKeyEventToHdmi=====");
-                mHardware.dispatchKeyEventToHdmi(event);
-                return true;
-            }
-            return false;
-        }*/
     }
 
-    public TvInputInfo onHardwareAdded(TvInputHardwareInfo hardwareInfo) {
-        if (hardwareInfo.getDeviceId() != DroidLogicTvUtils.DEVICE_ID_HDMI2
-            || hasInfoExisted(hardwareInfo))
-            return null;
-
-        Utils.logd(TAG, "=====onHardwareAdded=====" + hardwareInfo.getDeviceId());
-
-        TvInputInfo info = null;
-        ResolveInfo rInfo = getResolveInfo(Hdmi2InputService.class.getName());
-        if (rInfo != null) {
-            try {
-                info = TvInputInfo.createTvInputInfo(
-                           getApplicationContext(),
-                           rInfo,
-                           hardwareInfo,
-                           getTvInputInfoLabel(hardwareInfo.getDeviceId()),
-                           null);
-            } catch (XmlPullParserException e) {
-                // TODO: handle exception
-            } catch (IOException e) {
-                // TODO: handle exception
-            }
-        }
-        updateInfoListIfNeededLocked(hardwareInfo, info, false);
-        acquireHardware(info);
-        return info;
+    public String getDeviceClassName() {
+        return Hdmi2InputService.class.getName();
     }
 
-    public String onHardwareRemoved(TvInputHardwareInfo hardwareInfo) {
-        if (hardwareInfo.getDeviceId() != DroidLogicTvUtils.DEVICE_ID_HDMI2
-            || !hasInfoExisted(hardwareInfo))
-            return null;
-
-        TvInputInfo info = getTvInputInfo(hardwareInfo);
-        String id = null;
-        if (info != null)
-            id = info.getId();
-        updateInfoListIfNeededLocked(hardwareInfo, info, true);
-        releaseHardware();
-        Utils.logd(TAG, "=====onHardwareRemoved=====" + id);
-        return id;
+    public int getDeviceSourceType() {
+        return DroidLogicTvUtils.DEVICE_ID_HDMI2;
     }
 }

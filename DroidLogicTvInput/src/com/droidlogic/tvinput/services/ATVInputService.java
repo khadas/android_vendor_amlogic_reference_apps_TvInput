@@ -284,40 +284,12 @@ public class ATVInputService extends DroidLogicTvInputService {
         }
     }
 
-    public TvInputInfo onHardwareAdded(TvInputHardwareInfo hardwareInfo) {
-        if (hardwareInfo.getDeviceId() != DroidLogicTvUtils.DEVICE_ID_ATV
-                || hasInfoExisted(hardwareInfo))
-            return null;
-
-        Log.d(TAG, "=====onHardwareAdded=====" + hardwareInfo.getDeviceId());
-
-        TvInputInfo info = null;
-        ResolveInfo rInfo = getResolveInfo(ATVInputService.class.getName());
-        if (rInfo != null) {
-            try {
-                info = TvInputInfo.createTvInputInfo(this, rInfo, hardwareInfo,
-                        getTvInputInfoLabel(hardwareInfo.getDeviceId()), null);
-            } catch (Exception e) {
-            }
-        }
-        updateInfoListIfNeededLocked(hardwareInfo, info, false);
-        acquireHardware(info);
-        return info;
+    public String getDeviceClassName() {
+        return AUXInputService.class.getName();
     }
 
-    public String onHardwareRemoved(TvInputHardwareInfo hardwareInfo) {
-        if (hardwareInfo.getType() != TvInputHardwareInfo.TV_INPUT_TYPE_TUNER)
-            return null;
-
-        TvInputInfo info = getTvInputInfo(hardwareInfo);
-        String id = null;
-        if (info != null)
-            id = info.getId();
-
-        updateInfoListIfNeededLocked(hardwareInfo, info, true);
-        releaseHardware();
-        Log.d(TAG, "=====onHardwareRemoved===== " + id);
-        return id;
+    public int getDeviceSourceType() {
+        return DroidLogicTvUtils.DEVICE_ID_ATV;
     }
 
     @Override
