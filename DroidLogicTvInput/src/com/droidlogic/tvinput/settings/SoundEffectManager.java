@@ -252,11 +252,11 @@ public class SoundEffectManager {
             Log.i(TAG, "current not support Virtual X, begin to create TruSurround effect");
             creatTruSurroundAudioEffects();
         }
+        creatVirtualSurroundAudioEffects();
         creatTrebleBassAudioEffects();
         creatSoundModeAudioEffects();
-        creatVirtualSurroundAudioEffects();
-        creatBalanceAudioEffects();
         creatDbxAudioEffects();
+        creatBalanceAudioEffects();
     }
     private boolean creatVirtualXAudioEffects() {
         try {
@@ -1457,7 +1457,7 @@ public class SoundEffectManager {
         setAgcReleaseTime(getSavedAudioParameters(SET_AGC_RELEASE_TIME));
         setSourceIdForAvl(getSavedAudioParameters(SET_AGC_SOURCE_ID));
         setVirtualSurround(getSavedAudioParameters(SET_VIRTUAL_SURROUND));
-
+        setBalance(getSavedAudioParameters(SET_BALANCE));
         OutputModeManager opm = new OutputModeManager(mContext);
         int audioOutPutLatency = Settings.Global.getInt(mContext.getContentResolver(), OutputModeManager.DB_FIELD_AUDIO_OUTPUT_LATENCY,
                 OutputModeManager.AUDIO_OUTPUT_LATENCY_DEFAULT);
