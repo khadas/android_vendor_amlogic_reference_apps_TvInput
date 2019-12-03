@@ -911,6 +911,9 @@ public class OptionUiManagerT implements  OnFocusChangeListener, TvControlManage
 
     private void deleteOtherTypeAtvOrDtvChannels(TvControlManager.TvMode mode, boolean deleteAtv, boolean deleteDtv) {
         Log.d(TAG, "other type delete mode:"+mode.getBase()+" atv:"+deleteAtv+" dtv:"+deleteDtv);
+        if (mode.getBase() == TvChannelParams.MODE_DTMB  || mode.getBase() == TvChannelParams.MODE_ANALOG ) {
+            return;
+        }
         if (deleteAtv) {
             mSettingsManager.deleteOtherTypeAtvOrDtvChannels(mode.toType(), true);//delete all other atv channels
         }
