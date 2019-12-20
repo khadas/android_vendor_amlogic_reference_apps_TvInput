@@ -183,7 +183,8 @@ typedef void* AM_SUB2_Handle_t;
         pthread_mutex_lock(&sub->lock);
 
         sub->buffer = lock_bitmap(NULL, sub->obj_bitmap);
-        clear_bitmap(sub);
+        if (sub->buffer)
+            clear_bitmap(sub);
     }
 
     static void draw_end_cb(AM_TT2_Handle_t handle)
@@ -204,7 +205,8 @@ typedef void* AM_SUB2_Handle_t;
         pthread_mutex_lock(&sub->lock);
 
         sub->buffer = lock_bitmap(NULL, sub->obj_bitmap);
-        //clear_bitmap(sub);
+        //if (sub->buffer)
+            //clear_bitmap(sub);
     }
 
     static void scte27_draw_end_cb(AM_SCTE27_Handle_t handle)
@@ -225,7 +227,8 @@ typedef void* AM_SUB2_Handle_t;
         pthread_mutex_lock(&sub->lock);
 
         sub->buffer = lock_bitmap(NULL, sub->obj_bitmap);
-        //clear_bitmap(sub);
+        //if (sub->buffer)
+            //clear_bitmap(sub);
     }
 
     static void tt_draw_end_cb(AM_TT2_Handle_t handle, int page_type, int pgno, char* subs, int sub_cnt, int red, int green, int yellow, int blue, int curr_subpg)
@@ -356,6 +359,12 @@ typedef void* AM_SUB2_Handle_t;
         pthread_mutex_lock(&sub->lock);
 
         sub->buffer = lock_bitmap(NULL, sub->obj_bitmap);
+
+        if (!sub->buffer)
+        {
+            LOGE("show_sub_cb lock_bitmap null!");
+            return;
+        }
 
         clear_bitmap(sub);
 
@@ -1026,7 +1035,7 @@ error:
         sctep.draw_begin     = scte27_draw_begin_cb;
         sctep.draw_end    = scte27_draw_end_cb;
         sctep.bitmap    = &data->buffer;
-        sctep.pitch	  = data->bmp_pitch;
+        sctep.pitch    = data->bmp_pitch;
         sctep.update_size = scte27_update_size;
         sctep.user_data = data;
 
@@ -1095,7 +1104,10 @@ error:
 
         pthread_mutex_lock(&data->lock);
         data->buffer = lock_bitmap(env, data->obj_bitmap);
-        clear_bitmap(data);
+
+        if (data->buffer)
+            clear_bitmap(data);
+
         unlock_bitmap(env, data->obj_bitmap);
         if (data->obj)
             sub_update(data->obj);
@@ -1230,8 +1242,8 @@ error:
             ttp.draw_begin = tt_draw_begin_cb;
             ttp.draw_end  = tt_draw_end_cb;
             ttp.is_subtitle = is_sub;
-            ttp.bitmap	  = &data->buffer;
-            ttp.pitch	  = data->bmp_pitch;
+            ttp.bitmap  = &data->buffer;
+            ttp.pitch  = data->bmp_pitch;
             ttp.user_data = data;
             ttp.default_region = region_id;
             ttp.notify_contain_data = notify_contain_tt_data;
@@ -1259,7 +1271,10 @@ error:
         AM_PES_Destroy(data->pes_handle);
         pthread_mutex_lock(&data->lock);
         data->buffer = lock_bitmap(env, data->obj_bitmap);
-        clear_bitmap(data);
+
+        if (data->buffer)
+            clear_bitmap(data);
+
         unlock_bitmap(env, data->obj_bitmap);
         if (data->obj)
             sub_update(data->obj);
@@ -1284,8 +1299,10 @@ error:
 
         pthread_mutex_lock(&data->lock);
         data->buffer = lock_bitmap(env, data->obj_bitmap);
+
         if (data->buffer)
             clear_bitmap(data);
+
         unlock_bitmap(env, data->obj_bitmap);
         if (data->obj)
             sub_update(data->obj);
@@ -1304,8 +1321,10 @@ error:
 
         pthread_mutex_lock(&data->lock);
         data->buffer = lock_bitmap(env, data->obj_bitmap);
+
         if (data->buffer)
             clear_bitmap(data);
+
         unlock_bitmap(env, data->obj_bitmap);
         if (data->obj)
             sub_update(data->obj);
@@ -1429,7 +1448,6 @@ error:
     {
 #ifdef SUPPORT_ADTV
         TVSubtitleData *data = sub_get_data(env, obj);
-        LOGE("Native stop isdb");
         close_dmx(data);
         AM_PES_Destroy(data->pes_handle);
         data->pes_handle = NULL;
@@ -1635,7 +1653,6 @@ error:
     #ifdef SUPPORT_ADTV
         TVSubtitleData *data = sub_get_data(env, obj);
 
-        LOGI("stop cc");
         AM_CC_Destroy(data->cc_handle);
         pthread_mutex_lock(&data->lock);
         if (data->obj)
