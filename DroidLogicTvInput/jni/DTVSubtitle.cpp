@@ -1095,12 +1095,11 @@ error:
     {
 #ifdef SUPPORT_ADTV
         TVSubtitleData *data = sub_get_data(env, obj);
+        if (!data->scte27_handle)
+            return 0;
 
         close_dmx(data);
         AM_SCTE27_Destroy(data->scte27_handle);
-
-        AM_DMX_StopFilter(data->dmx_id, data->filter_handle);
-        AM_DMX_FreeFilter(data->dmx_id, data->filter_handle);
 
         pthread_mutex_lock(&data->lock);
         data->buffer = lock_bitmap(env, data->obj_bitmap);
@@ -1114,7 +1113,7 @@ error:
         bitmap_deinit(obj);
         pthread_mutex_unlock(&data->lock);
 
-        data->sub_handle = NULL;
+        data->scte27_handle = NULL;
         data->pes_handle = NULL;
 #endif
         return 0;
