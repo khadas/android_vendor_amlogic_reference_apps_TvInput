@@ -29,6 +29,7 @@ import android.provider.Settings;
 import android.text.TextUtils;
 import android.util.Log;
 
+import com.droidlogic.app.SystemControlManager;
 import com.droidlogic.app.tv.AudioEffectManager;
 import com.droidlogic.tvinput.settings.SoundEffectManager;
 
@@ -56,8 +57,10 @@ public class AudioEffectsService extends PersistentService {
         super.onCreate();
         if (DEBUG) Log.d(TAG, "AudioEffectsService onCreate");
         mContext = this;
-        mHandler.sendEmptyMessage(MSG_CHECK_BOOTVIDEO_FINISHED);
         mSoundEffectManager = SoundEffectManager.getInstance(mContext);
+        if (needAudioEffectFeture()) {
+            mHandler.sendEmptyMessage(MSG_CHECK_BOOTVIDEO_FINISHED);
+        }
     }
 
     @Override
@@ -382,4 +385,10 @@ public class AudioEffectsService extends PersistentService {
             }
         }
     };
+
+    private boolean needAudioEffectFeture () {
+        SystemControlManager sm = SystemControlManager.getInstance();
+        return sm.getPropertyBoolean("ro.vendor.platform.has.tvuimode", false)
+                && !sm.getPropertyBoolean("tv.soc.as.mbox", false);
+    }
 }
