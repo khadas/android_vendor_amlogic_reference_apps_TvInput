@@ -49,6 +49,7 @@ import com.droidlogic.app.tv.TvInSignalInfo;
 import com.droidlogic.app.tv.DroidLogicTvUtils;
 import com.droidlogic.app.tv.TvMultilingualText;
 import com.droidlogic.app.tv.TvScanConfig;
+import com.droidlogic.app.tv.TvMTSSetting;
 import com.droidlogic.tvinput.R;
 
 public class SettingsManager {
@@ -1633,22 +1634,17 @@ public class SettingsManager {
     }
 
     public void setAudioOutmode(int mode) {
-        mTvControlManager.SetAudioOutmode(mode);
+        TvMTSSetting.setAtvMTSOutModeValue(mode);
     }
 
-    public String getAudioOutmode(){
-        int mode = mTvControlManager.GetAudioOutmode();
-        Log.d(TAG, "getAudioOutmode"+" mode = " + mode);
-        switch (mode) {
-            case TvControlManager.AUDIO_OUTMODE_MONO:
-                return mResources.getString(R.string.audio_outmode_mono);
-            case TvControlManager.AUDIO_OUTMODE_STEREO:
-                return mResources.getString(R.string.audio_outmode_stereo);
-            case TvControlManager.AUDIO_OUTMODE_SAP:
-                return mResources.getString(R.string.audio_outmode_sap);
-            default:
-                return mResources.getString(R.string.audio_outmode_stereo);
+    public String getAudioOutmode() {
+        String str = "mono";
+        TvMTSSetting.MTSMode mtsMode = TvMTSSetting.getInstance().getAtvMTSMode();
+        if (mtsMode != null) {
+            str = mtsMode.getOut().getName();
         }
+
+        return str;
     }
 
     public void doFactoryReset() {
