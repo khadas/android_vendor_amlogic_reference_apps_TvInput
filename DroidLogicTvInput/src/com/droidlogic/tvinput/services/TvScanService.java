@@ -65,8 +65,16 @@ public class TvScanService extends Service {
             callManualSearch();
         }
 
-        public void setSearchSys (boolean value1, boolean value2){
-            setSearchSysT(value1, value2);
+        public void stopScan() {
+            callStopSearch();
+        }
+
+        public void setSearchSys(boolean dtv, boolean atv) {
+            setSearchSysT(dtv, atv);
+        }
+
+        public void setSearchType(String type, int atsc_c) {
+            setSearchTypeT(type, atsc_c);
         }
 
         public void setFrequency (String value1, String value2) {
@@ -130,10 +138,29 @@ public class TvScanService extends Service {
         }
     }
 
-    public void setSearchSysT (boolean value1, boolean value2){
+    public void callStopSearch() {
+        Log.d(TAG, "=====init callStopSearch");
+        if (mOptionUiManagerT != null) {
+            mOptionUiManagerT.DtvStopScan();
+        } else {
+            Log.d(TAG, "Oops！ mOptionUiManagerT is null.");
+        }
+    }
+
+    public void setSearchSysT (boolean dtv, boolean atv){
         Log.d(TAG, "=====init setSearchSys");
         if (mOptionUiManagerT != null) {
-            mOptionUiManagerT.setSearchSys(value1, value2);
+            mOptionUiManagerT.setSearchSys(dtv, atv);
+        } else {
+            Log.d(TAG, "Oops！ mOptionUiManagerT is null.");
+        }
+    }
+
+    public void setSearchTypeT(String type, int atsc_c) {
+        Log.d(TAG, "=====init setSearchSys");
+        if (mOptionUiManagerT != null) {
+            mOptionUiManagerT.setDtvType(type);
+            mOptionUiManagerT.setAtsccSearchSys(atsc_c);
         } else {
             Log.d(TAG, "Oops！ mOptionUiManagerT is null.");
         }

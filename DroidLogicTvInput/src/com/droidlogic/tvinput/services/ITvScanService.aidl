@@ -29,7 +29,11 @@ interface ITvScanService{
 
     void startManualScan();
 
-    void setSearchSys(boolean value1, boolean value2);
+    void stopScan();
+
+    void setSearchSys(boolean dtv, boolean atv);
+
+    void setSearchType(String type, int atsc_c);
 
     void setFrequency(String value1, String value2);
 
