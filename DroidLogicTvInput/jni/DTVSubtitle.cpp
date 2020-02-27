@@ -994,6 +994,7 @@ error:
         return 0;
     }
 
+#ifdef SUPPORT_ADTV
     static void scte27_section_callback(int dev_no, int fid, const uint8_t *data, int len, void *user_data)
     {
         AM_SCTE27_Decode(user_data, data, len);
@@ -1008,6 +1009,7 @@ error:
         sub->sub_h = height;
         pthread_mutex_unlock(&sub->lock);
     }
+#endif
 
     static jint sub_start_scte27(JNIEnv *env, jobject obj, jint dmx_id, jint pid)
     {
@@ -1394,15 +1396,18 @@ error:
 
     static jint sub_tt_lock_subpg(JNIEnv *env, jobject obj, jint lock)
     {
+#ifdef SUPPORT_ADTV
         TVSubtitleData *data = sub_get_data(env, obj);
         AM_TT2_LockSubpg(data->tt_handle, lock);
+#endif
         return 0;
     }
     static jint sub_tt_goto_subtitle(JNIEnv *env, jobject obj)
     {
+#ifdef SUPPORT_ADTV
         TVSubtitleData *data = sub_get_data(env, obj);
-
         AM_TT2_GotoSubtitle(data->tt_handle);
+#endif
         return 0;
     }
 
