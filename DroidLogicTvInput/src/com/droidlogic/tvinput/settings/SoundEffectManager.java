@@ -1533,6 +1533,8 @@ public class SoundEffectManager {
 
     private void applyAudioEffectByPlayEmptyTrack() {
         int bufsize = AudioTrack.getMinBufferSize(8000, AudioFormat.CHANNEL_OUT_STEREO, AudioFormat.ENCODING_PCM_16BIT);
+        if (bufsize <= 0)
+            return;
         byte data[] = new byte[bufsize];
         AudioTrack trackplayer = new AudioTrack(AudioManager.STREAM_MUSIC, 8000, AudioFormat.CHANNEL_OUT_STEREO,
                 AudioFormat.ENCODING_PCM_16BIT, bufsize, AudioTrack.MODE_STREAM);
