@@ -405,10 +405,6 @@ public class AV1InputService extends DroidLogicTvInputService {
             if (mSubtitleView != null) {
                 mSubtitleView.setVisible(is_subtitle_enable);
             }
-
-            if (signalFmt == SIGNAL_PAL_FMT) {
-                start_teletext();
-            }
         }
 
         @Override
