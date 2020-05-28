@@ -46,12 +46,18 @@ public class ArcInputService extends DroidLogicTvInputService {
     private SystemControlManager mSystemControlManager;
 
     @Override
+    public void onCreate() {
+        super.onCreate();
+        initInputService(DroidLogicTvUtils.DEVICE_ID_ARC, ArcInputService.class.getName());
+    }
+
+    @Override
     public Session onCreateSession(String inputId) {
         super.onCreateSession(inputId);
         Utils.logd(TAG, "onCreateSession:"+inputId);
         mCurrentSession = new ArcInputSession(getApplicationContext(), inputId, getHardwareDeviceId(inputId));
-        registerInputSession(mCurrentSession);
         mCurrentSession.setSessionId(id);
+        registerInputSession(mCurrentSession);
         sessionMap.put(id, mCurrentSession);
         id++;
         if (mSystemControlManager == null) {
@@ -108,9 +114,12 @@ public class ArcInputService extends DroidLogicTvInputService {
         @Override
         public void doRelease() {
             super.doRelease();
-            if (mCurrentSession != null && mCurrentSession.getSessionId() == getSessionId()) {
-                mCurrentSession = null;
-                registerInputSession(null);
+            if (sessionMap.containsKey(getSessionId())) {
+                sessionMap.remove(getSessionId());
+                if (mCurrentSession == this) {
+                    mCurrentSession = null;
+                    registerInputSession(null);
+                }
             }
         }
 
@@ -118,7 +127,9 @@ public class ArcInputService extends DroidLogicTvInputService {
         public void doAppPrivateCmd(String action, Bundle bundle) {
             super.doAppPrivateCmd(action, bundle);
             if (TextUtils.equals(DroidLogicTvUtils.ACTION_STOP_TV, action)) {
-                stopTv();
+                if (mHardware != null) {
+                    mHardware.setSurface(null, null);
+                }
             }
         }
     }

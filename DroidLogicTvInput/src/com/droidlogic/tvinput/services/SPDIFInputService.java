@@ -115,9 +115,11 @@ public class SPDIFInputService extends DroidLogicTvInputService {
         public void doRelease() {
             super.doRelease();
             if (sessionMap.containsKey(getSessionId())) {
-                mCurrentSession = null;
                 sessionMap.remove(getSessionId());
-                registerInputSession(null);
+                if (mCurrentSession == this) {
+                    mCurrentSession = null;
+                    registerInputSession(null);
+                }
             }
         }
 
