@@ -179,6 +179,7 @@
     <string name="tv_mexico">墨西哥</string>
     <string name="tv_germany">德国</string>
     <string name="tv_china">中国</string>
+    <string name="tv_philippines">菲律宾</string>
     <string name="tv_search_mode">搜台模式</string>
     <string name="tv_search_mode_manual">手动</string>
     <string name="tv_search_mode_auto">自动</string>
@@ -194,6 +195,7 @@
     <string name="tv_search_type_atsc_c_standard">ATSC-C(std)</string>
     <string name="tv_search_type_atsc_c_lrc">ATSC-C(lrc)</string>
     <string name="tv_search_type_atsc_c_hrc">ATSC-C(hrc)</string>
+    <string name="tv_search_type_isdb_t">ISDB-T</string>
     <string name="tv_search_option">搜台选项:</string>
     <string name="tv_search_order">频率顺序</string>
     <string name="tv_search_atv_clolor">色彩制式</string>

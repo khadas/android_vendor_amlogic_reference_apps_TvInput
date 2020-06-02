@@ -221,10 +221,11 @@ public class ChannelSearchActivity extends Activity implements OnClickListener {
     public final int COUNTRY_MEXICO = 3;//Mexico
     public final int COUNTRY_GERMANY = 4;
     public final int COUNTRY_CHINA = 5;
+    public final int COUNTRY_PHILIPPINES = 6;
 
-    public final ArrayList<String> COUNTRY_LIST = new ArrayList<String>(){{add("US"); add("IN"); add("ID"); add("MX"); add("DE"); add("CN");}};
+    public final ArrayList<String> COUNTRY_LIST = new ArrayList<String>(){{add("US"); add("IN"); add("ID"); add("MX"); add("DE"); add("CN"); add("PH");}};
 
-    final private int[] COUNTRY = {R.string.tv_america, R.string.tv_india, R.string.tv_indonesia, R.string.tv_mexico, R.string.tv_germany, R.string.tv_china};
+    final private int[] COUNTRY = {R.string.tv_america, R.string.tv_india, R.string.tv_indonesia, R.string.tv_mexico, R.string.tv_germany, R.string.tv_china, R.string.tv_philippines};
 
     final private int[] SEARCH_MODE = {R.string.tv_search_mode_manual, R.string.tv_search_mode_auto};
 
@@ -234,6 +235,7 @@ public class ChannelSearchActivity extends Activity implements OnClickListener {
     final private int[] MEXICO_TV_TYPE = {R.string.tv_search_type_atsc_t, R.string.tv_search_type_atsc_c_standard, R.string.tv_search_type_atsc_c_lrc, R.string.tv_search_type_atsc_c_hrc, R.string.tv_search_type_atsc_c_auto};
     final private int[] GERMANY_TV_TYPE = {R.string.atv, R.string.tv_search_type_dvb_t, R.string.tv_search_type_dvb_c, R.string.tv_search_type_dvb_s};
     final private int[] CHINA_TV_TYPE = {R.string.tv_search_type_atv, R.string.tv_search_type_dtmb};
+    final private int[] PHILIPPINES_TV_TYPE = {R.string.atv, R.string.tv_search_type_isdb_t, R.string.tv_search_type_dvb_c, R.string.tv_search_type_dvb_s};
 
     final private int[] SEARCH_ORDER = {R.string.tv_search_order_low, R.string.tv_search_order_high};
     final private int[] ATV_COLOR_SYSTEM = {R.string.tv_search_atv_clolor_auto, R.string.tv_search_atv_clolor_pal, R.string.tv_search_atv_clolor_ntsc, R.string.tv_search_atv_clolor_secam};
@@ -286,6 +288,9 @@ public class ChannelSearchActivity extends Activity implements OnClickListener {
                 break;
             case "CN"://COUNTRY_LIST.get(COUNTRY_CHINA):
                 list = CHINA_TV_TYPE;
+                break;
+            case "PH"://COUNTRY_LIST.get(COUNTRY_PHILIPPINES):
+                list = PHILIPPINES_TV_TYPE;
                 break;
             default:
                 list = INDIA_TV_TYPE;
@@ -1048,6 +1053,7 @@ public class ChannelSearchActivity extends Activity implements OnClickListener {
     public final String[] MEXICO_TV_TYPE_LIST = {TvContract.Channels.TYPE_ATSC_T, TvContract.Channels.TYPE_ATSC_C, TvContract.Channels.TYPE_ATSC_C, TvContract.Channels.TYPE_ATSC_C, TvContract.Channels.TYPE_ATSC_C};
     public final String[] GERMANY_TV_TYPE_LIST = {TvContract.Channels.TYPE_NTSC, TvContract.Channels.TYPE_DVB_T, TvContract.Channels.TYPE_DVB_C, TvContract.Channels.TYPE_DVB_S};
     public final String[] CHINA_TV_TYPE_LIST = {TvContract.Channels.TYPE_PAL, TvContract.Channels.TYPE_DTMB};
+    public final String[] PHILIPPINES_TV_TYPE_LIST = {TvContract.Channels.TYPE_NTSC, TvContract.Channels.TYPE_DVB_T, TvContract.Channels.TYPE_DVB_C, TvContract.Channels.TYPE_DVB_S};
 
     public final int TV_SEARCH_MANUAL = 0;
     public final int TV_SEARCH_AUTO = 1;
@@ -1167,6 +1173,8 @@ public class ChannelSearchActivity extends Activity implements OnClickListener {
                 return GERMANY_TV_TYPE_LIST;
             case COUNTRY_CHINA:
                 return CHINA_TV_TYPE_LIST;
+            case COUNTRY_PHILIPPINES:
+                return PHILIPPINES_TV_TYPE_LIST;
             default:
                 return INDIA_TV_TYPE_LIST;
         }
