@@ -1251,10 +1251,16 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
                     mUpdateTsFlag = false;
                 }
             }
-           if (!mSystemControlManager.getPropertyBoolean(DroidLogicTvUtils.PROP_NEED_FAST_SWITCH, false)) {
+
+            if (!mSystemControlManager.getPropertyBoolean(DroidLogicTvUtils.PROP_NEED_FAST_SWITCH, false)) {
                 mTvControlManager.TvSetFrontEnd(new TvControlManager.FEParas(info.getFEParas()));
-            } else {
-                onSigChange(mTvControlManager.GetCurrentSignalInfo());
+            } else if (isSurfaceAlive){
+                mSessionHandler.post(new Runnable() {
+                        public void run() {
+                            onSigChange(mTvControlManager.GetCurrentSignalInfo());
+                        }
+                });
+                
             }
 
             setMonitor(info);
