@@ -1296,77 +1296,7 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
         }
 
         protected boolean playProgram(ChannelInfo info) {
-            if (info == null)
-                return false;
-
-            info.print();
-
-            mRecordingId = null;
-
-            TvControlManager.FEParas fe = new TvControlManager.FEParas(info.getFEParas());
-            int audioAuto = getAudioAuto(info);
-            int mixingLevel = mAudioADMixingLevel;
-            if (mixingLevel < 0)
-                mixingLevel = mTvControlDataManager.getInt(mContext.getContentResolver(), DroidLogicTvUtils.TV_KEY_AD_MIX, AD_MIXING_LEVEL_DEF);
-
-            ChannelInfo.Audio audio = null;
-            if (mCurrentAudios != null && audioAuto >= 0)
-                audio = mCurrentAudios.get(audioAuto);
-
-            mTvControlManager.SetAVPlaybackListener(this);
-            mTvControlManager.SetAudioEventListener(this);
-            openTvAudio(DroidLogicTvUtils.SOURCE_TYPE_DTV);
-
-            if (false) {
-                mTvControlManager.PlayDTVProgram(
-                    fe,
-                    info.getVideoPid(),
-                    info.getVfmt(),
-                    (audio != null) ? audio.mPid : -1,
-                    (audio != null) ? audio.mFormat : -1,
-                    info.getPcrPid(),
-                    info.getAudioCompensation(),
-                    DroidLogicTvUtils.hasAudioADTracks(info),
-                    mixingLevel);
-            } else {
-                //("{\"fe\":{\"mod\":7,\"freq\":785028615,\"mode\":16777219},\"v\":{\"pid\":33,\"fmt\":0},\"a\":{\"pid\":36,\"fmt\":3},\"p\":{\"pid\":33}}")
-                String subPidString = new String("\"pid\":0");
-                int subCount = (info.getSubtitlePids() == null)? 0 : info.getSubtitlePids().length;
-                if (subCount != 0) {
-                    subPidString = new String("");
-                    for (int i = 0; i < subCount; i++) {
-                        subPidString = subPidString + "\"pid" + i+ "\":" + info.getSubtitlePids()[i];
-                        if (i != (subCount - 1 ))
-                            subPidString = subPidString + ",";
-                    }
-                    Log.e(TAG, "subpid string: " + subPidString);
-                }
-                StringBuilder param = new StringBuilder("{")
-                    .append("\"type\":\"dtv\"")
-                    .append(",\"fe\":" + info.getFEParas())
-                    .append(",\"v\":{\"pid\":"+info.getVideoPid()+",\"fmt\":"+info.getVfmt()+"}")
-                    .append(",\"a\":{\"pid\":"+(audio != null ? audio.mPid : -1)+",\"fmt\":"+(audio != null ? audio.mFormat : -1)+",\"AudComp\":"+info.getAudioCompensation()+"}")
-                    .append(",\"p\":{\"pid\":"+info.getPcrPid()+"}")
-                    .append(",\"para\":{"+"\"disableTimeShifting\":1")
-                    .append(",\"subpid\":{" + subPidString + "}")
-                    .append(",\"subcnt\":" + subCount)
-                    .append("}")
-                    .append("}");
-                Log.e(TAG, "playProgram dtvparam: " + param.toString());
-                mTvControlManager.startPlay("atsc", param.toString());
-                initTimeShiftStatus();
-            }
-            mTvControlManager.DtvSetAudioChannleMod(info.getAudioChannel());
-            mSystemControlManager.setProperty(DTV_AUDIO_TRACK_IDX,
-                        ((audioAuto>=0)? String.valueOf(audioAuto) : "-1"));
-            mSystemControlManager.setProperty(DTV_AUDIO_TRACK_ID, generateAudioIdString(audio));
-
-            notifyTracks(info);
-
-            tryStartSubtitle(info);
-            startAudioADMainMix(info, audioAuto);
-            isUnlockCurrent_NR = false;
-            setTuningScreen(false);
+            //override by child class
             return true;
         }
 
@@ -4534,9 +4464,6 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
         protected volatile long mRecordStartTimeMs_0 = 0;
         protected volatile long mRecordStartTimeMs = 0;
         protected volatile long mCurrentTimeMs = 0;
-
-        protected void initTimeShiftStatus() {
-        }
 
         protected void onTimeShiftEvent(int msg, int param) {
             switch (msg) {

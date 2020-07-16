@@ -173,21 +173,22 @@ public class ADTVInputService extends DTVInputService {
 
             info.print();
 
-            int audioAuto = getAudioAuto(info);
-            ChannelInfo.Audio audio = null;
-            if (mCurrentAudios != null && mCurrentAudios.size() > 0 && audioAuto >= 0) {
-                audio = mCurrentAudios.get(audioAuto);
-            }
-
             if (mSystemControlManager.getPropertyBoolean(DroidLogicTvUtils.PROP_NEED_FAST_SWITCH, false)) {
                 Log.d(TAG, "fast switch mode, no need replay channel");
                 mSystemControlManager.setProperty(DroidLogicTvUtils.PROP_NEED_FAST_SWITCH, "false");
                 if (info.isAnalogChannel()) {
                     openTvAudio(DroidLogicTvUtils.SOURCE_TYPE_ATV);
                 } else {
-                    //openTvAudio(DroidLogicTvUtils.SOURCE_TYPE_DTV);
+                    mTvControlManager.SetAVPlaybackListener(this);
+                    mTvControlManager.SetAudioEventListener(this);
                 }
             } else {
+                int audioAuto = getAudioAuto(info);
+                ChannelInfo.Audio audio = null;
+                if (mCurrentAudios != null && mCurrentAudios.size() > 0 && audioAuto >= 0) {
+                    audio = mCurrentAudios.get(audioAuto);
+                }
+
                 if (info.isAnalogChannel()) {
                     if (info.isNtscChannel())
                         muteVideo(false);
@@ -221,9 +222,6 @@ public class ADTVInputService extends DTVInputService {
                         Log.e(TAG, "subpid string: " + subPidString);
                     }
                     TvControlManager.FEParas fe = new TvControlManager.FEParas(info.getFEParas());
-                    int mixingLevel = mAudioADMixingLevel;
-                    if (mixingLevel < 0)
-                        mixingLevel = mTvControlDataManager.getInt(mContext.getContentResolver(), DroidLogicTvUtils.TV_KEY_AD_MIX, AD_MIXING_LEVEL_DEF);
 
                     mTvControlManager.SetAVPlaybackListener(this);
                     mTvControlManager.SetAudioEventListener(this);
@@ -246,21 +244,16 @@ public class ADTVInputService extends DTVInputService {
                     Log.d(TAG, "playProgram adtvparam: " + param.toString());
 
                     mTvControlManager.startPlay("atsc", param.toString());
-                    initTimeShiftStatus();
                     mTvControlManager.DtvSetAudioChannleMod(info.getAudioChannel());
+                    startAudioADMainMix(info, audioAuto);
                 }
+                mSystemControlManager.setProperty(DTV_AUDIO_TRACK_IDX,
+                ((audioAuto>=0)? String.valueOf(audioAuto) : "-1"));
+                mSystemControlManager.setProperty(DTV_AUDIO_TRACK_ID, generateAudioIdString(audio));
             }
-
-            mSystemControlManager.setProperty(DTV_AUDIO_TRACK_IDX,
-                        ((audioAuto>=0)? String.valueOf(audioAuto) : "-1"));
-            mSystemControlManager.setProperty(DTV_AUDIO_TRACK_ID, generateAudioIdString(audio));
 
             notifyTracks(info);
-
             tryStartSubtitle(info);
-            if (!info.isAnalogChannel()) {
-                startAudioADMainMix(info, audioAuto);
-            }
 
             isTvPlaying = true;
             return true;
