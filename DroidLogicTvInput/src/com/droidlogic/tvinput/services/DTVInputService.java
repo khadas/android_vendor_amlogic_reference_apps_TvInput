@@ -3705,7 +3705,8 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
                             if ((mTvTime.getTime()/1000 - event.time) > 30) {
                                 Log.e(TAG, "stream replay, tdt time " + event.time + " now time " + mTvTime.getTime()/1000);
                                 stopSubtitle();
-                                tryStartSubtitle(mCurrentChannel);
+                                if (mCurrentChannel != null)
+                                    tryStartSubtitle(mCurrentChannel);
                             }
 
                             if (mTvTime != null)
