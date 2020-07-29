@@ -199,6 +199,7 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
     protected TvTime mTvTime = null;
 
     public boolean is_subtitle_enabled;
+    protected boolean mIsChannelScrambled = false;
     // cur channnel ratings
     private TvContentRating[] mCurChannelRatings = null;
     private Uri mCurrentChannelUri = null;
@@ -496,7 +497,6 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
         protected Uri  mCurrentUri;
         private boolean mIsBlocked = false;
         private boolean mIsChannelBlocked = false;
-        private boolean mIsChannelScrambled = false;
         private boolean mIsPreviousChannelBlocked = false;
 
         private boolean mUpdateTsFlag = false;
@@ -1137,6 +1137,11 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
             isUnlockCurrent_NR = false;
 
             isTvPlaying = false;
+            if (mIsChannelScrambled
+                    && mSystemControlManager.getPropertyBoolean(DroidLogicTvUtils.PROP_NEED_FAST_SWITCH, false)) {
+                // scrambled channels need replay to receive scrambled message, so it can't do fast switch
+                mSystemControlManager.setProperty(DroidLogicTvUtils.PROP_NEED_FAST_SWITCH, "false");
+            }
             mIsChannelScrambled = false;
 
             subtitleAutoStart = mSystemControlManager.getPropertyBoolean(DTV_SUBTITLE_AUTO_START, true);
@@ -1257,10 +1262,13 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
             } else if (isSurfaceAlive){
                 mSessionHandler.post(new Runnable() {
                         public void run() {
-                            onSigChange(mTvControlManager.GetCurrentSignalInfo());
+                            if (isRadioChannel()) {
+                                notifyVideoAvailable();
+                            } else {
+                                onSigChange(mTvControlManager.GetCurrentSignalInfo());
+                            }
                         }
                 });
-                
             }
 
             setMonitor(info);
