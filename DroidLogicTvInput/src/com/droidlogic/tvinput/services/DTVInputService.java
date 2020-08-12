@@ -559,6 +559,7 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
          @Override
         public void onOverlayViewSizeChanged(int width, int height) {
             Log.d(TAG, "onOverlayViewSizeChanged: "+width+","+height);
+            super.onOverlayViewSizeChanged(width, height);
             if (width < 720 || height < 480) {
                 mSubtitleView.setPreviewWindowMode(true);
             } else {
@@ -1258,7 +1259,18 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
             }
 
             if (!mSystemControlManager.getPropertyBoolean(DroidLogicTvUtils.PROP_NEED_FAST_SWITCH, false)) {
+                boolean needResumeBlackout = false;
+                if (mLastChannel != null && mLastChannel.isAnalogChannel() != mCurrentChannel.isAnalogChannel()
+                        && mTvControlManager.getBlackoutEnable() != 1 && !DroidLogicTvUtils.isAtscCountry(mContext)) {
+                    // need clear static frame when switching source between ATV and DTV
+                    mTvControlManager.setBlackoutEnable(1, 0);
+                    needResumeBlackout = true;
+                }
                 mTvControlManager.TvSetFrontEnd(new TvControlManager.FEParas(info.getFEParas()));
+
+                if (needResumeBlackout) {
+                    mTvControlManager.setBlackoutEnable(0, 0);
+                }
             } else if (isSurfaceAlive){
                 mSessionHandler.post(new Runnable() {
                         public void run() {
