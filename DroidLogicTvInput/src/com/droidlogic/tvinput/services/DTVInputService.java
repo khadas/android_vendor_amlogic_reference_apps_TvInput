@@ -1871,6 +1871,7 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
                     break;
                 case KEY_TELETEXT_SWITCH: //Zoom out
                     teletext_switch = !teletext_switch;
+                    reset_atv_status();
                     mSubtitleView.setTTSwitch(teletext_switch);
                     if (teletext_switch && mSubtitleView.tt_have_data()) {
                         String subid = generateSubtitleIdString(pal_teletext_subtitle);

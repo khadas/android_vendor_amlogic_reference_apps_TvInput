@@ -1146,6 +1146,7 @@ public class AV1InputService extends DroidLogicTvInputService {
                     break;
                 case KEY_TELETEXT_SWITCH: //Zoom out
                     teletext_switch = !teletext_switch;
+                    reset_atv_status();
                     enableSubtitleShow(teletext_switch);
                     mSubtitleView.setTTSwitch(teletext_switch);
                     if (teletext_switch && mSubtitleView.tt_have_data()) {
