@@ -126,19 +126,19 @@ endif
 include $(BUILD_SHARED_LIBRARY)
 #######################################################################
 
-include $(CLEAR_VARS)
+#include $(CLEAR_VARS)
 
-LOCAL_MODULE    := libvendorfont
-LOCAL_MULTILIB := both
-LOCAL_MODULE_SUFFIX := .so
-LOCAL_MODULE_TAGS := optional
-LOCAL_MODULE_CLASS := SHARED_LIBRARIES
+#LOCAL_MODULE    := libvendorfont
+#LOCAL_MULTILIB := both
+#LOCAL_MODULE_SUFFIX := .so
+#LOCAL_MODULE_TAGS := optional
+#LOCAL_MODULE_CLASS := SHARED_LIBRARIES
 
-LOCAL_PRODUCT_MODULE := true
-LOCAL_SRC_FILES_arm := arm/$(LOCAL_MODULE)$(LOCAL_MODULE_SUFFIX)
-LOCAL_SRC_FILES_arm64 := arm64/$(LOCAL_MODULE)$(LOCAL_MODULE_SUFFIX)
+#LOCAL_PRODUCT_MODULE := true
+#LOCAL_SRC_FILES_arm := arm/$(LOCAL_MODULE)$(LOCAL_MODULE_SUFFIX)
+#LOCAL_SRC_FILES_arm64 := arm64/$(LOCAL_MODULE)$(LOCAL_MODULE_SUFFIX)
 
-include $(BUILD_PREBUILT)
+#include $(BUILD_PREBUILT)
 
 #######################################################################
 
@@ -155,7 +155,7 @@ LOCAL_C_INCLUDES := \
     system/core/liblog/include \
     libnativehelper/include/nativehelper
 
-LOCAL_SHARED_LIBRARIES += libvendorfont liblog libcutils
+LOCAL_SHARED_LIBRARIES += liblog libcutils libvendorfont
 LOCAL_PRODUCT_MODULE := true
 
 LOCAL_PRELINK_MODULE := false
