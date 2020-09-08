@@ -431,7 +431,7 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
     protected static boolean audioADAutoStart = false;
 
     /*only one monitor instance for all sessions*/
-    protected static DTVSessionImpl.DTVMonitor monitor = null;
+    protected static DTVSessionImpl.DTVMonitor mDTVMonitor = null;
     protected final Object mLock = new Object();
     protected final Object mSubtitleLock = new Object();
     protected final Object mEpgUpdateLock = new Object();
@@ -589,7 +589,6 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
             } catch (InterruptedException e) {
                 Log.e(TAG, "Couldn't wait for finish of MSG_RELEASE");
             } finally {
-                releaseWorkThread();
             }
 
             super.doRelease();
@@ -605,8 +604,9 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
                 mTvControlManager.SetAVPlaybackListener(null);
                 mTvControlManager.SetAudioEventListener(null);
                 //stopTv();
+                setMonitor(null);
             }
-            setMonitor(null);
+
             releaseWorkThread();
             synchronized(mLock) {
                 mCurrentChannel = null;
@@ -3440,24 +3440,24 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
                     Log.d(TAG, "std:"+standard + " forcestd:"+forceStandard);
                     if (forceStandard != null && forceStandard.length() != 0)
                         standard = forceStandard;
-                    if (monitor != null && !monitor.getStandard().equals(standard)) {
-                        monitor.destroy();
-                        monitor=null;
+                    if (mDTVMonitor != null && !mDTVMonitor.getStandard().equals(standard)) {
+                        mDTVMonitor.destroy();
+                        mDTVMonitor = null;
                     }
                     int forceMode = mSystemControlManager.getPropertyInt(DTV_MONITOR_MODE_FORCE, MONITOR_MODE);
                     Log.d(TAG, "monitor:"+MONITOR_MODE+" force:"+forceMode);
                     MONITOR_MODE = forceMode;
-                    if (monitor == null) {
-                        monitor = new DTVMonitor(mContext, getInputId(), DEF_CODING, MONITOR_MODE, standard);
-                        monitor.reset(MONITOR_FEND, MONITOR_DMX,
+                    if (mDTVMonitor == null) {
+                        mDTVMonitor = new DTVMonitor(mContext, getInputId(), DEF_CODING, MONITOR_MODE, standard);
+                        mDTVMonitor.reset(MONITOR_FEND, MONITOR_DMX,
                                   new TvControlManager.TvMode(mChannel.getType()).getBase(),
                                   EPG_LANGUAGE.replaceAll("local", TvMultilingualText.getLocalLang()));
                     }
 
-                    monitor.enterChannel(getTVChannelParams(mChannel), false);
-                    monitor.enterService(mChannel);
+                    mDTVMonitor.enterChannel(getTVChannelParams(mChannel), false);
+                    mDTVMonitor.enterService(mChannel);
 
-                    monitor.setEpgAutoReset(true);
+                    mDTVMonitor.setEpgAutoReset(true);
                 }
             }
         }
@@ -3499,9 +3499,9 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
                     }
                 } else {
                     Log.d(TAG, "stopMonitor");
-                    if (monitor != null) {
-                        monitor.destroy();
-                        monitor = null;
+                    if (mDTVMonitor != null) {
+                        mDTVMonitor.destroy();
+                        mDTVMonitor = null;
                     } else
                         Log.d(TAG, "monitor is null");
                 }
@@ -3511,8 +3511,8 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
         protected void restartMonitorTime() {
             synchronized (mLock) {
                 Log.d(TAG, "restartMonitorTime");
-                if (monitor != null)
-                    monitor.restartMonitorTime();
+                if (mDTVMonitor != null)
+                    mDTVMonitor.restartMonitorTime();
             }
         }
 
