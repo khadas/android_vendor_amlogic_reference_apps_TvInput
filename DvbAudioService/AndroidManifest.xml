@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.droidlogic.dvbaudioservice"
+    android:sharedUserId="android.uid.system">
+
+    <protected-broadcast android:name="droidlogic.intent.action.SYSTEM_CONTROL_EVENT" />
+    <uses-permission android:name="droidlogic.permission.SYSTEM_CONTROL" />
+    <uses-permission android:name="android.permission.TV_INPUT_HARDWARE" />
+
+    <application android:persistent="true"
+                 android:hasCode="true"
+                 android:label="@string/droidlogic_system_label"
+                 android:allowClearUserData="false"
+                 android:killAfterRestore="false"
+                 android:icon="@drawable/ic_launcher_droidlogic"
+                 android:supportsRtl="true"
+                 android:directBootAware="true">
+
+        <uses-library android:name="droidlogic.software.core" />
+
+        <service android:name="com.droidlogic.dvbaudioservice.AudioSystemCmdService" />
+
+        <receiver android:name="com.droidlogic.dvbaudioservice.BootCompleted">
+            <intent-filter android:priority="1000">
+                <action android:name="android.intent.action.PRE_BOOT_COMPLETED" />
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
+    </application>
+
+</manifest>
