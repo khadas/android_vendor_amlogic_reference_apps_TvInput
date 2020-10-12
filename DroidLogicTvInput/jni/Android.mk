@@ -51,7 +51,7 @@ LOCAL_C_INCLUDES += \
 LOCAL_STATIC_LIBRARIES += \
   libam_mw \
   libsqlite \
-  libzvbi \
+  libzvbi_static \
   libam_adp
 endif
 
@@ -114,7 +114,7 @@ LOCAL_PRIVATE_PLATFORM_APIS := true
 
 LOCAL_STATIC_LIBRARIES += \
   libam_mw \
-  libzvbi \
+  libzvbi_static \
   libsqlite \
   libam_adp
 endif
