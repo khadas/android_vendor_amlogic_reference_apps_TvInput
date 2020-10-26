@@ -496,7 +496,7 @@ public class DTVSubtitleView extends View {
                     @Override
                     public void onEnabledChanged(boolean enabled) {
                         super.onEnabledChanged(enabled);
-                        Log.e(TAG, "onenableChange");
+                        Log.e(TAG, "onenableChange from " + ci.cc_setting.is_enabled + " to " + captioningManager.isEnabled());
                         ci.cc_setting.is_enabled = captioningManager.isEnabled();
                     }
 
@@ -1345,6 +1345,9 @@ public class DTVSubtitleView extends View {
         int navi_left = 0;
         int navi_right = 0;
 
+        if (!ci.cc_setting.is_enabled)
+            return;
+
         if (need_clear_canvas) {
             /* Clear canvas */
             canvas.drawPaint(clear_paint);
@@ -1363,8 +1366,6 @@ public class DTVSubtitleView extends View {
             case MODE_DTV_CC:
             case MODE_ATV_CC:
                 /* For atsc */
-                if (!ci.cc_setting.is_enabled)
-                    return;
                 screen_mode = mSystemControlManager.readSysFs("/sys/class/video/screen_mode");
                 video_status = mSystemControlManager.readSysFs("/sys/class/video/video_state");
                 ratio = mSystemControlManager.readSysFs("/sys/class/video/frame_aspect_ratio");

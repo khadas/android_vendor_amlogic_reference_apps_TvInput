@@ -4416,6 +4416,8 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
                     //updateCCStyleParams();
                     mCurrentCCEnabled = enabled;
                     Log.d(TAG, "CCStyleObserver onEnabledChanged: " + enabled);
+                    if (!enabled)
+                        notifyTrackSelected(TvTrackInfo.TYPE_SUBTITLE, null);
                 }
 
                 @Override
