@@ -267,6 +267,7 @@
     <string name="ut_tune_atsc_c_hrc">HRC</string>
     <string name="tv_search_channel_from">From:</string>
     <string name="tv_search_channel_to">To:</string>
+    <string name="tv_search_channel_saving">Saving channels, please wait !</string>
 
     <!-- number search channel-->
     <string name="number_search_title">Searching</string>

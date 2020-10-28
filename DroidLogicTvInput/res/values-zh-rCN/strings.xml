@@ -204,6 +204,7 @@
     <string name="tv_search_order_low">由低到高</string>
     <string name="tv_search_channel">频道</string>
     <string name="tv_search">搜索</string>
+    <string name="tv_search_channel_saving">正在存台，请稍后 !</string>
 
     <!-- number search channel-->
     <string name="number_search_title">"搜台中"</string>

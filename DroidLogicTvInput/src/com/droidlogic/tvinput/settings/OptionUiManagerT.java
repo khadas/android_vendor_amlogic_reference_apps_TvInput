@@ -29,6 +29,8 @@ import android.view.ViewGroup;
 import android.widget.SimpleAdapter;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.content.IntentFilter;
+import android.content.BroadcastReceiver;
 
 import com.droidlogic.app.SystemControlManager;
 import com.droidlogic.app.tv.ChannelInfo;
@@ -115,6 +117,7 @@ public class OptionUiManagerT implements  OnFocusChangeListener, TvControlManage
     private static final int FREQUENCY = 6;
     private static final int CHANNELNUMBER = 7;
     private static final int EXIT_SCAN = 8;
+    private static final int SAVING = 9;
 
     private static final int EVENT_SCAN_END_PERCENT = 100;
 
@@ -157,6 +160,7 @@ public class OptionUiManagerT implements  OnFocusChangeListener, TvControlManage
     private int mAtsccMode = 0;
     private boolean mLiveTvManualSearch = false;
     private boolean mLiveTvAutoSearch = false;
+    private int mScanStage = -1;
 
     /* config in file 'tvconfig.cfg' [atv.auto.scan.mode] */
     /* 0: freq table list sacn mode */
@@ -193,6 +197,7 @@ public class OptionUiManagerT implements  OnFocusChangeListener, TvControlManage
         mSystemControlManager = SystemControlManager.getInstance();
         mTvDataBaseManager = new TvDataBaseManager(mContext);
         mTvControlDataManager = TvControlDataManager.getInstance(mContext);
+        registerChannelScanStartReceiver();
     }
 
     public int getOptionTag() {
@@ -1322,10 +1327,12 @@ public class OptionUiManagerT implements  OnFocusChangeListener, TvControlManage
 
             case TvControlManager.EVENT_STORE_BEGIN:
                 Log.d(TAG, "onEvent:Store begin");
+                mScanStage = TvControlManager.EVENT_STORE_BEGIN;
                 break;
 
             case TvControlManager.EVENT_STORE_END:
                 Log.d(TAG, "onEvent:Store end");
+                mScanStage = TvControlManager.EVENT_STORE_END;
                 String prompt = mResources.getString(R.string.searched);
                 if (channelNumber != 0) {
                     prompt += " " + channelNumber + " " + mResources.getString(R.string.tv_channel);
@@ -1343,34 +1350,92 @@ public class OptionUiManagerT implements  OnFocusChangeListener, TvControlManage
 
             case TvControlManager.EVENT_SCAN_END:
                 Log.d(TAG, "onEvent:Scan end");
+                mScanStage = TvControlManager.EVENT_SCAN_END;
                 sendMessage(PROCCESS, EVENT_SCAN_END_PERCENT, null);
                 stopSearch();
                 break;
 
             case TvControlManager.EVENT_SCAN_EXIT:
                 Log.d(TAG, "onEvent:Scan exit.");
+                mScanStage = TvControlManager.EVENT_SCAN_EXIT;
+                //exit finally after receive store status and show update channels to db for this stage
                 mSystemControlManager.setProperty("tv.channels.count", ""+(channelNumber+radioNumber));
                 mSystemControlManager.writeSysFs(AUTO_ATSC_C_PATH, AUTO_ATSC_C_MODE_DISABLE);//disable auto select std lrc hrc
                 isSearching = SEARCH_STOPPED;
                 saveSearchStatus(isSearching);
+                if (channelNumber == 0 && radioNumber == 0) {
+                    showToast(mResources.getString(R.string.searched) + " 0 " + mResources.getString(R.string.channel));
+                }
                 if (!isLiveTvScaning) {
                     ((TvSettingsActivity) mContext).finish();
                 } else {
                     if (getNumberSearchNeed() != 1) {
-                        Log.d(TAG, "=====not number search: EXIT_SCAN");
-                        sendMessage(EXIT_SCAN, -1, null);
+                        //Log.d(TAG, "=====not number search: EXIT_SCAN");
+                        //sendMessage(EXIT_SCAN, -1, null);
+                        Log.d(TAG, "=====not number search: SAVING");
+                        sendMessage(SAVING, EXIT_SCAN, mResources.getString(R.string.tv_search_channel_saving));
                     } else {
-                        Log.d(TAG, "=====number search: exit");
-                        sendMessage(STATUS, -1, "exit");
+                        //Log.d(TAG, "=====number search: exit");
+                        //sendMessage(STATUS, -1, "exit");
+                        Log.d(TAG, "=====number search: SAVING");
+                        sendMessage(SAVING, STATUS, mResources.getString(R.string.tv_search_channel_saving));
                     }
-                }
-                if (channelNumber == 0 && radioNumber == 0) {
-                    showToast(mResources.getString(R.string.searched) + " 0 " + mResources.getString(R.string.channel));
                 }
                 break;
             default:
                 break;
         }
+    }
+
+    private BroadcastReceiver mChannelScanStoreStatusReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if (intent != null) {
+                if (mScanStage != TvControlManager.EVENT_SCAN_EXIT) {
+                    Log.d(TAG, "mChannelScanStoreStatusReceiver skip invalid EVENT_SCAN_EXIT status");
+                    return;
+                }
+                int status = intent.getIntExtra(DroidLogicTvUtils.ACTION_STORE_CHANNEL_STATUS, -1);
+                excuteChannelScanStoreStatusByThread(status);
+                abortBroadcast();
+            }
+        }
+    };
+
+    private void excuteChannelScanStoreStatusByThread(final int status) {
+        if (mHandler != null) {
+            mHandler.post(new Runnable() {
+                @Override
+                    public void run() {
+                        switch (status) {
+                            case TvControlManager.EVENT_SCAN_EXIT:
+                                Log.d(TAG, "excuteChannelScanStoreStatusByThread Scan exit");
+                                if (!isLiveTvScaning) {
+                                    ((TvSettingsActivity) mContext).finish();
+                                } else {
+                                    if (getNumberSearchNeed() != 1) {
+                                        Log.d(TAG, "=====not number search: EXIT_SCAN");
+                                        sendMessage(EXIT_SCAN, SAVING, null);
+                                    } else {
+                                        Log.d(TAG, "=====number search: exit");
+                                        sendMessage(STATUS, SAVING, "exit");
+                                    }
+                                }
+                                break;
+                        }
+                    }
+            });
+        }
+    }
+
+    private void registerChannelScanStartReceiver() {
+        IntentFilter filter= new IntentFilter();
+        filter.addAction(DroidLogicTvUtils.ACTION_STORE_CHANNEL_STATUS);
+        mContext.registerReceiver(mChannelScanStoreStatusReceiver, filter);
+    }
+
+    private void unRegisterChannelScanStartReceiver() {
+        mContext.unregisterReceiver(mChannelScanStoreStatusReceiver);
     }
 
     /*private void createFactoryResetUi () {
@@ -1420,6 +1485,7 @@ public class OptionUiManagerT implements  OnFocusChangeListener, TvControlManage
         Log.d(TAG,"release");
         mTvControlManager.setScannerListener(null);
         mHandler.removeCallbacksAndMessages(null);
+        unRegisterChannelScanStartReceiver();
         mHandler = null;
         mSettingsManager = null;
         mTvControlManager = null;
