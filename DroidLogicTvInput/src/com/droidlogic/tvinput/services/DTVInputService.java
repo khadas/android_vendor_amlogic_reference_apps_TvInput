@@ -528,7 +528,8 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
             initOverlayView(R.layout.layout_overlay);
             Log.d(TAG,"init overlay view");
             if (mOverlayView != null) {
-                mOverlayView.setImage(R.drawable.bg_no_signal);
+                //mOverlayView.setImage(R.drawable.bg_no_signal);
+                mOverlayView.setImageVisibility(false);
                 mSubtitleView = (DTVSubtitleView)mOverlayView.getSubtitleView();
                 mSubtitleView.setSubtitleDataListener(this);
             }
@@ -2140,6 +2141,8 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
             if (isRadioChannel() && mOverlayView != null) {
                 mOverlayView.setImage(R.drawable.bg_radio);
                 mOverlayView.setImageVisibility(true);
+            } else {
+                Log.d(TAG, "notifyVideoAvailable not radio case");
             }
 
             if (mIsChannelScrambled && mTvControlManager.DtvGetVideoFormatInfo().fps <= 0
@@ -2227,6 +2230,7 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
             }
         }
 
+        @Override
         public boolean isRadioChannel() {
             if (mCurrentChannel != null)
                 return ChannelInfo.isRadioChannel(mCurrentChannel);
