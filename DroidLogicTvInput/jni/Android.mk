@@ -18,66 +18,6 @@ endif
 
 include $(CLEAR_VARS)
 
-LOCAL_MODULE    := libjnidtvsubtitle
-LOCAL_MODULE_TAGS := optional
-LOCAL_SRC_FILES := DTVSubtitle.cpp
-LOCAL_ARM_MODE := arm
-LOCAL_C_INCLUDES := \
-  bionic/libc/include \
-  external/skia/include\
-  external/skia/include/core \
-  external/skia/include/config \
-  libnativehelper/include_jni \
-  frameworks/native/include
-
-#DVB define
-ifeq ($(BOARD_HAS_ADTV),true)
-LOCAL_CFLAGS += -DSUPPORT_ADTV
-
-ifeq ($(BOARD_VNDK_VERSION), current)
-LOCAL_CFLAGS += -DUSE_VENDOR_ICU
-endif
-
-LOCAL_C_INCLUDES += \
-  external/libzvbi/src \
-	$(DVB_PATH)/include/am_mw \
-	$(DVB_PATH)/include/am_adp \
-	$(DVB_PATH)/android/ndk/include \
-	vendor/amlogic/external/libzvbi/src \
-	$(BOARD_AML_VENDOR_PATH)/external/libzvbi/src
-
-#LOCAL_PRIVATE_PLATFORM_APIS := true
-
-LOCAL_STATIC_LIBRARIES += \
-  libam_mw \
-  libsqlite \
-  libzvbi_static \
-  libam_adp
-endif
-
-LOCAL_LDLIBS := -llog -landroid -lstdc++
-
-LOCAL_SHARED_LIBRARIES += \
-  libjnigraphics \
-  libicuuc \
-  liblog \
-  libcutils \
-  libicui18n
-LOCAL_PRODUCT_MODULE := true
-#LOCAL_STATIC_LIBRARIES := libskia
-
-LOCAL_PRELINK_MODULE := false
-
-ifeq ($(shell test $(PLATFORM_SDK_VERSION) -ge 26 && echo OK),OK)
-#LOCAL_PROPRIETARY_MODULE := true
-endif
-
-include $(BUILD_SHARED_LIBRARY)
-
-#######################################################################
-
-include $(CLEAR_VARS)
-
 LOCAL_MODULE    := libjnidtvepgscanner
 LOCAL_MODULE_TAGS := optional
 LOCAL_SRC_FILES := DTVEpgScanner.c

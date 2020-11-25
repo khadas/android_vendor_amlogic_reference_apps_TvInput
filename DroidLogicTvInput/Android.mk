@@ -18,10 +18,10 @@ LOCAL_PROGUARD_ENABLED := disabled
 LOCAL_JAVA_LIBRARIES := droidlogic droidlogic-tv
 
 LOCAL_JNI_SHARED_LIBRARIES := \
-    libjnidtvsubtitle \
     libjnidtvepgscanner \
     libjnifont
 
+LOCAL_REQUIRED_MODULES := libsubtitlemanager_jni
 LOCAL_PRIVATE_PLATFORM_APIS := true
 
 #LOCAL_PRIVILEGED_MODULE := true
