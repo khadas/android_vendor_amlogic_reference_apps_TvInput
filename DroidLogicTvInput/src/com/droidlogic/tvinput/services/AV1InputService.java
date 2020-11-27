@@ -588,8 +588,9 @@ public class AV1InputService extends DroidLogicTvInputService {
             int index = -1;
             notifyTrackSelected(type, trackId);
             ChannelInfo.Subtitle subtitle = parseSubtitleIdString(trackId);
+            if (subtitle != null)
+                index = subtitle.id;
 
-            index = subtitle.id;
             Log.d(TAG, "onSelectTrack: [type:" + type + "] [id:" + trackId + "] " + "index" + index);
             return true;
         }
