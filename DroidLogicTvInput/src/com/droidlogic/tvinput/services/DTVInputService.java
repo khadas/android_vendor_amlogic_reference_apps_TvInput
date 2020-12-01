@@ -183,6 +183,7 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
     public static final String MAX_CACHE_SIZE_KEY = "tv.dtv.tf.max.size";
     public static final int MAX_CACHE_SIZE_DEF = 2 * 1024;  // 2GB
     public static final int MIN_CACHE_SIZE_DEF = 256;  // 256MB
+    public static final String PVR_DEFAULT_PATH = "/data/vendor/tvserver";
 
     private static ChannelInfo.Subtitle pal_teletext_subtitle = null;
 
@@ -366,7 +367,10 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
             boolean allowToUseInternalStorage = true;
             if (useExternalStorage || allowToUseInternalStorage) {
                 baseDir = useExternalStorage ? getExternalCacheDir() : getCacheDir();
-                return baseDir.getAbsolutePath();
+                Log.d(TAG, "getCacheStoragePath baseDir: " + baseDir.getAbsolutePath());
+                Log.d(TAG, "getCacheStoragePath PVR_DEFAULT_PATH: " + PVR_DEFAULT_PATH);
+                return PVR_DEFAULT_PATH;
+                //return baseDir.getAbsolutePath();
             }
         }
         return "/storage";

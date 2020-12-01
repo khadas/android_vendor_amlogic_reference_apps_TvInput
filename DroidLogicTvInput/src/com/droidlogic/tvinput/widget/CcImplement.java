@@ -554,6 +554,7 @@ public class CcImplement {
         JSONArray windowArr = null;
         String ccVersion;
         int windows_count;
+        final int windows_sizes = 8;
         Window windows[];
         boolean init_flag;
         boolean style_use_broadcast;
@@ -570,13 +571,15 @@ public class CcImplement {
         }
 
         CaptionWindow() {
-            windows = new Window[8];
-            for (int i=0; i<8; i++)
+            windows = new Window[windows_sizes];
+            for (int i=0; i<windows_sizes; i++)
                 windows[i] = new Window();
         }
 
         void updateCaptionWindow(String jsonStr)
         {
+            int n = 0;
+
             caption_screen.updateVideoPosition(ratio, screen_mode, video_status);
             caption_screen.updateLayout();
             init_flag = false;
@@ -587,21 +590,34 @@ public class CcImplement {
                     init_flag = false;
                     return;
                 }
+
                 ccVersion = ccObj.getString("type");
                 if (ccVersion.matches("cea608"))
                 {
                     windowArr = ccObj.getJSONArray("windows");
                     windows_count = windowArr.length();
+                    if (windows_count > windows_sizes) {
+                        n = windows_sizes;
+                        Log.i(TAG, "cea608 windows_count[" +  windows_count + "] > windows_sizes[" + windows_sizes + "] ");
+                    } else {
+                        n = windows_count;
+                    }
                     //Log.e(TAG, "ccType 608" + " window number: " + windows_count);
-                    for (int i=0; i<windows_count; i++)
+                    for (int i=0; i<n; i++)
                         windows[i].updateWindow(windowArr.getJSONObject(i));
                 }
                 else if (ccVersion.matches("cea708"))
                 {
                     windowArr = ccObj.getJSONArray("windows");
                     windows_count = windowArr.length();
+                    if (windows_count > windows_sizes) {
+                        n = windows_sizes;
+                        Log.i(TAG, "cea708 windows_count[" +  windows_count + "] > windows_sizes[" + windows_sizes + "] ");
+                    } else {
+                        n = windows_count;
+                    }
                     //Log.e(TAG, "ccType 708" + " window number: " + windows_count);
-                    for (int i=0; i<windows_count; i++)
+                    for (int i=0; i<n; i++)
                         windows[i].updateWindow(windowArr.getJSONObject(i));
                 }
                 else {
@@ -671,12 +687,13 @@ public class CcImplement {
             JSONArray json_rows;
             int fill_opacity_int;
 
+            final int rows_sizes = 16;
             Rows rows[];
             //Temp use system property
 
             Window() {
-                rows = new Rows[16];
-                for (int i=0; i<16; i++)
+                rows = new Rows[rows_sizes];
+                for (int i=0; i<rows_sizes; i++)
                     rows[i] = new Rows();
             }
             void windowReset()
@@ -698,6 +715,8 @@ public class CcImplement {
                 pensize_window_depend = 0;
             }
             void updateWindow(JSONObject windowStr) {
+                int n = 0;
+
                 windowReset();
                 window_edge_width = (float)(caption_screen.max_font_height * window_edge_rate);
                 try {
@@ -780,7 +799,13 @@ public class CcImplement {
                     window_max_font_size = caption_screen.safe_title_width / 32;
                     window_width = col_count * window_max_font_size;
                     /* ugly repeat */
-                    for (int i=0; i<row_count; i++) {
+                    if (row_count > rows_sizes) {
+                        n = rows_sizes;
+                        Log.i(TAG, "Window row_count[" +  row_count + "] > rows_sizes[" + rows_sizes + "] ");
+                    } else {
+                        n = row_count;
+                    }
+                    for (int i=0; i<n; i++) {
                         try {
                             rows[i].updateRows(new JSONObject(json_rows.optString(i)));
                         } catch (Exception e) {
@@ -810,6 +835,8 @@ public class CcImplement {
 
             void draw(Canvas canvas)
             {
+                int n = 0;
+
                 /* Draw window */
                 if (ccVersion.equalsIgnoreCase("cea708")) {
                     double columns_width;
@@ -847,7 +874,13 @@ public class CcImplement {
 
 
                 /* Draw rows */
-                for (int i=0; i<row_count; i++) {
+                if (row_count > rows_sizes) {
+                    n = rows_sizes;
+                    Log.i(TAG, "draw row_count[" +  row_count + "] > rows_sizes[" + rows_sizes + "] ");
+                } else {
+                    n = row_count;
+                }
+                for (int i=0; i<n; i++) {
                     if (rows[i].rowArray.length() != 0)
                         rows[i].draw(canvas);
                 }
@@ -1013,6 +1046,7 @@ public class CcImplement {
             class Rows
             {
                 int str_count;
+                final int rowStrs_sizes = 6;
                 RowStr rowStrs[];
                 JSONArray rowArray;
                 /* Row length is sum of each string */
@@ -1027,8 +1061,8 @@ public class CcImplement {
                 double row_max_font_size;
 
                 Rows() {
-                    rowStrs = new RowStr[6];
-                    for (int i=0; i<6; i++)
+                    rowStrs = new RowStr[rowStrs_sizes];
+                    for (int i=0; i<rowStrs_sizes; i++)
                         rowStrs[i] = new RowStr();
                 }
                 void updateRows(JSONObject rows)
@@ -1043,9 +1077,16 @@ public class CcImplement {
                         rowArray = rows.optJSONArray("content");
                         row_start_x = rows.optInt("row_start");
                         str_count = rowArray.length();
+                        int n = 0;
                         double single_char_width = ccVersion.matches("cea708") ?
                                 window_max_font_size : caption_screen.fixed_char_width;
-                        for (int i=0; i<str_count; i++) {
+                        if (str_count > rowStrs_sizes) {
+                            n = rowStrs_sizes;
+                            Log.i(TAG, "updateRows str_count[" +  str_count + "] > rowStrs_sizes[" + rowStrs_sizes + "] ");
+                        } else {
+                            n = str_count;
+                        }
+                        for (int i=0; i<n; i++) {
                             rowStrs[i].updateRowStr(rowArray.getJSONObject(i));
                             //Every string starts at prior string's tail
                             rowStrs[i].str_start_x = row_length_on_paint + row_start_x * single_char_width;
@@ -1065,9 +1106,18 @@ public class CcImplement {
 
                 void draw(Canvas canvas)
                 {
+                    int n = 0;
+
                     if (row_length_on_paint == 0 || str_count == 0)
                         return;
-                    for (int i=0; i<str_count; i++)
+
+                    if (str_count > rowStrs_sizes) {
+                        n = rowStrs_sizes;
+                        Log.i(TAG, "draw str_count[" +  str_count + "] > rowStrs_sizes[" + rowStrs_sizes + "] ");
+                    } else {
+                        n = str_count;
+                    }
+                    for (int i=0; i<n; i++)
                         rowStrs[i].draw(canvas);
                 }
 
@@ -1566,13 +1616,22 @@ public class CcImplement {
 
         void draw(Canvas canvas)
         {
+            int n = 0;
+
             /* Windows come in rising queue,
              * so we need to revert the draw sequence */
             if (!init_flag) {
                 Log.e(TAG, "Init failed, skip draw");
                 return;
             }
-            for (int i = windows_count - 1; i >= 0; i--)
+
+            if (windows_count > windows_sizes) {
+                n = windows_sizes;
+                Log.i(TAG, "draw windows_count[" +  windows_count + "] > windows_sizes[" + windows_sizes + "] ");
+            } else {
+                n = windows_count;
+            }
+            for (int i = n - 1; i >= 0; i--)
                 windows[i].draw(canvas);
         }
     }
