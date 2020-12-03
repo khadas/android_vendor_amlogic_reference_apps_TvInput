@@ -4116,6 +4116,73 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
                 }
             }
 
+            private void updateAtscChannelInfo(DTVEpgScanner.Event event) {
+                synchronized (this) {
+                    if (mTvDataBaseManager == null)
+                        return;
+                    ArrayList<ChannelInfo> channelList =
+                        mTvDataBaseManager.getChannelList(mInputId, ChannelInfo.COMMON_PROJECTION,
+                            TvContract.Channels.COLUMN_SERVICE_ID+"=? and "+
+                            TvContract.Channels.COLUMN_DISPLAY_NUMBER+"=?",
+                            new String[]{
+                                "" + event.channel.getServiceId(),
+                                "" + event.channel.getMajorChannelNumber() +
+                                "-" + event.channel.getMinorChannelNumber()
+                            });
+                    for (ChannelInfo co : channelList) {
+                        co.setDisplayName(TvMultilingualText.getText(event.channel.getDisplayName()));
+                        co.setDisplayNameMulti(event.channel.getDisplayName());
+                        mTvDataBaseManager.updateChannelInfo(co);
+                    }
+                }
+            }
+
+            private void updateDvbChannelInfo(DTVEpgScanner.Event event) {
+                Log.d(TAG, "[NAME Update]: current: ONID:"+event.channel.getOriginalNetworkId()
+                    +" Version:"+event.channel.getSdtVersion());
+                Log.d(TAG, "\t[Service]: id:"+event.channel.getServiceId() + " name:"+event.channel.getDisplayName());
+                Log.d(TAG, "[NAME Update]: ONID:"+event.services.mNetworkId
+                    +" TSID:"+event.services.mTSId
+                    +" Version:"+event.services.mVersion);
+                for (DTVEpgScanner.Event.ServiceInfosFromSDT.ServiceInfoFromSDT s : event.services.mServices) {
+                    Log.d(TAG, "\t[Service]: id:" + s.mId + " type:"+s.mType + " name:"+s.mName);
+                    Log.d(TAG, "\t           running:"+s.mRunning + " freeCA:"+s.mFreeCA);
+                }
+                synchronized (this) {
+                    if (mTvDataBaseManager == null)
+                        return;
+                    ArrayList<ChannelInfo> channelList =
+                        mTvDataBaseManager.getChannelList(mInputId, ChannelInfo.COMMON_PROJECTION,
+                            TvContract.Channels.COLUMN_ORIGINAL_NETWORK_ID+"=? and "+
+                            TvContract.Channels.COLUMN_TRANSPORT_STREAM_ID+"=?",
+                            new String[]{
+                                /*
+                                 * If sdt timeout in scanning, onid should be -1.
+                                 * Risk exsits if sdt timeout more then once in autoscan,
+                                 * TSId+SId may not identify a service without ONId.
+                                 * */
+                                "-1",
+                                /*String.valueOf(event.services.mNetworkId),*/
+                                String.valueOf(event.services.mTSId)
+                            });
+                    int count = 0;
+                    for (ChannelInfo co : channelList) {
+                        for (DTVEpgScanner.Event.ServiceInfosFromSDT.ServiceInfoFromSDT sn : event.services.mServices) {
+                            if (co.getServiceId() == sn.mId) {
+                                co.setOriginalNetworkId(event.services.mNetworkId);
+                                co.setDisplayName(TvMultilingualText.getText(sn.mName));
+                                co.setDisplayNameMulti(sn.mName);
+                                co.setSdtVersion(event.services.mVersion);
+                                mTvDataBaseManager.updateChannelInfo(co);
+                                count = count + 1;
+                            }
+                        }
+                    }
+                    Log.d(TAG, "found ["+event.services.mServices.size()+"] services in SDT.");
+                    Log.d(TAG, "update ["+count+"] services in DB.");
+                }
+            }
+
             private void resolveMonitorEvent(DTVEpgScanner.Event event) {
                 //if (DEBUG) Log.d(TAG, "Monitor event: " + event.type + " this:" +this);
                 switch (event.type) {
@@ -4270,48 +4337,11 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
                     }
                     break;
                     case DTVEpgScanner.Event.EVENT_PROGRAM_NAME_UPDATE: {
-                        Log.d(TAG, "[NAME Update]: current: ONID:"+event.channel.getOriginalNetworkId()
-                            +" Version:"+event.channel.getSdtVersion());
-                        Log.d(TAG, "\t[Service]: id:"+event.channel.getServiceId() + " name:"+event.channel.getDisplayName());
-                        Log.d(TAG, "[NAME Update]: ONID:"+event.services.mNetworkId
-                            +" TSID:"+event.services.mTSId
-                            +" Version:"+event.services.mVersion);
-                        for (DTVEpgScanner.Event.ServiceInfosFromSDT.ServiceInfoFromSDT s : event.services.mServices) {
-                            Log.d(TAG, "\t[Service]: id:" + s.mId + " type:"+s.mType + " name:"+s.mName);
-                            Log.d(TAG, "\t           running:"+s.mRunning + " freeCA:"+s.mFreeCA);
-                        }
-                        synchronized (this) {
-                            if (mTvDataBaseManager == null)
-                                break;
-                            ArrayList<ChannelInfo> channelList =
-                                mTvDataBaseManager.getChannelList(mInputId, ChannelInfo.COMMON_PROJECTION,
-                                    TvContract.Channels.COLUMN_ORIGINAL_NETWORK_ID+"=? and "+
-                                    TvContract.Channels.COLUMN_TRANSPORT_STREAM_ID+"=?",
-                                    new String[]{
-                                        /*
-                                         * If sdt timeout in scanning, onid should be -1.
-                                         * Risk exsits if sdt timeout more then once in autoscan,
-                                         * TSId+SId may not identify a service without ONId.
-                                         * */
-                                        "-1",
-                                        /*String.valueOf(event.services.mNetworkId),*/
-                                        String.valueOf(event.services.mTSId)
-                                    });
-                            int count = 0;
-                            for (ChannelInfo co : channelList) {
-                                for (DTVEpgScanner.Event.ServiceInfosFromSDT.ServiceInfoFromSDT sn : event.services.mServices) {
-                                    if (co.getServiceId() == sn.mId) {
-                                        co.setOriginalNetworkId(event.services.mNetworkId);
-                                        co.setDisplayName(TvMultilingualText.getText(sn.mName));
-                                        co.setDisplayNameMulti(sn.mName);
-                                        co.setSdtVersion(event.services.mVersion);
-                                        mTvDataBaseManager.updateChannelInfo(co);
-                                        count = count + 1;
-                                    }
-                                }
-                            }
-                            Log.d(TAG, "found ["+event.services.mServices.size()+"] services in SDT.");
-                            Log.d(TAG, "update ["+count+"] services in DB.");
+                        if ((event.channel.getOriginalNetworkId() == -1)
+                            && (event.channel.getMajorChannelNumber() != 0)) {
+                            updateAtscChannelInfo(event);
+                        } else {
+                            updateDvbChannelInfo(event);
                         }
                     }
                     break;

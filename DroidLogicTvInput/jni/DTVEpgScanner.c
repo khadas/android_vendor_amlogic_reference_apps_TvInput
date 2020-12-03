@@ -1269,6 +1269,61 @@ static int epg_mgt_update(AM_EPG_Handle_t handle, int type, void *tables, void *
     return 0;
 }
 
+static void VCT_Update(AM_EPG_Handle_t handle, dvbpsi_atsc_vct_t *vct) {
+   JNIEnv *env;
+   int ret;
+   int attached = 0;
+   EPGData *priv_data;
+   dvbpsi_atsc_vct_channel_t *vct_channels = vct->p_first_channel;
+   dvbpsi_atsc_vct_channel_t *vct_channel;
+   char name[22] = {0};
+   char multiName[256] = {0};
+
+   AM_EPG_GetUserData(handle, (void**)&priv_data);
+   if (!priv_data)
+       return ;
+
+   ret = (*gJavaVM)->GetEnv(gJavaVM, (void**) &env, JNI_VERSION_1_4);
+   if (ret <0) {
+       ret = (*gJavaVM)->AttachCurrentThread(gJavaVM,&env,NULL);
+       if (ret <0) {
+           log_error("callback handler:failed to attach current thread");
+           return ;
+       }
+       attached = 1;
+   }
+
+   AM_SI_LIST_BEGIN(vct_channels, vct_channel)
+
+      jobject event = (*env)->NewObject(env, gEventClass, gEventInitID, priv_data->obj, EVENT_PROGRAM_NAME_UPDATE);
+      jobject channel = (*env)->NewObject(env, gChannelClass, gChannelInitID, event, 0);
+
+      (*env)->SetIntField(env,channel,\
+              (*env)->GetFieldID(env, gChannelClass, "mMajorChannelNumber", "I"), (int)(vct_channel->i_major_number));
+      (*env)->SetIntField(env,channel,\
+              (*env)->GetFieldID(env, gChannelClass, "mMinorChannelNumber", "I"), (int)(vct_channel->i_minor_number));
+      (*env)->SetIntField(env,channel,\
+              (*env)->GetFieldID(env, gChannelClass, "mOriginalNetworkId", "I"), -1);
+
+      if (AM_SI_ConvertToUTF8((char*)vct_channel->i_short_name, 14, name, 22, "utf-16") == 0) {
+          snprintf(multiName, sizeof(multiName), "xxx%s", name);
+          (*env)->SetObjectField(env,channel,\
+                  (*env)->GetFieldID(env, gChannelClass, "mDisplayName", "Ljava/lang/String;"), (*env)->NewStringUTF(env, multiName));
+      }
+      (*env)->SetIntField(env,channel,\
+              (*env)->GetFieldID(env, gChannelClass, "mServiceId", "I"), (int)(vct_channel->i_program_number));
+
+      (*env)->SetObjectField(env,event,(*env)->GetFieldID(env, gEventClass, "channel", "Lcom/droidlogic/app/tv/ChannelInfo;"), channel);
+
+      (*env)->CallVoidMethod(env, priv_data->obj, gOnEventID, event);
+
+   AM_SI_LIST_END()
+
+   if (attached) {
+       (*gJavaVM)->DetachCurrentThread(gJavaVM);
+   }
+}
+
 static int epg_vct_update(AM_EPG_Handle_t handle, int type, void *tables, void *user_data)
 {
         dvbpsi_atsc_vct_t *vcts = (dvbpsi_atsc_vct_t*)tables;
@@ -1287,8 +1342,10 @@ static int epg_vct_update(AM_EPG_Handle_t handle, int type, void *tables, void *
         AM_SI_LIST_BEGIN(vcts, vct)
              if ((vct->i_extension == pch_cur->mTransportStreamId) && (pch_cur->mSdtVersion != vcts->i_version)) {
                   log_info("##### vct: version changed ##### wow  VctVersion: [%d] -> [%d] ",pch_cur->mSdtVersion, vcts->i_version); //temp use mSdtVersion to store vctVersion.
-                  if (pch_cur->mSdtVersion != 0xff)
-                       epg_evt_callback((long)handle, AM_EPG_EVT_UPDATE_TS, 0, NULL);
+                  if (pch_cur->mSdtVersion != 0xff) {
+                       //epg_evt_callback((long)handle, AM_EPG_EVT_UPDATE_TS, 0, NULL);
+                       VCT_Update(handle, vct);
+                  }
                   pch_cur->mSdtVersion = vcts->i_version;
                   break;
              }
@@ -1385,7 +1442,8 @@ static void epg_create(JNIEnv* env, jobject obj, jint fend_id, jint dmx_id, jint
     if (!epg_conf_get("tv.dtv.tsupdate.pat.disable", 0))
         AM_EPG_SetTablesCallback(data->handle, AM_EPG_TAB_PAT, epg_table_callback, NULL);
     AM_EPG_SetTablesCallback(data->handle, AM_EPG_TAB_MGT, epg_table_callback, NULL);
-    if (epg_conf_get("tv.dtv.tsupdate.vct.enable", 0))
+    //default receive vct update callback for channel info changes
+    if (epg_conf_get("tv.dtv.tsupdate.vct.enable", 1))
         AM_EPG_SetTablesCallback(data->handle, AM_EPG_TAB_VCT, epg_table_callback, NULL);
 #endif
 }
