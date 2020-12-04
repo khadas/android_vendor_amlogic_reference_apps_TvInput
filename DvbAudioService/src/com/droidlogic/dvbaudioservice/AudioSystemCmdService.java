@@ -103,6 +103,7 @@ public class AudioSystemCmdService extends Service implements SystemControlManag
     final IAudioRoutesObserver.Stub mAudioRoutesObserver = new IAudioRoutesObserver.Stub() {
         @Override
         public void dispatchAudioRoutesChanged(final AudioRoutesInfo newRoutes) {
+            Log.i(TAG, "dispatchAudioRoutesChanged");
             mCurAudioRoutesInfo = newRoutes;
             mHasStartedDecoder = false;
             mHandler.removeCallbacks(mHandleAudioSinkUpdatedRunnable);
@@ -162,6 +163,51 @@ public class AudioSystemCmdService extends Service implements SystemControlManag
         throw new UnsupportedOperationException("Not yet implemented");
     }
 
+    private String AudioCmdToString(int cmd) {
+        String temp = "["+cmd+"]";
+        switch (cmd) {
+            case ADEC_START_DECODE:
+                return temp + "START_DECODE";
+            case ADEC_PAUSE_DECODE:
+                return temp + "PAUSE_DECODE";
+            case ADEC_RESUME_DECODE:
+                return temp + "RESUME_DECODE";
+            case ADEC_STOP_DECODE:
+                return temp + "STOP_DECODE";
+            case ADEC_SET_DECODE_AD:
+                return temp + "SET_DECODE_AD";
+            case ADEC_SET_VOLUME:
+                return temp + "SET_VOLUME";
+            case ADEC_SET_MUTE:
+                return temp + "SET_MUTE";
+            case ADEC_SET_OUTPUT_MODE:
+                return temp + "SET_OUTPUT_MODE";
+            case ADEC_SET_PRE_GAIN:
+                return temp + "SET_PRE_GAIN";
+            case ADEC_SET_PRE_MUTE:
+                return temp + "SET_PRE_MUTE";
+            case ADEC_OPEN_DECODER:
+                return temp + "OPEN_DECODER";
+            case ADEC_CLOSE_DECODER:
+                return temp + "CLOSE_DECODER";
+            case ADEC_SET_DEMUX_INFO:
+                return temp + "SET_DEMUX_INFO";
+
+            case MSG_MIX_AD_DUAL_SUPPORT:
+                return temp + "AD_DUAL_SUPPORT";
+            case MSG_MIX_AD_MIX_SUPPORT:
+                return temp + "AD_MIX_SUPPORT";
+            case MSG_MIX_AD_MIX_LEVEL:
+                return temp + "AD_MIX_LEVEL";
+            case MSG_MIX_AD_SET_MAIN:
+                return temp + "AD_SET_MAIN";
+            case MSG_MIX_AD_SET_ASSOCIATE:
+                return temp + "AD_SET_ASSOCIATE";
+            default:
+                return temp + "invalid cmd";
+        }
+    }
+
     private boolean setAdFunction(int msg, int param1) {
         boolean result = false;
         if (mAudioManager == null) {
@@ -208,7 +254,7 @@ public class AudioSystemCmdService extends Service implements SystemControlManag
                         + "setAudioDescriptionOn " + (param1 == 1));
                 break;*/
             default:
-                Log.i(TAG,"setAdFunction unkown  msg = " + msg + ", param1 = " + param1);
+                Log.i(TAG,"setAdFunction unkown  msg:" + msg + ", param1:" + param1);
                 break;
         }
               return result;
@@ -216,9 +262,9 @@ public class AudioSystemCmdService extends Service implements SystemControlManag
 
     @Override
     public void OnAudioEvent(int cmd, int param1, int param2) {
-        Log.d(TAG, "cmd = "+cmd+" param1 = "+param1+" param2 = "+param2);
+        Log.d(TAG, "OnAudioEvent cmd:"+ AudioCmdToString(cmd) + ", param1:" + param1 + ", param2:" + param2);
         if (mAudioManager == null) {
-            Log.e(TAG, "get audio service failed!");
+            Log.e(TAG, "OnAudioEvent mAudioManager is null");
         } else {
             switch (cmd) {
                 case ADEC_SET_DEMUX_INFO:
@@ -249,8 +295,7 @@ public class AudioSystemCmdService extends Service implements SystemControlManag
                     mAudioManager.setParameters("cmd="+cmd);
                     mAudioManager.setParameters("subafmt="+param1);
                     mAudioManager.setParameters("subapid="+param2);
-                    Log.d(TAG, "AHandler setParameters ADEC_SET_DECODE_AD:cmd=" + cmd
-                            + ",subafmt=" + param1 + ",subapid=" + param2);
+                    Log.d(TAG, "OnAudioEvent subafmt:" + param1 + ", subapid:" + param2);
                     break;
                 case MSG_MIX_AD_MIX_SUPPORT://Associated audio mixing on/off
                     if (param1 == 0) {
@@ -260,13 +305,10 @@ public class AudioSystemCmdService extends Service implements SystemControlManag
                         setAdFunction(MSG_MIX_AD_DUAL_SUPPORT, 1);
                         setAdFunction(MSG_MIX_AD_MIX_SUPPORT, 1);
                     }
-                    Log.d(TAG, "setAdFunction MSG_MIX_AD_MIX_SUPPORT setParameters:"
-                            + "associate_audio_mixing_enable=" + (param1 > 0 ? 1 : 0));
+                    Log.d(TAG, "OnAudioEvent associate_audio_mixing_enable=" + (param1 > 0 ? 1 : 0));
                 break;
                 case MSG_MIX_AD_MIX_LEVEL:
                      setAdFunction(MSG_MIX_AD_MIX_LEVEL, param2);
-                     Log.d(TAG, "setAdFunction MSG_MIX_AD_MIX_LEVEL setParameters:"
-                            + "param2=" + param2);
                 break;
                 case ADEC_SET_VOLUME:
                     //mAudioManager.setParameters("cmd="+cmd);
@@ -309,7 +351,7 @@ public class AudioSystemCmdService extends Service implements SystemControlManag
                     mHasOpenedDecoder = false;
                     break;
                 default:
-                    Log.i(TAG,"unkown audio cmd!");
+                    Log.w(TAG,"OnAudioEvent unkown audio cmd!");
                     break;
             }
         }
@@ -354,7 +396,7 @@ public class AudioSystemCmdService extends Service implements SystemControlManag
         mCurrentMaxIndex = mAudioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC);
         mCurrentMinIndex = mAudioManager.getStreamMinVolume(AudioManager.STREAM_MUSIC);
         mCurrentIndex = mAudioManager.getStreamVolume(AudioManager.STREAM_MUSIC);
-        Log.d(TAG, "updateVolume:mCurrentIndex= "+ mCurrentIndex + ",mCommitedIndex="+mCommitedIndex);
+        Log.d(TAG, "updateVolume mCurrentIndex:"+ mCurrentIndex + ", mCommitedIndex:" + mCommitedIndex);
     }
 
     private void handleVolumeChange(Context context, Intent intent) {
@@ -369,6 +411,7 @@ public class AudioSystemCmdService extends Service implements SystemControlManag
                 if (index == mCurrentIndex) {
                     return;
                 }
+                Log.i(TAG, "handleVolumeChange VOLUME_CHANGED index:" + index);
                 mCurrentIndex = index;
                 break;
             }
@@ -377,12 +420,13 @@ public class AudioSystemCmdService extends Service implements SystemControlManag
                 if (streamType != AudioManager.STREAM_MUSIC) {
                     return;
                 }
+                Log.i(TAG, "handleVolumeChange MUTE_CHANGED");
                 // volume index will be updated at onMediaStreamVolumeChanged() through
                 // updateVolume().
                 break;
             }
             default:
-                Slog.w(TAG, "Unrecognized intent: " + intent);
+                Slog.w(TAG, "handleVolumeChange action:" + action + ", Unrecognized intent: " + intent);
                 return;
         }
         synchronized (mLock) {
@@ -418,8 +462,8 @@ public class AudioSystemCmdService extends Service implements SystemControlManag
     private void findAudioSinkFromAudioPolicy(List<AudioDevicePort> sinks) {
         sinks.clear();
         ArrayList<AudioPort> audioPorts = new ArrayList<>();
-        int[] portGeneration = new int[1];
-        if (AudioSystem.listAudioPorts(audioPorts, portGeneration) != AudioManager.SUCCESS) {
+        if (AudioManager.listAudioPorts(audioPorts) != AudioManager.SUCCESS) {
+            Log.w(TAG, "findAudioSinkFromAudioPolicy listAudioPorts failed");
             return;
         }
         int sinkDevice = mAudioManager.getDevicesForStream(AudioManager.STREAM_MUSIC);
@@ -440,8 +484,8 @@ public class AudioSystemCmdService extends Service implements SystemControlManag
             return null;
         }
         ArrayList<AudioPort> audioPorts = new ArrayList<>();
-        int[] portGeneration = new int[1];
-        if (AudioSystem.listAudioPorts(audioPorts, portGeneration) != AudioManager.SUCCESS) {
+        if (AudioManager.listAudioPorts(audioPorts) != AudioManager.SUCCESS) {
+            Log.w(TAG, "findAudioDevicePort listAudioPorts failed");
             return null;
         }
         AudioDevicePort port;
@@ -457,6 +501,7 @@ public class AudioSystemCmdService extends Service implements SystemControlManag
     }
 
     private void reStartAdecDecoderIfPossible() {
+        Log.i(TAG, "reStartAdecDecoderIfPossible StartDecoderCmd:" + mHasReceivedStartDecoderCmd);
         mAudioManager.setParameters("tuner_in=dtv");
         if (mHasReceivedStartDecoderCmd) {
             mAudioManager.setParameters("fmt="+mCurrentFmt);
@@ -469,6 +514,7 @@ public class AudioSystemCmdService extends Service implements SystemControlManag
     private void updateAudioConfigLocked() {
         if (mTvInputManager.getHardwareList() != null && mAudioSource != null &&
                 !mAudioSink.isEmpty() && mHasOpenedDecoder && !mHasStartedDecoder) {
+            Log.i(TAG, "updateAudioConfigLocked reStartAdecDecoderIfPossible begin.");
             reStartAdecDecoderIfPossible();
             return;
         }
@@ -476,6 +522,8 @@ public class AudioSystemCmdService extends Service implements SystemControlManag
         boolean sinkUpdated = updateAudioSinkLocked();
 
         if (mAudioSource == null || mAudioSink.isEmpty()) {
+            Log.i(TAG, "updateAudioConfigLocked return, mAudioSource:" +
+                    mAudioSource + ", mAudioSink empty:" +  mAudioSink.isEmpty());
             if (mAudioPatch != null) {
                 mAudioManager.releaseAudioPatch(mAudioPatch);
                 mAudioPatch = null;
@@ -492,6 +540,8 @@ public class AudioSystemCmdService extends Service implements SystemControlManag
         boolean shouldRecreateAudioPatch = sinkUpdated;
         boolean shouldApplyGain = false;
 
+        Log.i(TAG, "updateAudioConfigLocked sinkUpdated:" + sinkUpdated + ", mAudioPatch is empty:"
+                + (mAudioPatch == null));
          //mAudioPatch should not be null when current hardware is active.
         if (mAudioPatch == null)
             shouldRecreateAudioPatch = true;
@@ -592,7 +642,7 @@ public class AudioSystemCmdService extends Service implements SystemControlManag
                 // then convert media volume index to mBs
                 int indexGainMb = indexToGainMbForDevice(mCurrentIndex, deviceType, sourceGain);
 
-                Log.d(TAG, "updateAudioConfigLocked:mCurrentIndex= "+ mCurrentIndex + ",mCommitedIndex="+mCommitedIndex+",indexGainMb="+indexGainMb);
+                Log.d(TAG, "updateAudioConfigLocked mCurrentIndex= "+ mCurrentIndex + ",mCommitedIndex="+mCommitedIndex+",indexGainMb="+indexGainMb);
 
                 // apply combined gains
                 int gainValueMb = sourceGainMb + indexGainMb;
@@ -605,7 +655,7 @@ public class AudioSystemCmdService extends Service implements SystemControlManag
                 sourceGainConfig = sourceGain.buildConfig(AudioGain.MODE_JOINT,
                         sourceGain.channelMask(), gainValues, 0);
             } else {
-                Slog.w(TAG, "No audio source gain with MODE_JOINT support exists.");
+                Slog.w(TAG, "updateAudioConfigLocked No audio source gain with MODE_JOINT support exists.");
             }
         }
 
@@ -641,6 +691,7 @@ public class AudioSystemCmdService extends Service implements SystemControlManag
                 shouldRecreateAudioPatch = true;
             }
         }
+        Log.i(TAG, "updateAudioConfigLocked recreatePatch:" + shouldRecreateAudioPatch);
         if (shouldRecreateAudioPatch) {
             //mCommittedSourceVolume = volume;
             if (mAudioPatch != null) {
