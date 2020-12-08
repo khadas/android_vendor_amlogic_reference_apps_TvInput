@@ -1418,7 +1418,7 @@ public class OptionUiManagerT implements  OnFocusChangeListener, TvControlManage
                                         sendMessage(EXIT_SCAN, SAVING, null);
                                     } else {
                                         Log.d(TAG, "=====number search: exit");
-                                        sendMessage(STATUS, SAVING, "exit");
+                                        sendMessage(STATUS, -1, "exit");
                                     }
                                 }
                                 break;
