@@ -75,6 +75,7 @@ public class AV1InputService extends DroidLogicTvInputService {
     private TvDataBaseManager mTvDataBaseManager;
     private TvControlDataManager mTvControlDataManager = null;
     protected List<ChannelInfo.Subtitle> mCurrentSubtitles;
+    protected ChannelInfo.Subtitle mCurrentSubtitle;
     ChannelInfo.Subtitle pal_teletext_subtitle = null;
     protected final Object mLock = new Object();
     protected static int signalFmt = 0;
@@ -360,6 +361,7 @@ public class AV1InputService extends DroidLogicTvInputService {
             if (mTvInputManager == null)
                 mTvInputManager = (TvInputManager)getSystemService(Context.TV_INPUT_SERVICE);
             mCurrentChannel = null;
+            needRestartCC = true;
             mTvDataBaseManager = new TvDataBaseManager(mContext);
             mTvControlDataManager = TvControlDataManager.getInstance(mContext);
             initOverlayView(R.layout.layout_overlay);
@@ -587,11 +589,19 @@ public class AV1InputService extends DroidLogicTvInputService {
         public boolean onSelectTrack(int type, String trackId) {
             int index = -1;
             notifyTrackSelected(type, trackId);
-            ChannelInfo.Subtitle subtitle = parseSubtitleIdString(trackId);
-            if (subtitle != null)
-                index = subtitle.id;
-
-            Log.d(TAG, "onSelectTrack: [type:" + type + "] [id:" + trackId + "] " + "index" + index);
+            if (type == TvTrackInfo.TYPE_SUBTITLE) {
+                stopSubtitle();
+                ChannelInfo.Subtitle subtitle = parseSubtitleIdString(trackId);
+                if (subtitle == null) {
+                    index = -2;
+                    mCurrentSubtitle = null;
+                } else {
+                    index = subtitle.id;
+                    mCurrentSubtitle = subtitle;
+                    startSubtitle();
+                }
+                Log.d(TAG, "onSelectTrack: [type:" + type + "] [id:" + trackId + "] " + "index" + index);
+            }
             return true;
         }
 
@@ -1247,12 +1257,14 @@ public class AV1InputService extends DroidLogicTvInputService {
                     temp = ccPrefer > 0 ? ccPrefer : ChannelInfo.Subtitle.CC_CAPTION_VCHIP_ONLY;//parse xds vchip only
                 }
                 mSubtitleView.stop();
-                setSubtitleParam(ChannelInfo.Subtitle.TYPE_ATV_CC, mCurrentCCStyle == -1 ? temp : mCurrentCCStyle, 0, 0, 0,
-                        "");//we need xds data
-
-                mSubtitleView.setActive(true);
-                mSubtitleView.startSub();
-                enableSubtitleShow(true);
+                if (mCurrentSubtitle != null) {
+                    Log.d(TAG, "subtitle pid = " + mCurrentSubtitle.mPid);
+                    setSubtitleParam(ChannelInfo.Subtitle.TYPE_ATV_CC, mCurrentSubtitle.mPid,
+                            mCurrentCCStyle == -1 ? temp : mCurrentCCStyle, 0, 0, "");//we need xds data
+                    mSubtitleView.setActive(true);
+                    mSubtitleView.startSub();
+                    enableSubtitleShow(true);
+                }
             } else if (signalFmt == SIGNAL_PAL_FMT) {
                 Log.d(TAG, "SIGNAL_PAL_FMT startSubtitleAutoAnalog");
                 start_teletext();
@@ -1337,10 +1349,11 @@ public class AV1InputService extends DroidLogicTvInputService {
 
         protected void stopSubtitle() {
             Log.d(TAG, "stop Subtitle");
-
-            if (mSubtitleView != null) {
-                mSubtitleView.stop();
-                enableSubtitleShow(false);
+            synchronized (mSubtitleLock) {
+                if (mSubtitleView != null) {
+                    mSubtitleView.stop();
+                    enableSubtitleShow(false);
+                }
             }
         }
 
@@ -1418,7 +1431,7 @@ public class AV1InputService extends DroidLogicTvInputService {
 
             Log.d(TAG, "add subtitle tracks["+mCurrentSubtitles.size()+"]");
 
-            int auto = -1;
+            int auto = (mCurrentSubtitle == null)?-1:mCurrentSubtitle.id;
             Iterator<ChannelInfo.Subtitle> iter = mCurrentSubtitles.iterator();
             while (iter.hasNext()) {
                 ChannelInfo.Subtitle s = iter.next();
