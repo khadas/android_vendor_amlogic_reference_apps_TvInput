@@ -171,7 +171,7 @@ public class ADTVInputService extends DTVInputService {
                 return true;
             }
 
-            info.print();
+            //info.print();
 
             if (mSystemControlManager.getPropertyBoolean(DroidLogicTvUtils.PROP_NEED_FAST_SWITCH, false)) {
                 Log.d(TAG, "fast switch mode, no need replay channel");

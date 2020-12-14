@@ -1636,7 +1636,7 @@ static int get_channel_data(JNIEnv* env, jobject obj, jobject channel, EPGChanne
     char buf[2048] = "\0";
     for (i = 0; i < sizeof(pch->mEitVersions)/sizeof(pch->mEitVersions[0]); i++)
         sprintf(buf, "%s,%d", buf, pch->mEitVersions[i]);
-    log_error("eitversions: %s\n", buf);
+    //log_error("eitversions: %s\n", buf);
 
     pch->valid = 1;
 #endif

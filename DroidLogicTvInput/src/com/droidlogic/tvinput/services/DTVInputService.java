@@ -1442,12 +1442,12 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
                 TvContentRating[] newparseratings = null;
                 if (mCurrentProgram != null) {
                     json = mCurrentProgram.getInternalProviderData();
-                    Log.d(TAG, "getContentRatingsOfCurrentProgram programid = " + mCurrentProgram.getId() + ", channel json = " + json);
+                    if (DEBUG) Log.d(TAG, "getContentRatingsOfCurrentProgram programid = " + mCurrentProgram.getId() + ", channel json = " + json);
                     newparseratings = parseDRatingsT(json, mTvDataBaseManager, mCurrentProgram.getTitle(), channelInfo.getUri(), mCurrentProgram.getId(), mCurrentProgram.getStartTimeUtcMillis());
                 } else if (DEBUG) {
                     Log.d(TAG, "getContentRatingsOfCurrentProgram mCurrentProgram = null");
                 }
-                if (true || DEBUG) {
+                if (DEBUG) {
                     Log.d(TAG, "getContentRatingsOfCurrentProgram newrating = " + Program.contentRatingsToString(newparseratings) + ", ratings = " + Program.contentRatingsToString(ratings));
                 }
                 if (newparseratings != null && !TextUtils.equals(Program.contentRatingsToString(newparseratings), Program.contentRatingsToString(ratings))) {
@@ -1513,20 +1513,20 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
             if (isParentalControlsEnabled) {
                 TvContentRating blockContentRating = getContentRatingOfCurrentProgramBlocked(channelInfo);
                 if (blockContentRating != null) {
-                    Log.d(TAG, "Check parental controls: blocked by content rating - "
+                    if (DEBUG) Log.d(TAG, "Check parental controls: blocked by content rating - "
                             + blockContentRating.flattenToString());
                 } else {
                     //Log.d(TAG, "Check parental controls: available");
                 }
                 updateChannelBlockStatus(blockContentRating != null, blockContentRating, channelInfo);
             } else {
-                Log.d(TAG, "Check parental controls: disabled");
+                if (DEBUG) Log.d(TAG, "Check parental controls: disabled");
                 updateChannelBlockStatus(false, null, channelInfo);
             }
 
             if (mHandler != null) {
                     mHandler.sendMessageDelayed(mHandler.obtainMessage(MSG_PARENTAL_CONTROL, this), mParentControlDelay);
-                    Log.d(TAG, "doPC next:"+mParentControlDelay);
+                    if (DEBUG) Log.d(TAG, "doPC next:"+mParentControlDelay);
             }
         }
 
@@ -2642,9 +2642,9 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
                         .build();
                 tracks.add(SubtitleTrack);
 
-                Log.d(TAG, "\t" + ((subtitleAutoStart && (auto==s.id))? ("*"+s.id+":[") : (""+s.id+": [")) + s.mLang + "]"
+                if (DEBUG) Log.d(TAG, "\t" + ((subtitleAutoStart && (auto==s.id))? ("*"+s.id+":[") : (""+s.id+": [")) + s.mLang + "]"
                     + " [pid:" + s.mPid + "] [type:" + s.mType + "]");
-                Log.d(TAG, "\t" + "   [id1:" + s.mId1 + "] [id2:" + s.mId2 + "] [stype:" + s.mStype + "]");
+                if (DEBUG) Log.d(TAG, "\t" + "   [id1:" + s.mId1 + "] [id2:" + s.mId2 + "] [stype:" + s.mStype + "]");
             }
 
             if (auto >= 0 && mCurrentSubtitles.size() > 0)
@@ -5261,7 +5261,7 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
             if (DEBUG) Log.v(TAG, "parse ratings mixed vchip & rrt5"  + ", title = " + title);
         } else if (ratings_vchip != null && ratings_vchip.length > 0) {
             ratings_all = ratings_vchip;
-            Log.v(TAG, "parse ratings vchip only " + ", title = " + title);
+            if (DEBUG) Log.v(TAG, "parse ratings vchip only " + ", title = " + title);
         } else if (RatingList != null && RatingList.size() > 0) {
             ratings_all = new TvContentRating[RatingList.size()];
             for (int k = 0; k < ratings_all.length; k++) {
@@ -5270,7 +5270,7 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
             if (DEBUG) Log.v(TAG, "parse ratings rrt5 only " + ", title = " + title);
         } else {
             ratings_all = null;
-            Log.v(TAG, "parse ratings null " + ", title = " + title);
+            if (DEBUG) Log.v(TAG, "parse ratings null " + ", title = " + title);
         }
         return ratings_all;
     }
