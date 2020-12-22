@@ -63,6 +63,8 @@ public class AudioSystemCmdService extends Service implements SystemControlManag
     private int mDesiredChannelMask = AudioFormat.CHANNEL_OUT_DEFAULT;
     private int mDesiredFormat = AudioFormat.ENCODING_DEFAULT;
     private int mCurrentFmt;
+    private int mCurrentSubFmt = -1;
+    private int mCurrentSubPid = -1;
     private int mCurrentHasDtvVideo;
     private TvInputManager mTvInputManager;
 
@@ -97,6 +99,7 @@ public class AudioSystemCmdService extends Service implements SystemControlManag
     private boolean mHasStartedDecoder;
     private boolean mHasOpenedDecoder;
     private boolean mHasReceivedStartDecoderCmd;
+    private boolean  mMixAdSupported;
     private IAudioService mAudioService;
     private AudioRoutesInfo mCurAudioRoutesInfo;
     private Runnable mHandleAudioSinkUpdatedRunnable;
@@ -277,6 +280,17 @@ public class AudioSystemCmdService extends Service implements SystemControlManag
                     mCurrentFmt = param1;
                     mCurrentHasDtvVideo = param2;
                     mHasStartedDecoder = true;
+                    if (mMixAdSupported == false) {
+                        setAdFunction(MSG_MIX_AD_DUAL_SUPPORT, 0);
+                        setAdFunction(MSG_MIX_AD_MIX_SUPPORT, 0);
+                        mAudioManager.setParameters("subafmt=-1");
+                        mAudioManager.setParameters("subapid=-1");
+                    } else if (mMixAdSupported == true){
+                        mAudioManager.setParameters("subafmt="+mCurrentSubFmt);
+                        mAudioManager.setParameters("subapid="+mCurrentSubPid);
+                        setAdFunction(MSG_MIX_AD_DUAL_SUPPORT, 1);
+                        setAdFunction(MSG_MIX_AD_MIX_SUPPORT, 1);
+                    }
                     mAudioManager.setParameters("fmt="+param1);
                     mAudioManager.setParameters("has_dtv_video="+param2);
                     mAudioManager.setParameters("cmd="+cmd);
@@ -292,6 +306,8 @@ public class AudioSystemCmdService extends Service implements SystemControlManag
                     mAudioManager.setParameters("cmd="+cmd);
                     break;
                 case ADEC_SET_DECODE_AD:
+                    mCurrentSubFmt = param1;
+                    mCurrentSubPid = param2;
                     mAudioManager.setParameters("cmd="+cmd);
                     mAudioManager.setParameters("subafmt="+param1);
                     mAudioManager.setParameters("subapid="+param2);
@@ -299,11 +315,13 @@ public class AudioSystemCmdService extends Service implements SystemControlManag
                     break;
                 case MSG_MIX_AD_MIX_SUPPORT://Associated audio mixing on/off
                     if (param1 == 0) {
-                        setAdFunction(MSG_MIX_AD_DUAL_SUPPORT, 0);
-                        setAdFunction(MSG_MIX_AD_MIX_SUPPORT, 0);
-                    } else if (param1 == 1){
-                        setAdFunction(MSG_MIX_AD_DUAL_SUPPORT, 1);
-                        setAdFunction(MSG_MIX_AD_MIX_SUPPORT, 1);
+                        mMixAdSupported = false;
+                        //setAdFunction(MSG_MIX_AD_DUAL_SUPPORT, 0);
+                        //setAdFunction(MSG_MIX_AD_MIX_SUPPORT, 0);
+                    } else if (param1 == 1) {
+                        mMixAdSupported = true;
+                        //setAdFunction(MSG_MIX_AD_DUAL_SUPPORT, 1);
+                        //setAdFunction(MSG_MIX_AD_MIX_SUPPORT, 1);
                     }
                     Log.d(TAG, "OnAudioEvent associate_audio_mixing_enable=" + (param1 > 0 ? 1 : 0));
                 break;
@@ -349,6 +367,9 @@ public class AudioSystemCmdService extends Service implements SystemControlManag
                     mAudioSource = null;
                     mHasStartedDecoder = false;
                     mHasOpenedDecoder = false;
+                    mMixAdSupported = false;
+                    mCurrentSubFmt = -1;
+                    mCurrentSubPid = -1;
                     break;
                 default:
                     Log.w(TAG,"OnAudioEvent unkown audio cmd!");
@@ -504,6 +525,17 @@ public class AudioSystemCmdService extends Service implements SystemControlManag
         Log.i(TAG, "reStartAdecDecoderIfPossible StartDecoderCmd:" + mHasReceivedStartDecoderCmd);
         mAudioManager.setParameters("tuner_in=dtv");
         if (mHasReceivedStartDecoderCmd) {
+           if (mMixAdSupported == false) {
+                setAdFunction(MSG_MIX_AD_DUAL_SUPPORT, 0);
+                setAdFunction(MSG_MIX_AD_MIX_SUPPORT, 0);
+                mAudioManager.setParameters("subafmt=-1");
+                mAudioManager.setParameters("subapid=-1");
+            } else if (mMixAdSupported == true){
+                mAudioManager.setParameters("subafmt="+mCurrentSubFmt);
+                mAudioManager.setParameters("subapid="+mCurrentSubPid);
+                setAdFunction(MSG_MIX_AD_DUAL_SUPPORT, 1);
+                setAdFunction(MSG_MIX_AD_MIX_SUPPORT, 1);
+            }
             mAudioManager.setParameters("fmt="+mCurrentFmt);
             mAudioManager.setParameters("has_dtv_video="+mCurrentHasDtvVideo);
             mAudioManager.setParameters("cmd=1");
