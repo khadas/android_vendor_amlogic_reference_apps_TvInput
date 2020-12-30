@@ -1373,6 +1373,7 @@ public class DTVSubtitleView extends View {
                         return;
                 case MODE_DVB_SUB:
                 case MODE_SCTE27_SUB:
+                    if (bitmap == null) return;
                     sr = new Rect(0, 0, bitmap.getWidth(), bitmap.getHeight());
                     dr = new Rect(0, 0, getWidth(), getHeight());
                     canvas.setDrawFilter(new PaintFlagsDrawFilter(0, Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG));
@@ -1529,15 +1530,15 @@ public class DTVSubtitleView extends View {
                     bitmap = Bitmap.createBitmap(dis_w, dis_h, Bitmap.Config.ARGB_8888);
                     Canvas canvas = new Canvas(bitmap);
 
-                    int[] colors = new int[width * height];
-                    for (int i = 0, j = 0; i < width * height; i++, j += 4) {
-                        colors[i] = (((int)subdata[j]&0xFF) << 24) | (((int)subdata[j+1]&0xFF) << 16) |
-                            (((int)subdata[j+2]&0xFF) << 8) | ((int)subdata[j+3]&0xFF);
+                    if (showOrHide == true) {
+                        int[] colors = (int [])data;
+                        Bitmap databm = Bitmap.createBitmap(colors, 0, width, width, height, Bitmap.Config.ARGB_8888);
+                        canvas.drawBitmap(databm, src_x, src_y, null);
+                        databm.recycle();
+                    } else {
+                        canvas.drawColor(0, PorterDuff.Mode.CLEAR);
                     }
-
-                    Bitmap databm = Bitmap.createBitmap(colors, 0, width, width, height, Bitmap.Config.ARGB_8888);
-                    canvas.drawBitmap(databm, src_x, src_y, null);
-                    databm.recycle();
+                    update();
                 }
             }
         }
