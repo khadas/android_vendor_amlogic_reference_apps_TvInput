@@ -4560,10 +4560,12 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
                 case TvControlManager.EVENT_AV_TIMESHIFT_PLAY_FAIL:
                     break;
                 case TvControlManager.EVENT_AV_TIMESHIFT_REC_FAIL:
+                    Log.d(TAG, "[timeshift] rec false");
                     notifyTimeShiftStatusChanged(TvInputManager.TIME_SHIFT_STATUS_UNAVAILABLE);
                     break;
                 case TvControlManager.EVENT_AV_TIMESHIFT_START_TIME_CHANGED:
                     if (param == 0) {
+                        Log.d(TAG, "[timeshift] init record time");
                         mRecordStartTimeMs_0 = mCurrentTimeMs = (mRecordingId == null)? System.currentTimeMillis() : 0;
                         mHandler.sendEmptyMessageDelayed(MSG_TIMESHIFT_AVAILABLE, 3000);
                     }

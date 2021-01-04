@@ -73,6 +73,7 @@ import android.net.Uri;
 import android.view.Surface;
 import org.json.JSONArray;
 import org.json.JSONObject;
+import org.json.JSONException;
 
 public class ADTVInputService extends DTVInputService {
 
@@ -219,7 +220,24 @@ public class ADTVInputService extends DTVInputService {
                             if (i != (subCount - 1 ))
                                 subPidString = subPidString + ",";
                         }
-                        Log.e(TAG, "subpid string: " + subPidString);
+                        Log.e(TAG, "subpid- string: " + subPidString);
+                    }
+                    JSONArray as = null;
+                    try {
+                        /*audio tracks*/
+                        int audioCount = (info.getAudioPids() == null)? 0 : info.getAudioPids().length;
+                        if (audioCount != 0) {
+                            for (int i = 0; i < audioCount; i++) {
+                                if (as == null)
+                                    as = new JSONArray();
+                                as.put(new JSONObject()
+                                        .put("pid", info.getAudioPids()[i])
+                                        .put("fmt", info.getAudioFormats()[i]));
+                            }
+                        }
+                        Log.e(TAG, "audio string: " + as.toString());
+                    } catch (JSONException e) {
+                        Log.e(TAG, "Json fail for audio param:"+e);
                     }
                     TvControlManager.FEParas fe = new TvControlManager.FEParas(info.getFEParas());
 
@@ -240,6 +258,7 @@ public class ADTVInputService extends DTVInputService {
                             .append(",\"path\":\""+timeshiftPath+"\"")
                             .append(",\"subpid\":{" + subPidString)
                             .append("},\"subcnt\":" + subCount)
+                            .append(",\"as\":" + as.toString())
                             .append("}}");
                     Log.d(TAG, "playProgram adtvparam: " + param.toString());
 
