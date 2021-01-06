@@ -162,7 +162,7 @@ public class SoundEffectManager {
     public static final int PARAM_AGC_RELEASE_TIME                      = 5;
     public static final int PARAM_AGC_SOURCE_ID                         = 6;
 
-    public static final boolean DEFAULT_AGC_ENABLE                      = true; //enable 1, disable 0
+    public static final boolean DEFAULT_AGC_ENABLE                      = false; //enable 1, disable 0
     public static final int DEFAULT_AGC_MAX_LEVEL                       = -18;  //db
     public static final int DEFAULT_AGC_ATTRACK_TIME                    = 10;   //ms
     public static final int DEFAULT_AGC_RELEASE_TIME                    = 2;    //s
