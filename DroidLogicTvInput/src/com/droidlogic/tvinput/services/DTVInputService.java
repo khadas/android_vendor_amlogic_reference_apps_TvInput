@@ -123,6 +123,8 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
     protected static final String DTV_AUDIO_AD_DISABLE = "tv.dtv.ad.disable";
     protected static final String DTV_CHANNEL_NUMBER_START = "tv.channel.number.start";
 
+    protected static final String DTV_TSPLAYER_ENABLE = "tv.dtv.tsplayer.enable";
+
     protected static final String DTV_AUDIO_TRACK_IDX = "tv.dtv.audio_track_idx";
     protected static final String DTV_AUDIO_AD_TRACK_IDX = "tv.dtv.audio_ad_track_idx";
     protected static final String DTV_SUBTITLE_TRACK_IDX = "tv.dtv.subtitle_track_idx";
@@ -1601,8 +1603,12 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
         @Override
         public void HandleAudioEvent(int cmd, int param1, int param2) {
             AudioManager audioManager = (AudioManager) mContext.getSystemService(Context.AUDIO_SERVICE);
-            Log.d(TAG, "audio cmd start ="+cmd+" param1 ="+param1+" param2 ="+param2);
 
+            if (mSystemControlManager.getPropertyBoolean(DTV_TSPLAYER_ENABLE, false)) {
+                Log.d(TAG, "audio cmd not used");
+                return ;
+            }
+            Log.d(TAG, "audio cmd start ="+cmd+" param1 ="+param1+" param2 ="+param2);
             switch (cmd) {
                 case 1://ADEC_START_DECODE
                     audioManager.setParameters("fmt="+param1);
