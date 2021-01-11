@@ -2164,9 +2164,11 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
         }
 
         public void stopEasText() {
-            if (mOverlayView.isEasTextShown()) {
-                mOverlayView.setEasTextVisibility(false);
-                notifyAppEasStatus(false);
+            if (mOverlayView != null) {
+                if (mOverlayView.isEasTextShown()) {
+                    mOverlayView.setEasTextVisibility(false);
+                    notifyAppEasStatus(false);
+                }
             }
         }
 
