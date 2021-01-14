@@ -220,22 +220,20 @@ public class ADTVInputService extends DTVInputService {
                             if (i != (subCount - 1 ))
                                 subPidString = subPidString + ",";
                         }
-                        Log.e(TAG, "subpid- string: " + subPidString);
+                        Log.d(TAG, "subpid- string: " + subPidString);
                     }
-                    JSONArray as = null;
+                    JSONArray as = new JSONArray();;
                     try {
                         /*audio tracks*/
                         int audioCount = (info.getAudioPids() == null)? 0 : info.getAudioPids().length;
                         if (audioCount != 0) {
                             for (int i = 0; i < audioCount; i++) {
-                                if (as == null)
-                                    as = new JSONArray();
                                 as.put(new JSONObject()
                                         .put("pid", info.getAudioPids()[i])
                                         .put("fmt", info.getAudioFormats()[i]));
                             }
                         }
-                        Log.e(TAG, "audio string: " + as.toString());
+                        Log.d(TAG, "audio string: " + as.toString());
                     } catch (JSONException e) {
                         Log.e(TAG, "Json fail for audio param:"+e);
                     }
