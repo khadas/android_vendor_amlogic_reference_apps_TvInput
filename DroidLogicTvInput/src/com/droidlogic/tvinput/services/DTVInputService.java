@@ -2886,6 +2886,7 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
             if ((mask != (1 << 16)) && (mask & (1 << 15)) == 0) {
                 if (mCurrentCCContentRatings != null) {
                     mCurrentCCContentRatings = null;
+                    saveCurrentChannelRatings();
                     checkContentBlockNeeded(mCurrentChannel);
                 }
             }

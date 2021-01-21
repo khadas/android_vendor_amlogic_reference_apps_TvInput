@@ -1515,6 +1515,14 @@ public class DTVSubtitleView extends View {
             synchronized(lock) {
                 if (type == SubtitleManager.SUBTITLE_CC_JASON) {
                     saveJsonStr(new String(subdata));
+                } else if (type == SubtitleManager.SUBTITLE_VCHIP_RATE) {
+                    String rating_json = "";
+                    if ((x ==- 1) && (y == -1) && (width == -1))
+                        rating_json = "{Aratings:{},cc:{data:" + height + "}}";
+                    else
+                        rating_json = "{Aratings:{g:" + x + ",i:" + y + ",dlsv:" + width + "}}";
+                    if (mSubtitleDataListener != null)
+                        mSubtitleDataListener.onSubtitleData(rating_json);
                 } else {
                     int dis_w = videoW;
                     int dis_h = videoH;
