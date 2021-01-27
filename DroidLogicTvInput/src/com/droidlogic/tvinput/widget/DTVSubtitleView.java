@@ -1326,6 +1326,8 @@ public class DTVSubtitleView extends View {
         String screen_mode;
         String video_status;
         String ratio;
+        String video_frame_width;
+        String video_frame_height;
         int row_height = 0;
         int navi_left = 0;
         int navi_right = 0;
@@ -1354,7 +1356,21 @@ public class DTVSubtitleView extends View {
                     /* For atsc */
                     screen_mode = mSystemControlManager.readSysFs("/sys/class/video/screen_mode");
                     video_status = mSystemControlManager.readSysFs("/sys/class/video/video_state");
-                    ratio = mSystemControlManager.readSysFs("/sys/class/video/frame_aspect_ratio");
+                    //ratio = mSystemControlManager.readSysFs("/sys/class/video/frame_aspect_ratio");
+                    video_frame_width = mSystemControlManager.readSysFs("/sys/class/video/frame_width");
+                    video_frame_height = mSystemControlManager.readSysFs("/sys/class/video/frame_height");
+                    if (("NA".equals(video_frame_width) || "NA".equals(video_frame_height))
+                        || video_frame_width.isEmpty() || video_frame_height.isEmpty()) {
+                        ratio = "0x90";
+                    } else {
+                        int frame_width = Integer.parseInt(video_frame_width);
+                        int frame_height = Integer.parseInt(video_frame_height);
+                        if (frame_width * 9 >= frame_height * 16) {
+                            ratio = "0x90";
+                        } else {
+                            ratio = "0x01";
+                        }
+                    }
                     cw.UpdatePositioning(ratio, screen_mode, video_status);
                     ci.caption_screen.updateCaptionScreen(canvas.getWidth(), canvas.getHeight());
                     cw.style_use_broadcast = ci.isStyle_use_broadcast();

@@ -274,7 +274,7 @@ public class CcImplement {
         double safe_title_width;
         double safe_title_height;
         final double safe_title_w_percent = 0.80;
-        final double safe_title_h_percent = 0.85;
+        final double safe_title_h_percent = 0.80;
 
         int video_left;
         int video_right;
@@ -363,7 +363,7 @@ public class CcImplement {
             //This is used for postioning character in 608 mode.
             fixed_char_width = safe_title_width / (cc_col_count + 1);
 
-            anchor_horizon = ((video_h_v_rate_origin & 1) == 0)?210:160; //16:9 or 4:3
+            anchor_horizon = (width * 9 < height * 16)?160:210; //16:9 or 4:3
             anchor_vertical = 75;
 
             //This is used for calculate coordinate in non-relative anchor mode
@@ -390,7 +390,7 @@ public class CcImplement {
                 offset = safe_title_width * anchor_h / anchor_horizon + safe_title_left;
             else
                 /* anchor_h is percentage */
-                offset = safe_title_width * anchor_h / 100 + safe_title_left;
+                offset = safe_title_width * anchor_h / anchor_horizon + safe_title_left;
 //            Log.i(TAG,
 //                    "Window anchor relative " + anchor_relative +
 //                            " horizon density " + anchor_horizon_density +
@@ -409,7 +409,7 @@ public class CcImplement {
                 case 2:
                 case 5:
                 case 8:
-                    return offset - row_length;
+                    return offset - row_length + anchor_horizon_density;
                 default:
                     return -1;
             }
@@ -449,7 +449,7 @@ public class CcImplement {
                 case 6:
                 case 7:
                 case 8:
-                    position = offset - row_count * max_font_height;
+                    position = offset - row_count * max_font_height + anchor_vertical_density;
                     break;
                 default:
                     position = safe_title_top - row_count * max_font_height;
@@ -716,6 +716,7 @@ public class CcImplement {
             }
             void updateWindow(JSONObject windowStr) {
                 int n = 0;
+                double window_max_font_width = 0;
 
                 windowReset();
                 window_edge_width = (float)(caption_screen.max_font_height * window_edge_rate);
@@ -797,7 +798,7 @@ public class CcImplement {
                     Log.i(TAG, "window loses "+ (row_count - json_rows.length()) + " rows");
 
                     window_max_font_size = caption_screen.safe_title_width / 32;
-                    window_width = col_count * window_max_font_size;
+                    //window_width = col_count * caption_screen.max_font_width;
                     /* ugly repeat */
                     if (row_count > rows_sizes) {
                         n = rows_sizes;
@@ -820,8 +821,11 @@ public class CcImplement {
                         //window_width = col_count * caption_screen.max_font_width;
                         window_left_most = rows[i].row_start_x < window_left_most ?
                             rows[i].row_start_x : window_left_most;
+                        if (rows[i].row_max_font_size > window_max_font_width)
+                            window_max_font_width = rows[i].row_max_font_size;
                     }
 
+                    window_width = col_count * window_max_font_width;
                     //window_left_most *= caption_screen.max_font_width;
                     window_left_most *= pensize_window_depend;
                     //max_row_str_length = col_count * caption_screen.max_font_width;
