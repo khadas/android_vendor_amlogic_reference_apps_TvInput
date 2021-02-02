@@ -1050,7 +1050,7 @@ public class CcImplement {
             class Rows
             {
                 int str_count;
-                final int rowStrs_sizes = 6;
+                int rowStrs_sizes;
                 RowStr rowStrs[];
                 JSONArray rowArray;
                 /* Row length is sum of each string */
@@ -1065,9 +1065,6 @@ public class CcImplement {
                 double row_max_font_size;
 
                 Rows() {
-                    rowStrs = new RowStr[rowStrs_sizes];
-                    for (int i=0; i<rowStrs_sizes; i++)
-                        rowStrs[i] = new RowStr();
                 }
                 void updateRows(JSONObject rows)
                 {
@@ -1084,11 +1081,12 @@ public class CcImplement {
                         int n = 0;
                         double single_char_width = ccVersion.matches("cea708") ?
                                 window_max_font_size : caption_screen.fixed_char_width;
-                        if (str_count > rowStrs_sizes) {
+                        if (str_count > 0) {
+                            rowStrs_sizes = str_count;
                             n = rowStrs_sizes;
-                            Log.i(TAG, "updateRows str_count[" +  str_count + "] > rowStrs_sizes[" + rowStrs_sizes + "] ");
-                        } else {
-                            n = str_count;
+                            rowStrs = new RowStr[rowStrs_sizes];
+                            for (int i=0; i<rowStrs_sizes; i++)
+                                rowStrs[i] = new RowStr();
                         }
                         for (int i=0; i<n; i++) {
                             rowStrs[i].updateRowStr(rowArray.getJSONObject(i));
@@ -1115,13 +1113,7 @@ public class CcImplement {
                     if (row_length_on_paint == 0 || str_count == 0)
                         return;
 
-                    if (str_count > rowStrs_sizes) {
-                        n = rowStrs_sizes;
-                        Log.i(TAG, "draw str_count[" +  str_count + "] > rowStrs_sizes[" + rowStrs_sizes + "] ");
-                    } else {
-                        n = str_count;
-                    }
-                    for (int i=0; i<n; i++)
+                    for (int i=0; i<rowStrs.length; i++)
                         rowStrs[i].draw(canvas);
                 }
 
