@@ -1255,6 +1255,11 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
                 mCurrentCCContentRatings = null;
             }
 
+            if (info.isAnalogChannel()) {
+                mCurrentCCContentRatings = null;
+                saveCurrentChannelRatings();
+            }
+
             if ((mLastChannel != null) && (mCurrentChannel != null)) {
                 if ((mLastChannel.getFrequency() != mCurrentChannel.getFrequency()) || mUpdateTsFlag) {
                     setMonitor(null);

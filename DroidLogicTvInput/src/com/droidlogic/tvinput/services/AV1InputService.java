@@ -610,12 +610,22 @@ public class AV1InputService extends DroidLogicTvInputService {
             Log.d(TAG, "onSubtitleData curchannel:"+(mCurrentChannel!=null?mCurrentChannel.toString():"null"));
             Log.d(TAG, "onSubtitleData json:"+json);
 
-           if (json.contains("Aratings") ) {
-                mATVContentRatings = DroidLogicTvUtils.parseARatings(json);
-                sendAvRatingByTif();
-                if (mHandler != null)
-                    mHandler.sendMessage(mHandler.obtainMessage(MSG_PARENTAL_CONTROL_AV, this));
-           }
+            int mask = DroidLogicTvUtils.getObjectValueInt(json, "cc", "data", -1);
+            if (mask != -1) {
+                sendCCDataInfoByTif(mask);
+                if (mHandler != null) {
+                    Message msg = mHandler.obtainMessage(MSG_CC_DATA, this);
+                    msg.arg1 = mask;
+                    msg.sendToTarget();
+                }
+                Log.d(TAG, "ccc send data");
+                return;
+            }
+
+            mATVContentRatings = DroidLogicTvUtils.parseARatings(json);
+            sendAvRatingByTif();
+            if (mHandler != null)
+                mHandler.sendMessage(mHandler.obtainMessage(MSG_PARENTAL_CONTROL_AV, this));
         }
 
         public String onReadSysFs(String node) {
@@ -650,14 +660,12 @@ public class AV1InputService extends DroidLogicTvInputService {
         public void doCCData(int mask) {
             Log.d(TAG, "cc data: " + mask);
 
-            /*Check CC show*/
-            mCurrentCCExist = mask;
-            if (mSystemControlManager != null)
-                mSystemControlManager.setProperty(DTV_SUBTITLE_CAPTION_EXIST, String.valueOf(mCurrentCCExist));
-
-            if (mHandler != null) {
-                mHandler.removeMessages(MSG_CC_TRY_PREFERRED);
-                mHandler.obtainMessage(MSG_CC_TRY_PREFERRED, mCurrentCCExist, 0, this).sendToTarget();
+            if ((mask != (1 << 16)) && (mask & (1 << 15)) == 0) {
+                if (mATVContentRatings != null) {
+                    mATVContentRatings = null;
+                    sendAvRatingByTif();
+                    checkContentBlockNeeded(mCurrentChannel);
+                }
             }
         }
 
@@ -1260,11 +1268,15 @@ public class AV1InputService extends DroidLogicTvInputService {
                 if (mCurrentSubtitle != null) {
                     Log.d(TAG, "subtitle pid = " + mCurrentSubtitle.mPid);
                     setSubtitleParam(ChannelInfo.Subtitle.TYPE_ATV_CC, mCurrentSubtitle.mPid,
+                            mCurrentCCStyle == -1 ? temp : mCurrentCCStyle, 0, 0, "");
+                } else {
+                    setSubtitleParam(ChannelInfo.Subtitle.TYPE_ATV_CC, 15,
                             mCurrentCCStyle == -1 ? temp : mCurrentCCStyle, 0, 0, "");//we need xds data
-                    mSubtitleView.setActive(true);
-                    mSubtitleView.startSub();
-                    enableSubtitleShow(true);
                 }
+                mSubtitleView.setActive(true);
+                mSubtitleView.startSub();
+                enableSubtitleShow(true);
+
             } else if (signalFmt == SIGNAL_PAL_FMT) {
                 Log.d(TAG, "SIGNAL_PAL_FMT startSubtitleAutoAnalog");
                 start_teletext();
