@@ -4677,8 +4677,17 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
         }
 
         protected void doTimeShiftSeekTo(long timeMs) {
-            String para = "{\"offset\":"+ (timeMs - (mRecordStartTimeMs + mTvTime.getDiffTime())) + "}";
-            Log.d(TAG, "[timeshift] doTimeShiftSeekTo:"+"offset:"+(timeMs - (mRecordStartTimeMs + mTvTime.getDiffTime())));
+            Log.d(TAG, "[timeshift]: cmdparam: "+ getDateAndTime(timeMs) + "(" + timeMs + ")");
+            Log.d(TAG, "[timeshift]: RecordStartTime: "+ getDateAndTime(mRecordStartTimeMs_0) + "(" + mRecordStartTimeMs_0 + ")");
+            long diffTime = mTvTime.getDiffTime();
+            Log.d(TAG, "[timeshift]: diffTime: "+ getDateAndTime(diffTime) + "(" + diffTime + ")");
+
+            long offset = timeMs - (mRecordStartTimeMs_0 + mTvTime.getDiffTime());
+            if (offset < 0) {
+                offset = 0;
+            }
+            String para = "{\"offset\":"+ offset + "}";
+            Log.d(TAG, "[timeshift] doTimeShiftSeekTo:"+"offset:"+ offset);
             mTvControlManager.seekPlay("atsc", para);
         }
 
