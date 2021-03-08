@@ -4084,12 +4084,13 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
                                     .setEndTimeUtcMillis(end * 1000)
                                     .build();
                                 programs.add(p);
-                                Log.d(TAG, "epg: sid/net/ts[" + evt.srv_id + "/" + evt.net_id + "/" + evt.ts_id + "]"
-                                      + "{" + p.getTitle() + "}"
-                                      + "[" + p.getStartTimeUtcMillis() / 1000
-                                      + "-" + p.getEndTimeUtcMillis() / 1000
-                                      + " R["+ Program.contentRatingsToString(p.getContentRatings())
-                                      + "]");
+                                if (DEBUG)
+                                    Log.d(TAG, "epg: sid/net/ts[" + evt.srv_id + "/" + evt.net_id + "/" + evt.ts_id + "]"
+                                          + "{" + p.getTitle() + "}"
+                                          + "[" + p.getStartTimeUtcMillis() / 1000
+                                          + "-" + p.getEndTimeUtcMillis() / 1000
+                                          + " R["+ Program.contentRatingsToString(p.getContentRatings())
+                                          + "]");
                             } catch (Exception e) {
                                 e.printStackTrace();
                             }
