@@ -154,10 +154,11 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
     protected static final int KEY_GO_HOME = 90;
     protected static final int KEY_ZOOM = 88;
     protected static final int KEY_SUBPG = 86;
+    protected static final int KEY_REGION = 87;
     protected static final int KEY_LOCK_SUBPG = 172;
     protected static final int KEY_TELETEXT_SWITCH = 169;
-    protected static final int KEY_REVEAL = 2018;
-    protected static final int KEY_CANCEL = 2019;
+    protected static final int KEY_REVEAL = 246;
+    protected static final int KEY_CANCEL = 247;
     protected static final int KEY_SUBTITLE = 175;
     protected static final int KEY_LEFT = 21;
     protected static final int KEY_RIGHT = 22;
@@ -575,7 +576,6 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
         @Override
         public boolean onTune(Uri channelUri) {
             doTuneInService(channelUri, getSessionId());
-            resetTeletextNumber();
             return false;
         }
 
@@ -734,240 +734,8 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
             } else if (DroidLogicTvUtils.ACTION_TIF_AFTER_TUNE.equals(action)) {
                 boolean status = bundle.getBoolean(DroidLogicTvUtils.ACTION_TIF_AFTER_TUNE, false);
                 Log.d(TAG, "do private cmd:"+ DroidLogicTvUtils.ACTION_TIF_AFTER_TUNE + ", status:" + status);
-            } else if (ACTION_TTX_KEYEVENT.equals(action)) {
-                if (bundle != null) {
-                    dealTeletextPageNumber(bundle.getString(KEY_TTX_KEYEVENT));
-                }
             }
         }
-
-        /*@Override //debug teletext number key
-        public boolean onKeyUp(int keyCode, KeyEvent event) {
-            Log.i(TAG, "onKeyUp " + keyCode);
-            if (keyCode >= KeyEvent.KEYCODE_0 && keyCode <= KeyEvent.KEYCODE_9) {
-                dealTeletextPageNumber(VALUE_TTX_KEY[keyCode - KeyEvent.KEYCODE_0]);
-            }
-            return super.onKeyUp(keyCode, event);
-        }*/
-
-        private int mTeletextPageNumber = -1;
-        private int mTeletextSubPageNumber = 0;
-        private char[] mTeletextSubPageByteArr = new char[4];
-        private int mTeletextSubPageNumber_count = 0;
-        private final static String ACTION_TTX_KEYEVENT = "TTX_KEYEVENT";
-        private final static String KEY_TTX_KEYEVENT = "TTX_KEYEVENT";
-        private final static String VALUE_TTX_KEY_0 = "TTX_KEY_0";
-        private final static String VALUE_TTX_KEY_1 = "TTX_KEY_1";
-        private final static String VALUE_TTX_KEY_2 = "TTX_KEY_2";
-        private final static String VALUE_TTX_KEY_3 = "TTX_KEY_3";
-        private final static String VALUE_TTX_KEY_4 = "TTX_KEY_4";
-        private final static String VALUE_TTX_KEY_5 = "TTX_KEY_5";
-        private final static String VALUE_TTX_KEY_6 = "TTX_KEY_6";
-        private final static String VALUE_TTX_KEY_7 = "TTX_KEY_7";
-        private final static String VALUE_TTX_KEY_8 = "TTX_KEY_8";
-        private final static String VALUE_TTX_KEY_9 = "TTX_KEY_9";
-        private final static int TYPE_NUMBER_TIMEOUT = 2000;//2000MS
-        private final static int TYPE_NUMBER_WAIT = 500;//500MS
-        private final Map<String, Integer> VALUE_MAP = new HashMap<String, Integer>();
-        private final String[] VALUE_TTX_KEY = {VALUE_TTX_KEY_0, VALUE_TTX_KEY_1, VALUE_TTX_KEY_2,
-                VALUE_TTX_KEY_3, VALUE_TTX_KEY_4, VALUE_TTX_KEY_5,
-                VALUE_TTX_KEY_6, VALUE_TTX_KEY_7, VALUE_TTX_KEY_8,
-                VALUE_TTX_KEY_9};
-
-        private void updateMap() {
-            if (VALUE_MAP.size() == 0) {
-                VALUE_MAP.put(VALUE_TTX_KEY_0, 0);
-                VALUE_MAP.put(VALUE_TTX_KEY_1, 1);
-                VALUE_MAP.put(VALUE_TTX_KEY_2, 2);
-                VALUE_MAP.put(VALUE_TTX_KEY_3, 3);
-                VALUE_MAP.put(VALUE_TTX_KEY_4, 4);
-                VALUE_MAP.put(VALUE_TTX_KEY_5, 5);
-                VALUE_MAP.put(VALUE_TTX_KEY_6, 6);
-                VALUE_MAP.put(VALUE_TTX_KEY_7, 7);
-                VALUE_MAP.put(VALUE_TTX_KEY_8, 8);
-                VALUE_MAP.put(VALUE_TTX_KEY_9, 9);
-            }
-        }
-
-        private void resetTeletextNumber() {
-            mTeletextPageNumber = -1;
-        }
-
-        private int getTeletextNumber() {
-            return mTeletextPageNumber;
-        }
-
-        private String getTeletextDisplayNumber(int number) {
-            if (number < 0) {
-                return "___";
-            }
-            String result = "___";
-            String unit = "_";
-            String decade = "_";
-            String hundred = "_";
-            int unit_number = number % 10;
-            int decade_number = (number % 100) / 10;
-            int hundred_number = number / 100;
-            unit = String.valueOf(unit_number);
-            decade = String.valueOf(decade_number);
-            hundred = String.valueOf(hundred_number);
-            int typeCount = 0;
-            if (hundred_number > 0) {
-                typeCount = 3;
-            } else if (hundred_number == 0 && decade_number > 0) {
-                typeCount = 2;
-            } else if (hundred_number == 0 && decade_number == 0 && unit_number > 0) {
-                typeCount = 1;
-            }
-            switch (typeCount) {
-                case 1:
-                    result = unit + "__";
-                    break;
-                case 2:
-                    result = decade + unit + "_";
-                    break;
-                case 3:
-                    result = hundred + decade + unit;
-                    break;
-                default:
-                    break;
-            }
-            Log.d(TAG, "getTeletextDisplayNumber result = " + result);
-            return result;
-        }
-        private void dealTeletextPageNumber(String value) {
-            if (value == null) {
-                return;
-            }
-            updateMap();
-            if (mMainHandler != null && mMainHandler.hasCallbacks(mTeletextNumberRunnable)) {
-                mMainHandler.removeCallbacks(mTeletextNumberRunnable);
-            }
-            if (mMainHandler != null && mMainHandler.hasCallbacks(mTeletextNumberHideViewRunnable)) {
-                mMainHandler.removeCallbacks(mTeletextNumberHideViewRunnable);
-            }
-            int number = VALUE_MAP.get(value);
-            if (mTeletextPageNumber == -1) {
-                mTeletextPageNumber = number;
-            } else {
-                mTeletextPageNumber = mTeletextPageNumber * 10 + number;
-            }
-            if (mMainHandler != null && mTeletextPageNumber != -1) {
-                mMainHandler.post(mTeletextNumberUpdateViewRunnable);
-                if (mTeletextPageNumber >= 100) {
-                    mMainHandler.post(mTeletextNumberRunnable);
-                    mMainHandler.postDelayed(mTeletextNumberHideViewRunnable, TYPE_NUMBER_WAIT);
-                }
-            }
-            mMainHandler.postDelayed(mTeletextNumberHideViewRunnable, TYPE_NUMBER_TIMEOUT);
-        }
-
-
-        private void dealTeletextPageNumber(int value) {
-            updateMap();
-            if (mMainHandler != null && mMainHandler.hasCallbacks(mTeletextNumberRunnable)) {
-                mMainHandler.removeCallbacks(mTeletextNumberRunnable);
-            }
-            if (mMainHandler != null && mMainHandler.hasCallbacks(mTeletextNumberHideViewRunnable)) {
-                mMainHandler.removeCallbacks(mTeletextNumberHideViewRunnable);
-            }
-            int number = value;
-            if (mTeletextPageNumber == -1) {
-                mTeletextPageNumber = number;
-            } else {
-                mTeletextPageNumber = mTeletextPageNumber * 10 + number;
-            }
-            if (mMainHandler != null && mTeletextPageNumber != -1) {
-                mMainHandler.post(mTeletextNumberUpdateViewRunnable);
-                if (mTeletextPageNumber >= 100) {
-                    mMainHandler.post(mTeletextNumberRunnable);
-                    mMainHandler.postDelayed(mTeletextNumberHideViewRunnable, TYPE_NUMBER_WAIT);
-                }
-            }
-            mMainHandler.postDelayed(mTeletextNumberHideViewRunnable, TYPE_NUMBER_TIMEOUT);
-        }
-
-        private void dealTeletextSubPageNumber(int value) {
-            updateMap();
-            if (mMainHandler != null && mMainHandler.hasCallbacks(mTeletextSubpgNumberHideViewRunnable)) {
-                mMainHandler.removeCallbacks(mTeletextSubpgNumberHideViewRunnable);
-            }
-            if (mTeletextSubPageNumber_count == 0) {
-                for (int i=0; i<4; i++)
-                    mTeletextSubPageByteArr[i] = '-';
-            }
-            mTeletextSubPageByteArr[mTeletextSubPageNumber_count++] = (char)('0' + value);
-            if (mTeletextSubPageNumber == 0 && value != 0)
-                mTeletextSubPageNumber = value;
-            else
-                mTeletextSubPageNumber = mTeletextSubPageNumber * 10 + value;
-
-            if (mMainHandler != null) {
-                if (mTeletextSubPageNumber_count >= 4) {
-                    mSubtitleView.tt_set_subpn_text(String.valueOf(mTeletextSubPageByteArr));
-                    mSubtitleView.gotoPage(mSubtitleView.get_teletext_pg(), mTeletextSubPageNumber);
-                    mTeletextSubPageNumber_count = 0;
-                    mTeletextSubPageNumber = 0;
-                } else {
-                    mSubtitleView.tt_set_subpn_text(String.valueOf(mTeletextSubPageByteArr));
-                }
-            }
-            mMainHandler.postDelayed(mTeletextSubpgNumberHideViewRunnable, TYPE_NUMBER_TIMEOUT);
-        }
-
-        private Runnable mTeletextNumberRunnable = new Runnable() {
-            @Override
-            public void run() {
-                int number = getTeletextNumber();
-                Log.d(TAG, "mTeletextNumberRunnable number = " + number);
-                if (number >= 100) {
-                    if (mSubtitleView != null) {
-                        mSubtitleView.gotoPage(getTeletextNumber());
-                    }
-                }
-                resetTeletextNumber();
-            }
-        };
-
-        private Runnable mTeletextNumberUpdateViewRunnable = new Runnable() {
-            @Override
-            public void run() {
-                int number = getTeletextNumber();
-                Log.d(TAG, "mTeletextNumberUpdateViewRunnable number = " + number);
-                if (mOverlayView != null) {
-                    mOverlayView.setTeleTextNumberVisibility(true);
-                    mOverlayView.setTextForTeletextNumber(getTeletextDisplayNumber(number));
-                } else {
-                    Log.d(TAG, "mTeletextNumberUpdateViewRunnable mOverlayView null");
-                }
-            }
-        };
-
-        private Runnable mTeletextNumberHideViewRunnable = new Runnable() {
-            @Override
-            public void run() {
-                Log.d(TAG, "mTeletextNumberHideViewRunnable");
-                if (mOverlayView != null) {
-                    mOverlayView.setTeleTextNumberVisibility(false);
-                    mOverlayView.setTextForTeletextNumber("");
-                } else {
-                    Log.d(TAG, "mTeletextNumberHideViewRunnable mOverlayView null");
-                }
-                resetTeletextNumber();
-            }
-        };
-
-        private Runnable mTeletextSubpgNumberHideViewRunnable = new Runnable() {
-            @Override
-            public void run() {
-                mTeletextSubPageNumber_count = 0;
-                mTeletextSubPageNumber = 0;
-                for (int i=0;i<mTeletextSubPageByteArr.length;i++)
-                    mTeletextSubPageByteArr[i] = '-';
-                mSubtitleView.tt_set_subpn_text(Integer.toString(mSubtitleView.get_teletext_subpg()));
-                Log.d(TAG, "mTeletextNumberHideViewRunnable");
-            }
-        };
 
         @Override
         public void doUnblockContent(TvContentRating rating) {
@@ -1320,8 +1088,11 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
                         break;
                     }
                 }
+
                 pal_teletext = true;
-                start_teletext();
+                if (teletext_switch) {
+                    start_teletext();
+                }
             } else if (subtitleAutoStart) {
                 startSubtitle(info);
                 pal_teletext = false;
@@ -1681,11 +1452,7 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
         }
 
         boolean teletext_switch = false;
-        int tt_display_mode = DTVSubtitleView.TT_DISP_NORMAL;
-        int tt_lock_subpg = DTVSubtitleView.TT_LOCK_MODE_NORMAL;
-        int tt_pgno_mode = DTVSubtitleView.TT_DISP_NORMAL;
-        int tt_clock_mode = DTVSubtitleView.TT_DISP_NORMAL;
-        boolean tt_subpg_walk_mode = false;
+        int tt_display_mode = DTVSubtitleView.TTX_MIX_MODE_NORAML;
 
         @Override
         public boolean onKeyUp(int keyCode, KeyEvent event) {
@@ -1729,20 +1496,13 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
 
         public void reset_atv_status()
         {
-            tt_subpg_walk_mode = false;
-            if (tt_display_mode == DTVSubtitleView.TT_DISP_MIX_RIGHT) {
+            if (tt_display_mode == DTVSubtitleView.TTX_MIX_MODE_LEFT_RIGHT) {
                 Rect rect = new Rect();
                 mSubtitleView.getGlobalVisibleRect(rect);
                 layoutSurface(rect.left, rect.top, rect.right, rect.bottom);
             }
-            mSubtitleView.setTTMixMode(tt_display_mode);
+            tt_display_mode = DTVSubtitleView.TTX_MIX_MODE_NORAML;
             mSubtitleView.reset_atv_status();
-            mSubtitleView.setTTSubpgLock(DTVSubtitleView.TT_LOCK_MODE_NORMAL);
-            mSubtitleView.setTTSubpgWalk(false);
-            if (tt_display_mode != DTVSubtitleView.TT_DISP_NORMAL) {
-                mSubtitleView.setTTDisplayMode(tt_display_mode);
-                tt_display_mode = DTVSubtitleView.TT_DISP_NORMAL;
-            }
             Log.e(TAG, "reset_atv_status done");
         }
 
@@ -1752,8 +1512,9 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
             float Time= (float) android.os.SystemClock.uptimeMillis() / 1000;
             Log.d(TAG, "keycode down: " + keyCode + " tt_switch " + teletext_switch + "SwitchSourceTime = " + Time);
             //Teletext is not opened.
-            if (!pal_teletext || (!teletext_switch && keyCode != KEY_TELETEXT_SWITCH))
+            if (!pal_teletext || (!teletext_switch && keyCode != KEY_TELETEXT_SWITCH)) {
                 return super.onKeyDown(keyCode, event);
+             }
 
             switch (keyCode) {
                 case 7:
@@ -1766,71 +1527,44 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
                 case 14:
                 case 15:
                 case 16:
-                    if (!tt_subpg_walk_mode)
-                        dealTeletextPageNumber(keyCode - 7);
-                    else
-                        dealTeletextSubPageNumber(keyCode - 7);
+                    mSubtitleView.tt_handle_number_event(keyCode - 7);
                     break;
                 case KEY_LEFT:
-                    if (tt_subpg_walk_mode) {
-                        int sub_no = mSubtitleView.tt_subpg_updown(false);
-                        mSubtitleView.tt_set_subpn_text(Integer.toString(sub_no));
-                    }
                     break;
                 case KEY_RIGHT:
-                    if (tt_subpg_walk_mode) {
-                        int sub_no = mSubtitleView.tt_subpg_updown(true);
-                        mSubtitleView.tt_set_subpn_text(Integer.toString(sub_no));
-                    }
                     break;
                 case KEY_RED: //Red
-                    if (!tt_subpg_walk_mode)
-                        reset_atv_status();
-                    if (!tt_subpg_walk_mode)
-                        mSubtitleView.colorLink(0);
-                    else {
-                        int sub_no = mSubtitleView.tt_subpg_updown(false);
-                        mSubtitleView.tt_set_subpn_text(Integer.toString(sub_no));
-                    }
+                    mSubtitleView.colorLink(0);
                     break;
                 case KEY_GREEN: //Green
-                    if (!tt_subpg_walk_mode)
-                        reset_atv_status();
-                    if (!tt_subpg_walk_mode)
-                        mSubtitleView.colorLink(1);
-                    else {
-                        int sub_no = mSubtitleView.tt_subpg_updown(true);
-                        mSubtitleView.tt_set_subpn_text(Integer.toString(sub_no));
-                    }
+                    mSubtitleView.colorLink(1);
                     break;
                 case KEY_YELLOW: //Yellow
-                    reset_atv_status();
                     mSubtitleView.colorLink(2);
                     break;
                 case KEY_BLUE: //Blue
-                    reset_atv_status();
                     mSubtitleView.colorLink(3);
                     break;
                 case KEY_MIX: //Play/Pause
                     switch (tt_display_mode)
                     {
-                        case DTVSubtitleView.TT_DISP_NORMAL:
-                            tt_display_mode = DTVSubtitleView.TT_DISP_MIX_RIGHT;
+                        case DTVSubtitleView.TTX_MIX_MODE_NORAML:
+                            tt_display_mode = DTVSubtitleView.TTX_MIX_MODE_TRANSPARENT;
                             break;
-                        case DTVSubtitleView.TT_DISP_MIX_TRANSPARENT:
-                            tt_display_mode = DTVSubtitleView.TT_DISP_NORMAL;
+                        case DTVSubtitleView.TTX_MIX_MODE_TRANSPARENT:
+                            tt_display_mode = DTVSubtitleView.TTX_MIX_MODE_LEFT_RIGHT;
                             break;
-                        case DTVSubtitleView.TT_DISP_MIX_RIGHT:
-                            tt_display_mode = DTVSubtitleView.TT_DISP_MIX_TRANSPARENT;
+                        case DTVSubtitleView.TTX_MIX_MODE_LEFT_RIGHT:
+                            tt_display_mode = DTVSubtitleView.TTX_MIX_MODE_NORAML;
                             break;
                         default:
-                            tt_display_mode = DTVSubtitleView.TT_DISP_NORMAL;
+                            tt_display_mode = DTVSubtitleView.TTX_MIX_MODE_NORAML;
                             break;
                     };
-                    mSubtitleView.setTTMixMode(tt_display_mode);
+                    mSubtitleView.tt_switch_mix_mode(tt_display_mode);
                     Rect rect = new Rect();
                     mSubtitleView.getGlobalVisibleRect(rect);
-                    if (tt_display_mode == DTVSubtitleView.TT_DISP_MIX_RIGHT) {
+                    if (tt_display_mode == DTVSubtitleView.TTX_MIX_MODE_LEFT_RIGHT) {
                         layoutSurface(rect.left, rect.top, (rect.left + rect.right) / 2,  rect.top + rect.bottom);
                     } else {
                         layoutSurface(rect.left, rect.top, rect.right,  rect.bottom);
@@ -1842,74 +1576,43 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
                     break;
                 case KEY_PRIOR_PAGE: //Prior program
                     reset_atv_status();
-                        mSubtitleView.previousPage();
+                     mSubtitleView.previousPage();
                     break;
                 case KEY_CLOCK: //Fast backward
-                    if (tt_clock_mode == DTVSubtitleView.TT_DISP_ONLY_CLOCK)
-                        tt_clock_mode = DTVSubtitleView.TT_DISP_NORMAL;
-                    else if (tt_clock_mode == DTVSubtitleView.TT_DISP_NORMAL)
-                        tt_clock_mode = DTVSubtitleView.TT_DISP_ONLY_CLOCK;
-
-                    mSubtitleView.setTTDisplayMode(tt_clock_mode);
+                    mSubtitleView.tt_switch_clock_mode();
                     break;
                 case KEY_GO_HOME: //Fast forward
                     reset_atv_status();
                     mSubtitleView.goHome();
                     break;
                 case KEY_ZOOM: //Zoom in
-                    if (tt_display_mode == DTVSubtitleView.TT_DISP_NORMAL)
-                        mSubtitleView.tt_zoom_in();
+                    mSubtitleView.tt_zoom_in();
                     break;
                 case KEY_SUBPG: //Stop
-                    int sub_pg_count = mSubtitleView.get_teletext_subpg_count();
-                    if (sub_pg_count > 1) {
-                        tt_subpg_walk_mode = !tt_subpg_walk_mode;
-                        if (tt_subpg_walk_mode) {
-                            mSubtitleView.setTTSubpgLock(DTVSubtitleView.TT_LOCK_MODE_LOCK_NO_ICON);
-                            mSubtitleView.setTTSubpgWalk(true);
-                        } else {
-                            mSubtitleView.setTTSubpgLock(DTVSubtitleView.TT_LOCK_MODE_NORMAL);
-                            mSubtitleView.setTTSubpgWalk(false);
-                        }
-                    } else {
-                        mSubtitleView.notify_no_subpage();
-                    }
+                    mSubtitleView.tt_get_nextsubpage();
                     break;
                 case KEY_LOCK_SUBPG: //DUIDE
-                    if (tt_lock_subpg == DTVSubtitleView.TT_LOCK_MODE_NORMAL)
-                        tt_lock_subpg = DTVSubtitleView.TT_LOCK_MODE_LOCK;
-                    else if (tt_lock_subpg == DTVSubtitleView.TT_LOCK_MODE_LOCK)
-                        tt_lock_subpg = DTVSubtitleView.TT_LOCK_MODE_NORMAL;
-                    mSubtitleView.setTTSubpgLock(tt_lock_subpg);
+                    mSubtitleView.setTTSubpgLock();
                     break;
                 case KEY_TELETEXT_SWITCH: //Zoom out
                     teletext_switch = !teletext_switch;
-                    reset_atv_status();
-                    mSubtitleView.setTTSwitch(teletext_switch);
-                    if (teletext_switch && mSubtitleView.tt_have_data()) {
-                        String subid = generateSubtitleIdString(pal_teletext_subtitle);
-                        notifyTrackSelected(TvTrackInfo.TYPE_SUBTITLE, subid);
+                    if (teletext_switch) {
+                        start_teletext();
+                    } else {
+                        stop_teletext();
                     }
                     break;
-
                 case KEY_REVEAL: //FAV
                     mSubtitleView.setTTRevealMode();
                     break;
                 case KEY_CANCEL: //List
-                    if (tt_display_mode == DTVSubtitleView.TT_DISP_MIX_RIGHT)
-                        break;
-                    if (tt_pgno_mode == DTVSubtitleView.TT_DISP_ONLY_PGNO)
-                        tt_pgno_mode = DTVSubtitleView.TT_DISP_NORMAL;
-                    else if (tt_pgno_mode == DTVSubtitleView.TT_DISP_NORMAL)
-                        tt_pgno_mode = DTVSubtitleView.TT_DISP_ONLY_PGNO;
-
-                    mSubtitleView.setTTDisplayMode(tt_pgno_mode);
+                    mSubtitleView.tt_clear();
                     break;
                 case KEY_SUBTITLE: //Subtitle
                     reset_atv_status();
                     mSubtitleView.tt_goto_subtitle();
                     break;
-                case 87:
+                case KEY_REGION:
                     switch (reg_id)
                     {
                         case 0:
@@ -1960,6 +1663,7 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
                 mSubtitleView.setActive(true);
                 mSubtitleView.startSub();
                 mSubtitleView.setTTSwitch(false);
+                enableSubtitleShow(true);
                 Log.e(TAG, "teletext_switch " + teletext_switch + " id");
             } else {
                 Toast.makeText(mContext, "No teletext, no channel info", Toast.LENGTH_SHORT).show();

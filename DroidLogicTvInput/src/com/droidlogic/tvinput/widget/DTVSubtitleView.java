@@ -189,10 +189,15 @@ public class DTVSubtitleView extends View {
     private static SubtitleManager mSubtitleManager = null;
     private static SubtitleManagerListener mSubtitleManagerListener = null;
     public final int SUBTITLE_DEMUX_SOURCE  = 4;
+    public final int SUBTITLE_VBI_SOURCE    = 5;
     public final int SUBTITLE_IOTYPE_SUB    = 5;
     public final int SUBTITLE_IOTYPE_TTX    = 6;
     public final int SUBTITLE_IOTYPE_SCTE27 = 7;
 
+    public static final int TTX_MIX_MODE_NORAML = 0;
+    public static final int TTX_MIX_MODE_TRANSPARENT = 1;
+    public static final int TTX_MIX_MODE_LEFT_RIGHT = 2;
+    private int mMixMode = TTX_MIX_MODE_NORAML;
     private int subtitlemanager_init(Context context) {
         synchronized(lock) {
             if (mSubtitleManager == null) {
@@ -240,7 +245,7 @@ public class DTVSubtitleView extends View {
                 mSubtitleManager.setSubPid(pid);
                 if (mSubtitleManager.open("", (dmx_id << 16)|SUBTITLE_DEMUX_SOURCE)) {
                     if (!is_sub) {
-                        mSubtitleManager.ttGotoPage(page, sub_page);
+                        mSubtitleManager.ttGoHome();
                     }
                 }
             }
@@ -249,6 +254,18 @@ public class DTVSubtitleView extends View {
     }
     private int subtitlemanager_start_atv_tt(int region_id, int page_no, int sub_page_no, boolean is_sub)
     {
+        synchronized(lock) {
+            if (mSubtitleManager != null)
+            {
+                mSubtitleManager.setSubType(SUBTITLE_IOTYPE_TTX);
+                mSubtitleManager.setSubPid(region_id);
+                if (mSubtitleManager.open("", SUBTITLE_VBI_SOURCE)) {
+                    if (!is_sub) {
+                        mSubtitleManager.ttGoHome();
+                    }
+                }
+            }
+        }
         return 0;
     }
     private int subtitlemanager_stop()
@@ -262,70 +279,29 @@ public class DTVSubtitleView extends View {
         }
         return 0;
     }
-    private int subtitlemanager_tt_goto(int page, int subpg)
-    {
+    private int subtitlemanager_tt_control(int event, int para0, int para1) {
         synchronized(lock) {
             if (mSubtitleManager != null) {
-                return mSubtitleManager.ttGotoPage(page, subpg);
+                return mSubtitleManager.ttControl(event, para0, para1);
             }
         }
-        return 0;
-    }
-    private int subtitlemanager_tt_color_link(int color)
-    {
-        return 0;
-    }
-    private int subtitlemanager_tt_home_link()
-    {
-        synchronized(lock) {
-            if (mSubtitleManager != null) {
-                return mSubtitleManager.ttGoHome();
-            }
-        }
-        return 0;
-    }
-    private int subtitlemanager_tt_next(int dir)
-    {
-        synchronized(lock) {
-            if (mSubtitleManager != null) {
-                return mSubtitleManager.ttNextPage(dir);
-            }
-        }
-        return 0;
-    }
-    private int subtitlemanager_tt_set_display_mode(int mode)
-    {
         return 0;
     }
     private int subtitlemanager_tt_set_region(int region_id)
     {
-        return 0;
-    }
-    private int subtitlemanager_tt_set_reveal_mode(boolean mode)
-    {
-        return 0;
-    }
-    private int subtitlemanager_tt_set_search_pattern(String pattern, boolean casefold)
-    {
-        return 0;
-    }
-    private int subtitlemanager_tt_lock_subpg(int lock)
-    {
-        return 0;
-    }
-    private int subtitlemanager_tt_search_next(int dir)
-    {
         synchronized(lock) {
             if (mSubtitleManager != null) {
-                return mSubtitleManager.ttNextPage(dir);
+                return mSubtitleManager.ttControl(SubtitleManager.TT_EVENT_SET_REGION_ID, -1, -1, region_id);
             }
         }
         return 0;
     }
-    private int subtitlemanager_tt_goto_subtitle()
+
+    private int subtitlemanager_tt_set_search_pattern(String pattern, boolean casefold)
     {
         return 0;
     }
+
     private int subtitlemanager_start_atsc_cc(int source, int vfmt, int caption, int decoder_param, String lang, int fg_color, int fg_opacity, int bg_color, int bg_opacity, int font_style, int font_size)
     {
         synchronized(lock) {
@@ -511,14 +487,6 @@ public class DTVSubtitleView extends View {
     private boolean   visible;
     private boolean   destroy;
     private static DTVSubtitleView activeView = null;
-    private static int tt_red_value;
-    private static int tt_green_value;
-    private static int tt_yellow_value;
-    private static int tt_blue_value;
-    private static int tt_curr_pgno;
-    private static int tt_curr_subpg;
-    private static String tt_navi_subpg_string;
-    private static byte[] tt_subs;
 
     private void update() {
         postInvalidate();
@@ -692,8 +660,9 @@ public class DTVSubtitleView extends View {
                 /*}else if (activeView == this){
                   activeView = null;*/
             }
-            if (!isPreWindowMode)
+            if (!isPreWindowMode) {
                 postInvalidate();
+            }
         }
     }
 
@@ -945,12 +914,14 @@ public class DTVSubtitleView extends View {
 
     public void stop() {
         synchronized(lock) {
-            Log.e(TAG, "subtitleView stop");
+            Log.d(TAG, "subtitleView stop");
             if (activeView != this) {
                 Log.e(TAG, "activeView not this");
                 return;
             }
             stopDecoder();
+            mMixMode = TTX_MIX_MODE_NORAML;
+            Log.d(TAG, "subtitleView stop end");
         }
     }
 
@@ -972,7 +943,7 @@ public class DTVSubtitleView extends View {
                 return;
             if (play_mode != PLAY_TT)
                 return;
-            subtitlemanager_tt_next(1);
+            subtitlemanager_tt_control(SubtitleManager.TT_EVENT_NEXTPAGE, -1, -1);
         }
     }
 
@@ -984,7 +955,7 @@ public class DTVSubtitleView extends View {
                 return;
             Log.e(TAG, "previousPage");
 
-            subtitlemanager_tt_next(-1);
+            subtitlemanager_tt_control(SubtitleManager.TT_EVENT_PREVIOUSPAGE, -1, -1);
         }
     }
 
@@ -996,7 +967,7 @@ public class DTVSubtitleView extends View {
             if (play_mode != PLAY_TT)
                 return;
 
-            subtitlemanager_tt_goto(page, TT_ANY_SUBNO);
+            subtitlemanager_tt_control(SubtitleManager.TT_EVENT_GO_TO_PAGE, page, TT_ANY_SUBNO);
         }
     }
     public void gotoPage(int page, int subpg) {
@@ -1006,7 +977,7 @@ public class DTVSubtitleView extends View {
             if (play_mode != PLAY_TT)
                 return;
 
-            subtitlemanager_tt_goto(page, subpg);
+            subtitlemanager_tt_control(SubtitleManager.TT_EVENT_GO_TO_PAGE, page, subpg);
         }
     }
 
@@ -1017,7 +988,7 @@ public class DTVSubtitleView extends View {
             if (play_mode != PLAY_TT)
                 return;
 
-            subtitlemanager_tt_home_link();
+            subtitlemanager_tt_control(SubtitleManager.TT_EVENT_INDEXPAGE, -1, -1);
         }
     }
 
@@ -1029,7 +1000,7 @@ public class DTVSubtitleView extends View {
                 return;
             Log.e(TAG, "colorlink");
 
-            subtitlemanager_tt_color_link(color);
+            subtitlemanager_tt_control(color, -1, -1);
         }
     }
 
@@ -1044,27 +1015,6 @@ public class DTVSubtitleView extends View {
         }
     }
 
-    public static final int TT_DISP_NORMAL = 0;
-    public static final int TT_DISP_ONLY_PGNO = 1;
-    public static final int TT_DISP_ONLY_CLOCK = 2;
-    public static final int TT_DISP_MIX_TRANSPARENT = 3;
-    public static final int TT_DISP_MIX_RIGHT = 4;
-
-    private static int tt_display_mode = TT_DISP_NORMAL;
-    public void setTTDisplayMode(int mode) {
-        synchronized(lock) {
-            need_clear_canvas = true;
-            //Change between display mode 0-2
-
-            if (activeView != this)
-                return;
-            if (play_mode != PLAY_TT)
-                return;
-            tt_display_mode = mode;
-            subtitlemanager_tt_set_display_mode(mode);
-        }
-    }
-
     public int setTTRegion(int region_id)
     {
         Log.e(TAG, "setTTRegion " + region_id);
@@ -1073,60 +1023,99 @@ public class DTVSubtitleView extends View {
     }
 
     public void setTTRevealMode() {
-        tt_reveal_mode = !tt_reveal_mode;
-        subtitlemanager_tt_set_reveal_mode(tt_reveal_mode);
-    }
+        synchronized(lock) {
+            if (activeView != this)
+                return;
+            if (play_mode != PLAY_TT)
+                return;
 
-    public static final int TT_LOCK_MODE_NORMAL = 0;
-    public static final int TT_LOCK_MODE_LOCK = 1;
-    public static final int TT_LOCK_MODE_LOCK_NO_ICON = 2;
-
-    public void setTTSubpgLock(int mode) {
-        if (mode <= TT_LOCK_MODE_LOCK_NO_ICON && mode >= TT_LOCK_MODE_NORMAL)
-            subtitlemanager_tt_lock_subpg(mode);
-    }
-
-    public static boolean tt_subpg_walk_mode = false;
-    public void setTTSubpgWalk(boolean enable)
-    {
-        tt_subpg_walk_mode = enable;
-        postInvalidate();
-    }
-
-    public int get_teletext_subpg_count()
-    {
-        if (tt_subs == null)
-            return 0;
-        else
-            return tt_subs.length;
-    }
-    public int get_teletext_pg()
-    {
-        return tt_curr_pgno;
-    }
-    public int get_teletext_subpg()
-    {
-        return tt_curr_subpg;
-    }
-
-    Runnable myTimerRun=new Runnable()
-    {
-        @Override
-        public void run() {
-            draw_no_subpg_notification = false;
+            subtitlemanager_tt_control(SubtitleManager.TT_EVENT_REVEAL, -1, -1);
         }
-    };
-    public void notify_no_subpage()
-    {
-        draw_no_subpg_notification = true;
-        postInvalidate();
-        handler.postDelayed(myTimerRun, 2000);
-        postInvalidate();
+    }
+
+    public void setTTSubpgLock() {
+        synchronized(lock) {
+            if (activeView != this)
+                return;
+            if (play_mode != PLAY_TT)
+                return;
+
+            subtitlemanager_tt_control(SubtitleManager.TT_EVENT_HOLD, -1, -1);
+        }
     }
 
     public void tt_goto_subtitle()
     {
-        subtitlemanager_tt_goto_subtitle();
+        synchronized(lock) {
+            if (activeView != this)
+                return;
+            if (play_mode != PLAY_TT)
+                return;
+
+            subtitlemanager_tt_control(SubtitleManager.TT_EVENT_GO_TO_SUBTITLE, -1, -1);
+        }
+    }
+
+    public void tt_get_nextsubpage() {
+        synchronized(lock) {
+            if (activeView != this)
+                return;
+            if (play_mode != PLAY_TT)
+                return;
+
+            subtitlemanager_tt_control(SubtitleManager.TT_EVENT_NEXTSUBPAGE, -1, -1);
+        }
+    }
+
+    public void tt_handle_number_event(int number)
+    {
+        int start_number_event = SubtitleManager.TT_EVENT_0;
+        synchronized(lock) {
+            if (activeView != this)
+                return;
+            if (play_mode != PLAY_TT)
+                return;
+
+            subtitlemanager_tt_control(number + start_number_event, -1, -1);
+        }
+    }
+
+    public void tt_switch_mix_mode(int mix_mode)
+    {
+        synchronized(lock) {
+            if (activeView != this)
+                return;
+            if (play_mode != PLAY_TT)
+                return;
+            mMixMode = mix_mode;
+            Log.d(TAG, "MixMode = " + mMixMode);
+            subtitlemanager_tt_control(SubtitleManager.TT_EVENT_MIX_VIDEO, -1, -1);
+            update();
+        }
+    }
+
+    public void tt_switch_clock_mode()
+    {
+        synchronized(lock) {
+            if (activeView != this)
+                return;
+            if (play_mode != PLAY_TT)
+                return;
+
+            subtitlemanager_tt_control(SubtitleManager.TT_EVENT_CLOCK, -1, -1);
+        }
+    }
+
+    public void tt_clear()
+    {
+        synchronized(lock) {
+            if (activeView != this)
+                return;
+            if (play_mode != PLAY_TT)
+                return;
+
+            subtitlemanager_tt_control(SubtitleManager.TT_EVENT_CLEAR, -1, -1);
+        }
     }
 
     private boolean tt_show_switch = true;
@@ -1138,79 +1127,8 @@ public class DTVSubtitleView extends View {
         postInvalidate();
     }
 
-    public static int tt_subpg_mode_subno = 1;
-    public int tt_subpg_updown(boolean up)
-    {
-        int i;
-        if (tt_subs == null)
-            return 0;
-
-        for (i=0; i<tt_subs.length; i++)
-        {
-            if (tt_curr_subpg == tt_subs[i])
-                break;
-        }
-        if (up) {
-            i++;
-            if (i >= tt_subs.length)
-                i = 0;
-        } else {
-            i--;
-            if (i < 0)
-                i = tt_subs.length - 1;
-        }
-        Log.e(TAG, "subpg updown up " + up + " pgno " + tt_curr_pgno + " subno " + tt_curr_subpg + " tsub " + tt_subs[i]);
-        subtitlemanager_tt_goto(tt_curr_pgno, tt_subs[i]);
-        return tt_subs[i];
-    }
-
-    private static int tt_mix_mode;
-    public void setTTMixMode(int tt_display_mode) {
-        synchronized(lock) {
-//            need_clear_canvas = true;
-            //Change between display mode 0 3 4
-            if (activeView != this)
-                return;
-            if (play_mode != PLAY_TT)
-                return;
-
-            tt_mix_mode = tt_display_mode;
-            if (tt_display_mode == TT_DISP_MIX_TRANSPARENT || tt_display_mode == TT_DISP_NORMAL) {
-                handler.obtainMessage(TT_ZOOM, TT_ZOOM_NORMAL).sendToTarget();
-                subtitlemanager_tt_set_display_mode(tt_display_mode);
-            } else {
-                handler.obtainMessage(TT_ZOOM, TT_ZOOM_RIGHT).sendToTarget();
-                subtitlemanager_tt_set_display_mode(TT_DISP_NORMAL);
-            }
-        }
-    }
-
-    public static final int ATV_TT_NO_CONTENT   = 0;
-    public static final int ATV_TT_HAVE_CONTENT = 1;
-    public static final int ATV_TT_SEARCHING    = 2;
-
     public void tt_reset_status()
     {
-    }
-
-    public void tt_data_notify(int pgno)
-    {
-//        Log.i(TAG, "tt_data_notify pgno: " + pgno);
-        notify_pgno = pgno;
-        teletext_have_data = true;
-        if (tt_notify_status == TT_NOTIFY_SEARCHING) {
-            postInvalidate();
-        }
-        handler.removeMessages(TT_NO_SIGAL);
-        if (pgno == 100) {
-            tt_notify_status = TT_NOTIFY_CANCEL;
-            postInvalidate();
-        }
-    }
-
-    public boolean tt_have_data()
-    {
-        return teletext_have_data;
     }
 
     public void searchNext() {
@@ -1220,7 +1138,7 @@ public class DTVSubtitleView extends View {
             if (play_mode != PLAY_TT)
                 return;
 
-            subtitlemanager_tt_search_next(1);
+            subtitlemanager_tt_control(SubtitleManager.TT_EVENT_NEXTPAGE, -1, -1);
         }
     }
 
@@ -1231,57 +1149,30 @@ public class DTVSubtitleView extends View {
             if (play_mode != PLAY_TT)
                 return;
 
-            subtitlemanager_tt_search_next(-1);
-        }
-    }
-
-    public void hide_reveal_tt()
-    {
-        hide_reveal_state = !hide_reveal_state;
-        if (hide_reveal_state) {
-            show();
-        } else {
-            hide();
+            subtitlemanager_tt_control(SubtitleManager.TT_EVENT_PREVIOUSPAGE, -1, -1);
         }
     }
 
     public void reset_atv_status()
     {
         synchronized (lock) {
-            tt_mix_mode = TT_DISP_NORMAL;
-            tt_display_mode = TT_DISP_NORMAL;
-            tt_zoom_state = TT_ZOOM_NORMAL;
+            tt_zoom_state = 0;
             tt_reveal_mode = false;
-            handler.obtainMessage(TT_ZOOM, TT_ZOOM_NORMAL).sendToTarget();
-            subtitlemanager_tt_set_display_mode(TT_DISP_NORMAL);
-            subtitlemanager_tt_set_reveal_mode(false);
-            subtitlemanager_tt_lock_subpg(0);
         }
         postInvalidate();
     }
 
-    public static final int TT_ZOOM_NORMAL = 0;
-    public static final int TT_ZOOM_TOP_HALF = 1;
-    public static final int TT_ZOOM_BOTTOM_HALF = 2;
-    public static final int TT_ZOOM_RIGHT = 3;
     public void tt_zoom_in()
     {
-        switch (tt_zoom_state)
-        {
-            case TT_ZOOM_NORMAL:
-                tt_zoom_state = TT_ZOOM_TOP_HALF;
-                break;
-            case TT_ZOOM_TOP_HALF:
-                tt_zoom_state = TT_ZOOM_BOTTOM_HALF;
-                break;
-            case TT_ZOOM_BOTTOM_HALF:
-                tt_zoom_state = TT_ZOOM_NORMAL;
-                break;
-            default:
-                tt_zoom_state = TT_ZOOM_NORMAL;
-                break;
-        };
-        handler.obtainMessage(TT_ZOOM, tt_zoom_state).sendToTarget();
+        synchronized(lock) {
+            if (activeView != this)
+                return;
+            if (play_mode != PLAY_TT)
+                return;
+
+            subtitlemanager_tt_control(SubtitleManager.TT_EVENT_DOUBLE_HEIGHT, -1, -1);
+        }
+
     }
 
     public void tt_stop_refresh()
@@ -1311,14 +1202,6 @@ public class DTVSubtitleView extends View {
             return false;
     }
 
-    public void tt_set_subpn_text(String number_str)
-    {
-        tt_navi_subpg_string = number_str;
-        while (tt_navi_subpg_string.length() < 4) {
-            tt_navi_subpg_string = '0' + tt_navi_subpg_string;
-        }
-    }
-
     @Override
     public void onDraw(Canvas canvas) {
         Rect sr, dr;
@@ -1342,7 +1225,7 @@ public class DTVSubtitleView extends View {
             need_clear_canvas = false;
             return;
         }
-//        Log.e(TAG, "onDraw active " + active + " visible " + visible + " pm " + play_mode);
+        //Log.e(TAG, "onDraw active " + active + " visible " + visible + " pm " + play_mode);
         if (!active || !visible || (play_mode == PLAY_NONE)) {
             return;
         }
@@ -1383,10 +1266,18 @@ public class DTVSubtitleView extends View {
                     break;
                 case MODE_DTV_TT:
                 case MODE_ATV_TT:
-                    if (!tt_show_switch)
-                        return;
-                    if (!teletext_have_data)
-                        return;
+                    if (bitmap == null) return;
+                    sr = new Rect(0, 0, bitmap.getWidth(), bitmap.getHeight());
+                    if (mMixMode == TTX_MIX_MODE_LEFT_RIGHT) {
+                        dr = new Rect(getWidth()/2, 0, getWidth(), getHeight());
+                    } else {
+                        dr = new Rect(0, 0, getWidth(), getHeight());
+                    }
+                    canvas.setDrawFilter(new PaintFlagsDrawFilter(0, Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG));
+                    canvas.drawBitmap(bitmap, sr, dr, null);
+                    //bitmap.recycle();
+                   // bitmap = null;
+                    break;
                 case MODE_DVB_SUB:
                 case MODE_SCTE27_SUB:
                     if (bitmap == null) return;
@@ -1528,6 +1419,7 @@ public class DTVSubtitleView extends View {
         @Override
         public void onSubtitleEvent(int type, Object data, byte[] subdata, int x, int y,
             int width ,int height, int videoW, int videoH, boolean showOrHide) {
+            //Log.d(TAG, "DTVSubtitleView type:" + type+"; height=" +height+"; width="+width+",videoW:"+videoW+",videoH:"+videoH+", show="+showOrHide);
             synchronized(lock) {
                 if (type == SubtitleManager.SUBTITLE_CC_JASON) {
                     saveJsonStr(new String(subdata));
@@ -1544,23 +1436,36 @@ public class DTVSubtitleView extends View {
                     int dis_h = videoH;
                     int src_x = x;
                     int src_y = y;
+                    int widtmp = width;
+                    int heitmp = height;
                     if (type == SubtitleManager.SUBTITLE_IMAGE_CENTER) {
                         dis_w = 720;
-                        dis_h = 525;
-                        src_x = (dis_w - width)/2;
-                        src_y = (dis_h - height)/2;
+                        dis_h = 576;
+                        widtmp = 480;
+                        heitmp = 525;
+                        src_x = (dis_w - widtmp)/2;
+                        src_y = (dis_h - heitmp)/2;
                     }
-
-                    bitmap = Bitmap.createBitmap(dis_w, dis_h, Bitmap.Config.ARGB_8888);
-                    Canvas canvas = new Canvas(bitmap);
-
-                    if (showOrHide == true) {
+                    if (showOrHide == true
+                        && width > 0
+                        && height > 0
+                        && dis_w > 0
+                        && dis_h > 0) {
                         int[] colors = (int [])data;
+                        if (bitmap != null)
+                            bitmap.recycle();
+                        bitmap = Bitmap.createBitmap(dis_w, dis_h, Bitmap.Config.ARGB_8888);
+                        Canvas canvas = new Canvas(bitmap);
+                        Log.d(TAG, "mixmode = " + mMixMode);
+                        if ((type == SubtitleManager.SUBTITLE_IMAGE_CENTER) && mMixMode == TTX_MIX_MODE_NORAML)
+                            canvas.drawColor(0xFF000000);
                         Bitmap databm = Bitmap.createBitmap(colors, 0, width, width, height, Bitmap.Config.ARGB_8888);
-                        canvas.drawBitmap(databm, src_x, src_y, null);
+                        Rect src = new Rect(0, 0, width, height);
+                        Rect dsc = new Rect(src_x, src_y, src_x + widtmp, src_y + heitmp);
+                        canvas.drawBitmap(databm, src, dsc, null);
                         databm.recycle();
                     } else {
-                        canvas.drawColor(0, PorterDuff.Mode.CLEAR);
+                        need_clear_canvas = true;
                     }
                     update();
                 }
