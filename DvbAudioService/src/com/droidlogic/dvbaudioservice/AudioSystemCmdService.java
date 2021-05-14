@@ -68,26 +68,27 @@ public class AudioSystemCmdService extends Service implements SystemControlManag
     private int mCurrentHasDtvVideo;
     private TvInputManager mTvInputManager;
 
-    private static final int ADEC_START_DECODE = 1;
-    private static final int ADEC_PAUSE_DECODE = 2;
-    private static final int ADEC_RESUME_DECODE = 3;
-    private static final int ADEC_STOP_DECODE = 4;
-    private static final int ADEC_SET_DECODE_AD = 5;
-    private static final int ADEC_SET_VOLUME = 6;
-    private static final int ADEC_SET_MUTE = 7;
-    private static final int ADEC_SET_OUTPUT_MODE = 8;
-    private static final int ADEC_SET_PRE_GAIN = 9;
-    private static final int ADEC_SET_PRE_MUTE = 10;
-    private static final int ADEC_OPEN_DECODER = 12;
-    private static final int ADEC_CLOSE_DECODER = 13;
-    private static final int ADEC_SET_DEMUX_INFO = 14;
+    private static final int ADEC_START_DECODE                          = 1;
+    private static final int ADEC_PAUSE_DECODE                          = 2;
+    private static final int ADEC_RESUME_DECODE                         = 3;
+    private static final int ADEC_STOP_DECODE                           = 4;
+    private static final int ADEC_SET_DECODE_AD                         = 5;
+    private static final int ADEC_SET_VOLUME                            = 6;
+    private static final int ADEC_SET_MUTE                              = 7;
+    private static final int ADEC_SET_OUTPUT_MODE                       = 8;
+    private static final int ADEC_SET_PRE_GAIN                          = 9;
+    private static final int ADEC_SET_PRE_MUTE                          = 10;
+    private static final int ADEC_OPEN_DECODER                          = 12;
+    private static final int ADEC_CLOSE_DECODER                         = 13;
+    private static final int ADEC_SET_DEMUX_INFO                        = 14;
+    private static final int ADEC_SET_SECURITY_MEM_LEVEL                = 15;
 
     //audio ad
-    public static final int MSG_MIX_AD_DUAL_SUPPORT = 20;
-    public static final int MSG_MIX_AD_MIX_SUPPORT = 21;
-    public static final int MSG_MIX_AD_MIX_LEVEL = 22;
-    public static final int MSG_MIX_AD_SET_MAIN = 23;
-    public static final int MSG_MIX_AD_SET_ASSOCIATE = 24;
+    public static final int MSG_MIX_AD_DUAL_SUPPORT                     = 20;
+    public static final int MSG_MIX_AD_MIX_SUPPORT                      = 21;
+    public static final int MSG_MIX_AD_MIX_LEVEL                        = 22;
+    public static final int MSG_MIX_AD_SET_MAIN                         = 23;
+    public static final int MSG_MIX_AD_SET_ASSOCIATE                    = 24;
 
     private final BroadcastReceiver mVolumeReceiver = new BroadcastReceiver() {
         @Override
@@ -100,6 +101,7 @@ public class AudioSystemCmdService extends Service implements SystemControlManag
     private boolean mHasOpenedDecoder;
     private boolean mHasReceivedStartDecoderCmd;
     private boolean  mMixAdSupported;
+    private boolean  mNotImptTvHardwareInputService;
     private IAudioService mAudioService;
     private AudioRoutesInfo mCurAudioRoutesInfo;
     private Runnable mHandleAudioSinkUpdatedRunnable;
@@ -113,10 +115,13 @@ public class AudioSystemCmdService extends Service implements SystemControlManag
             mHandleAudioSinkUpdatedRunnable = new Runnable() {
                 public void run() {
                     synchronized (mLock) {
-                        handleAudioSinkUpdated();
+                        if (mNotImptTvHardwareInputService)
+                            handleAudioSinkUpdated();
+                        reStartAdecDecoderIfPossible();
                     }
                 }
             };
+
             if (mTvInputManager.getHardwareList() == null) {
                 mHandler.post(mHandleAudioSinkUpdatedRunnable);
             } else {
@@ -151,6 +156,7 @@ public class AudioSystemCmdService extends Service implements SystemControlManag
         filter.addAction(AudioManager.VOLUME_CHANGED_ACTION);
         filter.addAction(AudioManager.STREAM_MUTE_CHANGED_ACTION);
         mContext.registerReceiver(mVolumeReceiver, filter);
+        mNotImptTvHardwareInputService = (mTvInputManager.getHardwareList() == null) || (mTvInputManager.getHardwareList().isEmpty());
         updateVolume();
     }
 
@@ -195,6 +201,8 @@ public class AudioSystemCmdService extends Service implements SystemControlManag
                 return temp + "CLOSE_DECODER";
             case ADEC_SET_DEMUX_INFO:
                 return temp + "SET_DEMUX_INFO";
+            case ADEC_SET_SECURITY_MEM_LEVEL:
+                return temp + "SET_SECURITY_MEM_LEVEL";
 
             case MSG_MIX_AD_DUAL_SUPPORT:
                 return temp + "AD_DUAL_SUPPORT";
@@ -275,6 +283,9 @@ public class AudioSystemCmdService extends Service implements SystemControlManag
                     mAudioManager.setParameters("demux_id="+param2);
                     mAudioManager.setParameters("cmd="+cmd);
                     break;
+                case ADEC_SET_SECURITY_MEM_LEVEL:
+                    mAudioManager.setParameters("security_mem_level="+param1);
+                    break;
                 case ADEC_START_DECODE:
                     mHasReceivedStartDecoderCmd = true;
                     mCurrentFmt = param1;
@@ -331,9 +342,12 @@ public class AudioSystemCmdService extends Service implements SystemControlManag
                 case ADEC_SET_VOLUME:
                     //mAudioManager.setParameters("cmd="+cmd);
                     //mAudioManager.setParameters("vol="+param1);
-                    updateVolume();
-                    updateAudioSourceAndAudioSink();
-                    updateAudioConfigLocked();
+                    /*if (mHasOpenedDecoder) {
+                        updateVolume();
+                        updateAudioSourceAndAudioSink();
+                        handleAudioSinkUpdated();
+                       }*/
+                    Log.d(TAG,"SET_VOLUME now triggered by AudioManager.VOLUME_CHANGED_ACTION");
                     break;
                 case ADEC_SET_MUTE:
                     //mAudioManager.setParameters("cmd="+cmd);
@@ -355,12 +369,16 @@ public class AudioSystemCmdService extends Service implements SystemControlManag
                     mAudioManager.setParameters("mute="+param1);
                     break;
                 case ADEC_OPEN_DECODER:
-                    mHasOpenedDecoder = true;
                     updateAudioSourceAndAudioSink();
-                    updateAudioConfigLocked();
+                    if (mNotImptTvHardwareInputService)
+                        handleAudioSinkUpdated();
+                    mHasOpenedDecoder = true;
+                    reStartAdecDecoderIfPossible();
                     break;
                 case ADEC_CLOSE_DECODER://
                     if (mAudioPatch != null) {
+                       Log.d(TAG, "ADEC_CLOSE_DECODER mAudioPatch:"
+                            + mAudioPatch);
                         mAudioManager.releaseAudioPatch(mAudioPatch);
                     }
                     mAudioPatch = null;
@@ -451,7 +469,7 @@ public class AudioSystemCmdService extends Service implements SystemControlManag
                 return;
         }
         synchronized (mLock) {
-            if (mTvInputManager.getHardwareList() == null) {
+            if (mNotImptTvHardwareInputService) {
                 updateAudioConfigLocked();
             }
         }
@@ -522,34 +540,34 @@ public class AudioSystemCmdService extends Service implements SystemControlManag
     }
 
     private void reStartAdecDecoderIfPossible() {
-        Log.i(TAG, "reStartAdecDecoderIfPossible StartDecoderCmd:" + mHasReceivedStartDecoderCmd);
-        mAudioManager.setParameters("tuner_in=dtv");
-        if (mHasReceivedStartDecoderCmd) {
-           if (mMixAdSupported == false) {
-                setAdFunction(MSG_MIX_AD_DUAL_SUPPORT, 0);
-                setAdFunction(MSG_MIX_AD_MIX_SUPPORT, 0);
-                mAudioManager.setParameters("subafmt=-1");
-                mAudioManager.setParameters("subapid=-1");
-            } else if (mMixAdSupported == true){
-                mAudioManager.setParameters("subafmt="+mCurrentSubFmt);
-                mAudioManager.setParameters("subapid="+mCurrentSubPid);
-                setAdFunction(MSG_MIX_AD_DUAL_SUPPORT, 1);
-                setAdFunction(MSG_MIX_AD_MIX_SUPPORT, 1);
+
+        Log.i(TAG, "reStartAdecDecoderIfPossible StartDecoderCmd:" + mHasReceivedStartDecoderCmd +
+                ", mMixAdSupported:" + mMixAdSupported);
+
+        if (mAudioSource != null &&!mAudioSink.isEmpty() &&
+            mHasOpenedDecoder && !mHasStartedDecoder) {
+            mAudioManager.setParameters("tuner_in=dtv");
+            if (mHasReceivedStartDecoderCmd) {
+               if (mMixAdSupported == false) {
+                    setAdFunction(MSG_MIX_AD_DUAL_SUPPORT, 0);
+                    setAdFunction(MSG_MIX_AD_MIX_SUPPORT, 0);
+                    mAudioManager.setParameters("subafmt=-1");
+                    mAudioManager.setParameters("subapid=-1");
+                } else if (mMixAdSupported == true) {
+                    mAudioManager.setParameters("subafmt="+mCurrentSubFmt);
+                    mAudioManager.setParameters("subapid="+mCurrentSubPid);
+                    setAdFunction(MSG_MIX_AD_DUAL_SUPPORT, 1);
+                    setAdFunction(MSG_MIX_AD_MIX_SUPPORT, 1);
+                }
+                mAudioManager.setParameters("fmt="+mCurrentFmt);
+                mAudioManager.setParameters("has_dtv_video="+mCurrentHasDtvVideo);
+                mAudioManager.setParameters("cmd=1");
+                mHasStartedDecoder = true;
             }
-            mAudioManager.setParameters("fmt="+mCurrentFmt);
-            mAudioManager.setParameters("has_dtv_video="+mCurrentHasDtvVideo);
-            mAudioManager.setParameters("cmd=1");
-            mHasStartedDecoder = true;
         }
     }
 
     private void updateAudioConfigLocked() {
-        if (mTvInputManager.getHardwareList() != null && mAudioSource != null &&
-                !mAudioSink.isEmpty() && mHasOpenedDecoder && !mHasStartedDecoder) {
-            Log.i(TAG, "updateAudioConfigLocked reStartAdecDecoderIfPossible begin.");
-            reStartAdecDecoderIfPossible();
-            return;
-        }
 
         boolean sinkUpdated = updateAudioSinkLocked();
 
@@ -575,8 +593,10 @@ public class AudioSystemCmdService extends Service implements SystemControlManag
         Log.i(TAG, "updateAudioConfigLocked sinkUpdated:" + sinkUpdated + ", mAudioPatch is empty:"
                 + (mAudioPatch == null));
          //mAudioPatch should not be null when current hardware is active.
-        if (mAudioPatch == null)
+        if (mAudioPatch == null) {
             shouldRecreateAudioPatch = true;
+            mHasStartedDecoder = false;
+        }
 
         for (AudioDevicePort audioSink : mAudioSink) {
             AudioPortConfig sinkConfig = audioSink.activeConfig();
@@ -735,10 +755,8 @@ public class AudioSystemCmdService extends Service implements SystemControlManag
                     audioPatchArray,
                     new AudioPortConfig[] { sourceConfig },
                     sinkConfigs.toArray(new AudioPortConfig[sinkConfigs.size()]));
-            if (!mHasStartedDecoder) {
-                reStartAdecDecoderIfPossible();
-            }
             mAudioPatch = audioPatchArray[0];
+            Log.d(TAG,"createAudioPatch end" + mAudioPatch);
             if (sourceGainConfig != null) {
                 mCommitedIndex = mCurrentIndex;
                 mCommittedSourceVolume = mSourceVolume;
