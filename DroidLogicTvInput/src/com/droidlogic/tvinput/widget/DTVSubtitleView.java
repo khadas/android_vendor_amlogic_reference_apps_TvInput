@@ -306,7 +306,7 @@ public class DTVSubtitleView extends View {
     {
         synchronized(lock) {
             if (mSubtitleManager != null) {
-                mSubtitleManager.open("", SUBTITLE_DEMUX_SOURCE);
+                //mSubtitleManager.open("", SUBTITLE_DEMUX_SOURCE);
                 mSubtitleManager.startCCchanel(caption|source<<8);
             }
         }
