@@ -18,11 +18,15 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.database.ContentObserver;
 import android.os.IBinder;
 import android.os.RemoteException;
 import android.os.ServiceManager;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.SystemProperties;
+
+import android.provider.Settings;
 import android.util.Log;
 import android.util.Slog;
 import android.media.AudioDevicePort;
@@ -38,12 +42,17 @@ import android.media.AudioSystem;
 import android.media.IAudioRoutesObserver;
 import android.media.IAudioService;
 import android.media.tv.TvInputManager;
+import android.net.Uri;
 
+import com.droidlogic.app.AudioSystemCmdManager;
+import com.droidlogic.app.DroidLogicUtils;
+import com.droidlogic.app.OutputModeManager;
+import com.droidlogic.app.SystemControlEvent;
 import com.droidlogic.app.SystemControlManager;
 
 //this service used to call audio system commands
-public class AudioSystemCmdService extends Service implements SystemControlManager.AudioListener{
-    private static final String TAG = "AudioSystemCmdService";
+public class AudioSystemCmdService extends Service implements SystemControlManager.AudioListener {
+    private static final String TAG = AudioSystemCmdService.class.getSimpleName();
 
     private SystemControlManager mSystemControlManager;
     private AudioManager mAudioManager = null;
@@ -62,33 +71,14 @@ public class AudioSystemCmdService extends Service implements SystemControlManag
     private int mDesiredSamplingRate = 0;
     private int mDesiredChannelMask = AudioFormat.CHANNEL_OUT_DEFAULT;
     private int mDesiredFormat = AudioFormat.ENCODING_DEFAULT;
-    private int mCurrentFmt;
+    private int mCurrentFmt = -1;
     private int mCurrentSubFmt = -1;
     private int mCurrentSubPid = -1;
-    private int mCurrentHasDtvVideo;
+    private int mCurrentHasDtvVideo = 0;
+    private int mDtvDemuxIdBase = 20;
+    private int mDtvDemuxIdCurrentWork = 0;
+    private int mDtvDemuxIdCurrentRecive = 0;
     private TvInputManager mTvInputManager;
-
-    private static final int ADEC_START_DECODE                          = 1;
-    private static final int ADEC_PAUSE_DECODE                          = 2;
-    private static final int ADEC_RESUME_DECODE                         = 3;
-    private static final int ADEC_STOP_DECODE                           = 4;
-    private static final int ADEC_SET_DECODE_AD                         = 5;
-    private static final int ADEC_SET_VOLUME                            = 6;
-    private static final int ADEC_SET_MUTE                              = 7;
-    private static final int ADEC_SET_OUTPUT_MODE                       = 8;
-    private static final int ADEC_SET_PRE_GAIN                          = 9;
-    private static final int ADEC_SET_PRE_MUTE                          = 10;
-    private static final int ADEC_OPEN_DECODER                          = 12;
-    private static final int ADEC_CLOSE_DECODER                         = 13;
-    private static final int ADEC_SET_DEMUX_INFO                        = 14;
-    private static final int ADEC_SET_SECURITY_MEM_LEVEL                = 15;
-
-    //audio ad
-    public static final int MSG_MIX_AD_DUAL_SUPPORT                     = 20;
-    public static final int MSG_MIX_AD_MIX_SUPPORT                      = 21;
-    public static final int MSG_MIX_AD_MIX_LEVEL                        = 22;
-    public static final int MSG_MIX_AD_SET_MAIN                         = 23;
-    public static final int MSG_MIX_AD_SET_ASSOCIATE                    = 24;
 
     private final BroadcastReceiver mVolumeReceiver = new BroadcastReceiver() {
         @Override
@@ -97,31 +87,47 @@ public class AudioSystemCmdService extends Service implements SystemControlManag
         }
     };
 
-    private boolean mHasStartedDecoder;
-    private boolean mHasOpenedDecoder;
+    private boolean mHasStartedDecoder = false;
+    private boolean mHasOpenedDecoder = false;
     private boolean mHasReceivedStartDecoderCmd;
     private boolean  mMixAdSupported;
-    private boolean  mNotImptTvHardwareInputService;
+    private boolean  mNotImptTvHardwareInputService = false;
+    private boolean mForceManagePatch = false;
     private IAudioService mAudioService;
     private AudioRoutesInfo mCurAudioRoutesInfo;
     private Runnable mHandleAudioSinkUpdatedRunnable;
     final IAudioRoutesObserver.Stub mAudioRoutesObserver = new IAudioRoutesObserver.Stub() {
         @Override
         public void dispatchAudioRoutesChanged(final AudioRoutesInfo newRoutes) {
-            Log.i(TAG, "dispatchAudioRoutesChanged");
+            Log.i(TAG, "dispatchAudioRoutesChanged cur device:" + newRoutes.mainType +
+                    ", pre device:" + mCurAudioRoutesInfo.mainType);
+            if (DroidLogicUtils.getAudioDebugEnable()) {
+                Log.d(TAG, "dispatchAudioRoutesChanged newRoutes:" + newRoutes.toString());
+                Log.d(TAG, "dispatchAudioRoutesChanged preRoutes:" + mCurAudioRoutesInfo.toString());
+            }
+            if (DroidLogicUtils.isTv()) {
+                if (newRoutes.mainType == AudioRoutesInfo.MAIN_HDMI) {
+                    Settings.Global.putInt(mContext.getContentResolver(), OutputModeManager.SOUND_OUTPUT_DEVICE, OutputModeManager.SOUND_OUTPUT_DEVICE_ARC);
+                } else {
+                    Settings.Global.putInt(mContext.getContentResolver(), OutputModeManager.SOUND_OUTPUT_DEVICE, OutputModeManager.SOUND_OUTPUT_DEVICE_SPEAKER);
+                }
+            }
             mCurAudioRoutesInfo = newRoutes;
             mHasStartedDecoder = false;
             mHandler.removeCallbacks(mHandleAudioSinkUpdatedRunnable);
             mHandleAudioSinkUpdatedRunnable = new Runnable() {
                 public void run() {
                     synchronized (mLock) {
-                        if (mNotImptTvHardwareInputService)
-                            handleAudioSinkUpdated();
-                        reStartAdecDecoderIfPossible();
+                        if (mHasOpenedDecoder) {
+                            if (mNotImptTvHardwareInputService)
+                                handleAudioSinkUpdated();
+                            mHasOpenedDecoder = false;
+                            reStartAdecDecoderIfPossible();
+                            mHasOpenedDecoder = true;
+                        }
                     }
                 }
             };
-
             if (mTvInputManager.getHardwareList() == null) {
                 mHandler.post(mHandleAudioSinkUpdatedRunnable);
             } else {
@@ -157,8 +163,25 @@ public class AudioSystemCmdService extends Service implements SystemControlManag
         filter.addAction(AudioManager.STREAM_MUTE_CHANGED_ACTION);
         mContext.registerReceiver(mVolumeReceiver, filter);
         mNotImptTvHardwareInputService = (mTvInputManager.getHardwareList() == null) || (mTvInputManager.getHardwareList().isEmpty());
+        Log.d(TAG, "mNotImptTvHardwareInputService:"+ mNotImptTvHardwareInputService + ", mTvInputManager.getHardwareList():" + mTvInputManager.getHardwareList());
+        mForceManagePatch =  SystemProperties.getBoolean("vendor.media.dtv.force.manage.patch", false);
+        Log.d(TAG, "mForceManagePatch :" + mForceManagePatch);
         updateVolume();
+
+        getContentResolver().registerContentObserver(Settings.Global.getUriFor(OutputModeManager.DB_ID_AUDIO_OUTPUT_DEVICE_ARC_ENABLE),
+                false, mAudioOutputParametersObserver);
     }
+
+    private ContentObserver mAudioOutputParametersObserver = new ContentObserver(new Handler()) {
+        @Override
+        public void onChange(boolean selfChange, Uri uri) {
+            int currentArcEnable = Settings.Global.getInt(mContext.getContentResolver(), OutputModeManager.DB_ID_AUDIO_OUTPUT_DEVICE_ARC_ENABLE, 0);
+            Log.i(TAG, "onChange ARC enable:" + currentArcEnable + " changed");
+            if (uri != null && uri.equals(Settings.Global.getUriFor(OutputModeManager.DB_ID_AUDIO_OUTPUT_DEVICE_ARC_ENABLE))) {
+                mAudioManager.setHdmiSystemAudioSupported(currentArcEnable != 0);
+            }
+        }
+    };
 
     @Override
     public void onDestroy() {
@@ -172,227 +195,164 @@ public class AudioSystemCmdService extends Service implements SystemControlManag
         throw new UnsupportedOperationException("Not yet implemented");
     }
 
-    private String AudioCmdToString(int cmd) {
-        String temp = "["+cmd+"]";
-        switch (cmd) {
-            case ADEC_START_DECODE:
-                return temp + "START_DECODE";
-            case ADEC_PAUSE_DECODE:
-                return temp + "PAUSE_DECODE";
-            case ADEC_RESUME_DECODE:
-                return temp + "RESUME_DECODE";
-            case ADEC_STOP_DECODE:
-                return temp + "STOP_DECODE";
-            case ADEC_SET_DECODE_AD:
-                return temp + "SET_DECODE_AD";
-            case ADEC_SET_VOLUME:
-                return temp + "SET_VOLUME";
-            case ADEC_SET_MUTE:
-                return temp + "SET_MUTE";
-            case ADEC_SET_OUTPUT_MODE:
-                return temp + "SET_OUTPUT_MODE";
-            case ADEC_SET_PRE_GAIN:
-                return temp + "SET_PRE_GAIN";
-            case ADEC_SET_PRE_MUTE:
-                return temp + "SET_PRE_MUTE";
-            case ADEC_OPEN_DECODER:
-                return temp + "OPEN_DECODER";
-            case ADEC_CLOSE_DECODER:
-                return temp + "CLOSE_DECODER";
-            case ADEC_SET_DEMUX_INFO:
-                return temp + "SET_DEMUX_INFO";
-            case ADEC_SET_SECURITY_MEM_LEVEL:
-                return temp + "SET_SECURITY_MEM_LEVEL";
-
-            case MSG_MIX_AD_DUAL_SUPPORT:
-                return temp + "AD_DUAL_SUPPORT";
-            case MSG_MIX_AD_MIX_SUPPORT:
-                return temp + "AD_MIX_SUPPORT";
-            case MSG_MIX_AD_MIX_LEVEL:
-                return temp + "AD_MIX_LEVEL";
-            case MSG_MIX_AD_SET_MAIN:
-                return temp + "AD_SET_MAIN";
-            case MSG_MIX_AD_SET_ASSOCIATE:
-                return temp + "AD_SET_ASSOCIATE";
-            default:
-                return temp + "invalid cmd";
-        }
-    }
-
     private boolean setAdFunction(int msg, int param1) {
         boolean result = false;
         if (mAudioManager == null) {
-            Log.i(TAG, "setAdFunction null audioManager");
+            Log.w(TAG, "setAdFunction null audioManager");
             return result;
         }
-        //Log.d(TAG, "setAdFunction msg = " + msg + ", param1 = " + param1);
         switch (msg) {
-            case MSG_MIX_AD_DUAL_SUPPORT://dual_decoder_surport for ad & main mix on/off
-                if (param1 > 0) {
-                    mAudioManager.setParameters("dual_decoder_support=1");
-                } else {
-                    mAudioManager.setParameters("dual_decoder_support=0");
-                }
-                Log.d(TAG, "setAdFunction MSG_MIX_AD_DUAL_SUPPORT setParameters:"
-                        + "dual_decoder_support=" + (param1 > 0 ? 1 : 0));
+            case AudioSystemCmdManager.AUDIO_SERVICE_CMD_AD_DUAL_SUPPORT://dual_decoder_surport for ad & main mix on/off
+                mAudioManager.setParameters("hal_param_dual_dec_support=" + param1);
                 result = true;
                 break;
-            case MSG_MIX_AD_MIX_SUPPORT://Associated audio mixing on/off
-                if (param1 > 0) {
-                    mAudioManager.setParameters("associate_audio_mixing_enable=1");
-                } else {
-                    mAudioManager.setParameters("associate_audio_mixing_enable=0");
-                }
-                Log.d(TAG, "setAdFunction MSG_MIX_AD_MIX_SUPPORT setParameters:"
-                        + "associate_audio_mixing_enable=" + (param1 > 0 ? 1 : 0));
+            case AudioSystemCmdManager.AUDIO_SERVICE_CMD_AD_MIX_SUPPORT://Associated audio mixing on/off
+                mAudioManager.setParameters("hal_param_ad_mix_enable=" + param1);
                 result = true;
                 break;
 
-            case MSG_MIX_AD_MIX_LEVEL://Associated audio mixing level
-                mAudioManager.setParameters("dual_decoder_mixing_level=" + param1 + "");
-                Log.d(TAG, "setAdFunction MSG_MIX_AD_MIX_LEVEL setParameters:"
-                        + "dual_decoder_mixing_level=" + param1);
+            case AudioSystemCmdManager.AUDIO_SERVICE_CMD_AD_MIX_LEVEL://Associated audio mixing level
+                mAudioManager.setParameters("hal_param_dual_dec_mix_level=" + param1);
                 result = true;
                 break;
-            /*case MSG_MIX_AD_SET_MAIN://set Main Audio by handle
-                result = playerSelectAudioTrack(param1);
-                Log.d(TAG, "setAdFunction MSG_MIX_AD_SET_MAIN result=" + result
-                        + ", setAudioStream " + param1);
-                break;
-            case MSG_MIX_AD_SET_ASSOCIATE://set Associate Audio by handle
-                result = playersetAudioDescriptionOn(param1 == 1);
-                Log.d(TAG, "setAdFunction MSG_MIX_AD_SET_ASSOCIATE result=" + result
-                        + "setAudioDescriptionOn " + (param1 == 1));
-                break;*/
             default:
-                Log.i(TAG,"setAdFunction unkown  msg:" + msg + ", param1:" + param1);
                 break;
         }
               return result;
     }
 
     @Override
-    public void OnAudioEvent(int cmd, int param1, int param2) {
-        Log.d(TAG, "OnAudioEvent cmd:"+ AudioCmdToString(cmd) + ", param1:" + param1 + ", param2:" + param2);
+    public void OnAudioEvent(int cmd, int param1, int param2, int param3) {
+        HandleAudioEvent(cmd, param1, param2, param3, true);
+    }
+
+    public void HandleAudioEvent(int cmd, int param1, int param2, int param3, boolean isDtvkit) {
+        Log.i(TAG, "HandleAudioEvent cmd:"+ AudioSystemCmdManager.AudioCmdToString(cmd) +
+                ", param1:" + param1 + ", param2:" + param2 +", param3:" + param3 + ", is " + (isDtvkit ? "": "not ") +"Dtvkit.");
         if (mAudioManager == null) {
-            Log.e(TAG, "OnAudioEvent mAudioManager is null");
-        } else {
-            switch (cmd) {
-                case ADEC_SET_DEMUX_INFO:
-                    mAudioManager.setParameters("pid="+param1);
-                    mAudioManager.setParameters("demux_id="+param2);
-                    mAudioManager.setParameters("cmd="+cmd);
-                    break;
-                case ADEC_SET_SECURITY_MEM_LEVEL:
-                    mAudioManager.setParameters("security_mem_level="+param1);
-                    break;
-                case ADEC_START_DECODE:
+            Log.e(TAG, "HandleAudioEvent mAudioManager is null");
+            return;
+        }
+        if (mForceManagePatch) {
+            mNotImptTvHardwareInputService = true;
+        } else if (mNotImptTvHardwareInputService !=
+            (mTvInputManager.getHardwareList() == null ||
+            (mTvInputManager.getHardwareList().isEmpty()))) {
+            mNotImptTvHardwareInputService = !mNotImptTvHardwareInputService;
+            Log.i(TAG, "mNotImptTvHardwareInputService set to " + mNotImptTvHardwareInputService);
+        }
+        int cmd_index = cmd;
+        if (param3 != -1) {
+            cmd = cmd + (param3 << mDtvDemuxIdBase);
+            param1 = param1 + (param3 << mDtvDemuxIdBase);
+            param2 = param2 + (param3 << mDtvDemuxIdBase);
+        }
+        mDtvDemuxIdCurrentRecive = param3;
+        switch (cmd_index) {
+            case AudioSystemCmdManager.AUDIO_SERVICE_CMD_SET_DEMUX_INFO:
+                //mAudioManager.setParameters("hal_param_dtv_pid=" + param1);
+                mAudioManager.setParameters("hal_param_dtv_demux_id=" + param2);
+                mAudioManager.setParameters("hal_param_dtv_cmd=" + cmd);
+                break;
+            case AudioSystemCmdManager.AUDIO_SERVICE_CMD_SET_SECURITY_MEM_LEVEL:
+                mAudioManager.setParameters("hal_param_security_mem_level=" + param1);
+                break;
+            case AudioSystemCmdManager.AUDIO_SERVICE_CMD_SET_MEDIA_SYCN_ID:
+                mAudioManager.setParameters("hal_param_media_sync_id=" + param1);
+                break;
+            case AudioSystemCmdManager.AUDIO_SERVICE_CMD_SET_HAS_VIDEO:
+                mCurrentHasDtvVideo = param1;
+                mAudioManager.setParameters("hal_param_has_dtv_video=" + param1);
+                break;
+            case AudioSystemCmdManager.AUDIO_SERVICE_CMD_START_DECODE:
+                if (isDtvkit) {
                     mHasReceivedStartDecoderCmd = true;
-                    mCurrentFmt = param1;
-                    mCurrentHasDtvVideo = param2;
                     mHasStartedDecoder = true;
-                    if (mMixAdSupported == false) {
-                        setAdFunction(MSG_MIX_AD_DUAL_SUPPORT, 0);
-                        setAdFunction(MSG_MIX_AD_MIX_SUPPORT, 0);
-                        mAudioManager.setParameters("subafmt=-1");
-                        mAudioManager.setParameters("subapid=-1");
-                    } else if (mMixAdSupported == true){
-                        mAudioManager.setParameters("subafmt="+mCurrentSubFmt);
-                        mAudioManager.setParameters("subapid="+mCurrentSubPid);
-                        setAdFunction(MSG_MIX_AD_DUAL_SUPPORT, 1);
-                        setAdFunction(MSG_MIX_AD_MIX_SUPPORT, 1);
-                    }
-                    mAudioManager.setParameters("fmt="+param1);
-                    mAudioManager.setParameters("has_dtv_video="+param2);
-                    mAudioManager.setParameters("cmd="+cmd);
-                    break;
-                case ADEC_PAUSE_DECODE:
-                    mAudioManager.setParameters("cmd="+cmd);
-                    break;
-                case ADEC_RESUME_DECODE:
-                    mAudioManager.setParameters("cmd="+cmd);
-                    break;
-                case ADEC_STOP_DECODE:
-                    mHasReceivedStartDecoderCmd = false;
-                    mAudioManager.setParameters("cmd="+cmd);
-                    break;
-                case ADEC_SET_DECODE_AD:
+                }
+                mCurrentFmt = param1;
+                mDtvDemuxIdCurrentWork = param3;
+                mAudioManager.setParameters("hal_param_dtv_audio_fmt=" + param1);
+                mAudioManager.setParameters("hal_param_dtv_audio_id=" + param2);
+                mAudioManager.setParameters("hal_param_dtv_patch_cmd=" + cmd);
+                break;
+            case AudioSystemCmdManager.AUDIO_SERVICE_CMD_PAUSE_DECODE:
+                mAudioManager.setParameters("hal_param_dtv_patch_cmd=" + cmd);
+                break;
+            case AudioSystemCmdManager.AUDIO_SERVICE_CMD_RESUME_DECODE:
+                mAudioManager.setParameters("hal_param_dtv_patch_cmd=" + cmd);
+                break;
+            case AudioSystemCmdManager.AUDIO_SERVICE_CMD_STOP_DECODE:
+                mHasReceivedStartDecoderCmd = false;
+                mAudioManager.setParameters("hal_param_dtv_patch_cmd=" + cmd);
+                break;
+            case AudioSystemCmdManager.AUDIO_SERVICE_CMD_SET_DECODE_AD:
+                if (isDtvkit) {
                     mCurrentSubFmt = param1;
                     mCurrentSubPid = param2;
-                    mAudioManager.setParameters("cmd="+cmd);
-                    mAudioManager.setParameters("subafmt="+param1);
-                    mAudioManager.setParameters("subapid="+param2);
-                    Log.d(TAG, "OnAudioEvent subafmt:" + param1 + ", subapid:" + param2);
-                    break;
-                case MSG_MIX_AD_MIX_SUPPORT://Associated audio mixing on/off
-                    if (param1 == 0) {
-                        mMixAdSupported = false;
-                        //setAdFunction(MSG_MIX_AD_DUAL_SUPPORT, 0);
-                        //setAdFunction(MSG_MIX_AD_MIX_SUPPORT, 0);
-                    } else if (param1 == 1) {
-                        mMixAdSupported = true;
-                        //setAdFunction(MSG_MIX_AD_DUAL_SUPPORT, 1);
-                        //setAdFunction(MSG_MIX_AD_MIX_SUPPORT, 1);
-                    }
-                    Log.d(TAG, "OnAudioEvent associate_audio_mixing_enable=" + (param1 > 0 ? 1 : 0));
+                }
+                mAudioManager.setParameters("hal_param_dtv_sub_audio_fmt=" + param1);
+                mAudioManager.setParameters("hal_param_dtv_sub_audio_pid=" + param2);
+                mAudioManager.setParameters("hal_param_dtv_patch_cmd=" + cmd);
+                Log.d(TAG, "HandleAudioEvent hal_param_dtv_sub_audio_fmt:" + param1 + ", hal_param_dtv_sub_audio_pid:" + param2);
                 break;
-                case MSG_MIX_AD_MIX_LEVEL:
-                     setAdFunction(MSG_MIX_AD_MIX_LEVEL, param2);
+            case AudioSystemCmdManager.AUDIO_SERVICE_CMD_SET_VOLUME:
+                //left to do
                 break;
-                case ADEC_SET_VOLUME:
-                    //mAudioManager.setParameters("cmd="+cmd);
-                    //mAudioManager.setParameters("vol="+param1);
-                    /*if (mHasOpenedDecoder) {
-                        updateVolume();
-                        updateAudioSourceAndAudioSink();
-                        handleAudioSinkUpdated();
-                       }*/
-                    Log.d(TAG,"SET_VOLUME now triggered by AudioManager.VOLUME_CHANGED_ACTION");
-                    break;
-                case ADEC_SET_MUTE:
-                    //mAudioManager.setParameters("cmd="+cmd);
-                    mAudioManager.setParameters("TV-Mute="+param1);
-                    //updateVolume();
-                    //updateAudioSourceAndAudioSink();
-                    //updateAudioConfigLocked();
-                    break;
-                case ADEC_SET_OUTPUT_MODE:
-                    mAudioManager.setParameters("cmd="+cmd);
-                    mAudioManager.setParameters("mode="+param1);
-                    break;
-                case ADEC_SET_PRE_GAIN:
-                    mAudioManager.setParameters("cmd="+cmd);
-                    mAudioManager.setParameters("gain="+param1);
-                    break;
-                case ADEC_SET_PRE_MUTE:
-                    mAudioManager.setParameters("cmd="+cmd);
-                    mAudioManager.setParameters("mute="+param1);
-                    break;
-                case ADEC_OPEN_DECODER:
-                    updateAudioSourceAndAudioSink();
-                    if (mNotImptTvHardwareInputService)
-                        handleAudioSinkUpdated();
-                    mHasOpenedDecoder = true;
-                    reStartAdecDecoderIfPossible();
-                    break;
-                case ADEC_CLOSE_DECODER://
-                    if (mAudioPatch != null) {
-                       Log.d(TAG, "ADEC_CLOSE_DECODER mAudioPatch:"
-                            + mAudioPatch);
-                        mAudioManager.releaseAudioPatch(mAudioPatch);
-                    }
-                    mAudioPatch = null;
-                    mAudioSource = null;
-                    mHasStartedDecoder = false;
-                    mHasOpenedDecoder = false;
-                    mMixAdSupported = false;
-                    mCurrentSubFmt = -1;
-                    mCurrentSubPid = -1;
-                    break;
-                default:
-                    Log.w(TAG,"OnAudioEvent unkown audio cmd!");
-                    break;
-            }
+            case AudioSystemCmdManager.AUDIO_SERVICE_CMD_SET_MUTE:
+                mAudioManager.setParameters("hal_param_tv_mute=" + param1); /* 1:mute, 0:unmute */
+                break;
+            case AudioSystemCmdManager.AUDIO_SERVICE_CMD_SET_OUTPUT_MODE:
+                mAudioManager.setParameters("hal_param_dtv_patch_cmd=" + cmd);
+                mAudioManager.setParameters("hal_param_audio_output_mode=" + param1); /* refer to AM_AOUT_OutputMode_t */
+                break;
+            case AudioSystemCmdManager.AUDIO_SERVICE_CMD_SET_PRE_GAIN:
+                mAudioManager.setParameters("hal_param_dtv_patch_cmd=" + cmd);
+                break;
+            case AudioSystemCmdManager.AUDIO_SERVICE_CMD_SET_PRE_MUTE:
+                mAudioManager.setParameters("hal_param_dtv_patch_cmd=" + cmd);
+                break;
+            case AudioSystemCmdManager.AUDIO_SERVICE_CMD_OPEN_DECODER:
+                updateAudioSourceAndAudioSink();
+                if (mNotImptTvHardwareInputService && !mHasOpenedDecoder)
+                    handleAudioSinkUpdated();
+                reStartAdecDecoderIfPossible();
+                synchronized (mLock) {
+                    mAudioManager.setParameters("hal_param_dtv_fmt=" + param1);
+                    mAudioManager.setParameters("hal_param_dtv_pid=" + param2);
+                }
+                mAudioManager.setParameters("hal_param_dtv_patch_cmd=" + cmd);
+                mHasOpenedDecoder = true;
+                break;
+            case AudioSystemCmdManager.AUDIO_SERVICE_CMD_CLOSE_DECODER://
+                mAudioManager.setParameters("hal_param_dtv_patch_cmd=" + cmd);
+                if (mAudioPatch != null) {
+                   Log.d(TAG, "ADEC_CLOSE_DECODER mAudioPatch:"
+                        + mAudioPatch);
+                    mAudioManager.releaseAudioPatch(mAudioPatch);
+                }
+                mAudioPatch = null;
+                mAudioSource = null;
+                mHasStartedDecoder = false;
+                mHasOpenedDecoder = false;
+                mMixAdSupported = false;
+                mCurrentSubFmt = -1;
+                mCurrentSubPid = -1;
+                break;
+            case AudioSystemCmdManager.AUDIO_SERVICE_CMD_AD_DUAL_SUPPORT:
+                setAdFunction(AudioSystemCmdManager.AUDIO_SERVICE_CMD_AD_DUAL_SUPPORT, param1);
+                break;
+            case AudioSystemCmdManager.AUDIO_SERVICE_CMD_AD_MIX_SUPPORT://Associated audio mixing on/off
+                mMixAdSupported = (param1 != 0);
+                setAdFunction(AudioSystemCmdManager.AUDIO_SERVICE_CMD_AD_DUAL_SUPPORT, param1);
+                setAdFunction(AudioSystemCmdManager.AUDIO_SERVICE_CMD_AD_MIX_SUPPORT, param1);
+                Log.d(TAG, "HandleAudioEvent mMixAdSupported:" + mMixAdSupported);
+                break;
+            case AudioSystemCmdManager.AUDIO_SERVICE_CMD_AD_MIX_LEVEL:
+                setAdFunction(AudioSystemCmdManager.AUDIO_SERVICE_CMD_AD_MIX_LEVEL, param2);
+                break;
+            default:
+                Log.w(TAG,"HandleAudioEvent unkown audio cmd:" + cmd);
+                break;
         }
     }
 
@@ -510,8 +470,7 @@ public class AudioSystemCmdService extends Service implements SystemControlManag
         for (AudioPort audioPort : audioPorts) {
             if (audioPort instanceof AudioDevicePort) {
                 port = (AudioDevicePort)audioPort;
-                if ((port.type() & sinkDevice) != 0 &&
-                        (port.type() & AudioSystem.DEVICE_BIT_IN) == 0) {
+                if ((port.type() & sinkDevice) != 0 && mAudioManager.isOutputDevice(port.type())) {
                     sinks.add(port);
                 }
             }
@@ -540,30 +499,18 @@ public class AudioSystemCmdService extends Service implements SystemControlManag
     }
 
     private void reStartAdecDecoderIfPossible() {
-
-        Log.i(TAG, "reStartAdecDecoderIfPossible StartDecoderCmd:" + mHasReceivedStartDecoderCmd +
-                ", mMixAdSupported:" + mMixAdSupported);
-
-        if (mAudioSource != null &&!mAudioSink.isEmpty() &&
-            mHasOpenedDecoder && !mHasStartedDecoder) {
-            mAudioManager.setParameters("tuner_in=dtv");
+        Log.i(TAG, "reStartAdecDecoderIfPossiblem HasOpenedDecoder:" + mHasOpenedDecoder +
+                   " StartDecoderCmd:" + mHasReceivedStartDecoderCmd +
+                   ", mMixAdSupported:" + mMixAdSupported);
+        if (mAudioSource != null &&!mAudioSink.isEmpty() && !mHasOpenedDecoder ) {
+            mAudioManager.setParameters("hal_param_tuner_in=dtv");
             if (mHasReceivedStartDecoderCmd) {
-               if (mMixAdSupported == false) {
-                    setAdFunction(MSG_MIX_AD_DUAL_SUPPORT, 0);
-                    setAdFunction(MSG_MIX_AD_MIX_SUPPORT, 0);
-                    mAudioManager.setParameters("subafmt=-1");
-                    mAudioManager.setParameters("subapid=-1");
-                } else if (mMixAdSupported == true) {
-                    mAudioManager.setParameters("subafmt="+mCurrentSubFmt);
-                    mAudioManager.setParameters("subapid="+mCurrentSubPid);
-                    setAdFunction(MSG_MIX_AD_DUAL_SUPPORT, 1);
-                    setAdFunction(MSG_MIX_AD_MIX_SUPPORT, 1);
-                }
-                mAudioManager.setParameters("fmt="+mCurrentFmt);
-                mAudioManager.setParameters("has_dtv_video="+mCurrentHasDtvVideo);
-                mAudioManager.setParameters("cmd=1");
+                mAudioManager.setParameters("hal_param_dtv_audio_fmt="+mCurrentFmt);
+                mAudioManager.setParameters("hal_param_has_dtv_video="+mCurrentHasDtvVideo);
+                int cmd = AudioSystemCmdManager.AUDIO_SERVICE_CMD_START_DECODE + (mDtvDemuxIdCurrentWork << mDtvDemuxIdBase);
+                mAudioManager.setParameters("hal_param_dtv_patch_cmd=" + cmd);
                 mHasStartedDecoder = true;
-            }
+             }
         }
     }
 
