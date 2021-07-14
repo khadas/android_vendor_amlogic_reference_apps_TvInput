@@ -19,6 +19,9 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.database.ContentObserver;
+import android.hardware.hdmi.HdmiControlManager;
+import android.hardware.hdmi.HdmiTvClient;
+import android.hardware.hdmi.HdmiTvClient.SelectCallback;
 import android.os.IBinder;
 import android.os.RemoteException;
 import android.os.ServiceManager;
@@ -57,6 +60,7 @@ public class AudioSystemCmdService extends Service implements SystemControlManag
     private SystemControlManager mSystemControlManager;
     private AudioManager mAudioManager = null;
     private AudioPatch mAudioPatch = null;
+    private HdmiTvClient mTvClient = null;
     private Context mContext;
     private int mCurrentIndex = 0;
     private int mCommitedIndex = -1;
@@ -157,6 +161,10 @@ public class AudioSystemCmdService extends Service implements SystemControlManag
         } catch (RemoteException e) {
             e.printStackTrace();
         }
+        HdmiControlManager mHdmiControlManager = (HdmiControlManager)mContext.getSystemService(Context.HDMI_CONTROL_SERVICE);
+        if (mHdmiControlManager != null) {
+            mTvClient = mHdmiControlManager.getTvClient();
+        }
 
         final IntentFilter filter = new IntentFilter();
         filter.addAction(AudioManager.VOLUME_CHANGED_ACTION);
@@ -172,6 +180,13 @@ public class AudioSystemCmdService extends Service implements SystemControlManag
                 false, mAudioOutputParametersObserver);
     }
 
+    private final SelectCallback mSelectCallback = new SelectCallback() {
+        @Override
+        public void onComplete(int result) {
+            Log.d(TAG, "select onComplete result = " + result);
+        }
+    };
+
     private ContentObserver mAudioOutputParametersObserver = new ContentObserver(new Handler()) {
         @Override
         public void onChange(boolean selfChange, Uri uri) {
@@ -179,6 +194,7 @@ public class AudioSystemCmdService extends Service implements SystemControlManag
             Log.i(TAG, "onChange ARC enable:" + currentArcEnable + " changed");
             if (uri != null && uri.equals(Settings.Global.getUriFor(OutputModeManager.DB_ID_AUDIO_OUTPUT_DEVICE_ARC_ENABLE))) {
                 mAudioManager.setHdmiSystemAudioSupported(currentArcEnable != 0);
+                mTvClient.setSystemAudioMode((currentArcEnable != 0), mSelectCallback);
             }
         }
     };
