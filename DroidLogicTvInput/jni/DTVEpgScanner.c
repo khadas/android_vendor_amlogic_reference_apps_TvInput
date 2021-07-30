@@ -383,6 +383,7 @@ void Events_Update(AM_EPG_Handle_t handle, int event_count, AM_EPG_Event_t *peve
     AM_EPG_FreeEvents(event_count, pevents);
 }
 
+/*
 static void format_audio_strings(AM_SI_AudioInfo_t *ai, char *pids, char *fmts, char *langs)
 {
     int i;
@@ -408,10 +409,10 @@ static void format_audio_strings(AM_SI_AudioInfo_t *ai, char *pids, char *fmts, 
             snprintf(langs, 256, "%s %s", langs, ai->audios[i].lang);
         }
     }
-}
+}*/
 
 #define gen_type_n_string(array, item, fmt, n, string, n_s) do { \
-        int i; char tmp[32]; \
+        int i; \
         (string)[0] = 0; \
         for (i=0; i<(n); i++) \
             snprintf(string, n_s, "%s " fmt, string, (array)[i].item); \
@@ -783,11 +784,7 @@ static void PMT_Update(AM_EPG_Handle_t handle, dvbpsi_pmt_t *pmts)
 {
     dvbpsi_pmt_t *pmt;
     dvbpsi_pmt_es_t *es;
-    dvbpsi_descriptor_t *descr;
-    EPGChannelData *pch_cur = &gChannelMonitored,
-            ch;
-    EPGData *p_data;
-    EPGEventData edata;
+    EPGChannelData *pch_cur = &gChannelMonitored, ch;
 
     if (!pmts)
         return;
@@ -1145,7 +1142,6 @@ static int epg_sdt_update(AM_EPG_Handle_t handle, int type, void *tables, void *
 {
     dvbpsi_sdt_t *sdts = (dvbpsi_sdt_t*)tables;
     EPGChannelData *pch_cur = &gChannelMonitored;
-    dvbpsi_sdt_t *sdt;
 
     UNUSED(type);
     UNUSED(user_data);
@@ -1383,7 +1379,6 @@ static void epg_create(JNIEnv* env, jobject obj, jint fend_id, jint dmx_id, jint
     AM_EPG_CreatePara_t para;
     EPGData *data;
     AM_ErrorCode_t ret;
-    AM_FEND_OpenPara_t fend_para;
     AM_DMX_OpenPara_t dmx_para;
 
     data = (EPGData*)malloc(sizeof(EPGData));
@@ -1703,7 +1698,6 @@ static JNINativeMethod epg_methods[] =
     {"native_epg_set_dvb_text_coding", "(Ljava/lang/String;)V", (void*)epg_set_dvb_text_coding}
 };
 
-//JNIHelp.h ????
 #ifndef NELEM
 # define NELEM(x) ((int) (sizeof(x) / sizeof((x)[0])))
 #endif

@@ -32,6 +32,8 @@ import org.json.JSONObject;
 import java.util.Locale;
 import java.util.Objects;
 
+import com.droidlogic.app.DataProviderManager;
+
 /**
  * Created by daniel on 16/10/2017.
  */
@@ -125,13 +127,7 @@ public class CcImplement {
     {
         int style_setting = 0;
         if (style_broadcast_use_database = true) {
-            try {
-                style_setting = Settings.Secure.getInt(context.getContentResolver(), "accessibility_captioning_style_enabled");
-            } catch (Settings.SettingNotFoundException e) {
-                Log.w(TAG, e.toString());
-                style_setting = 0;
-                style_broadcast_use_database = false;
-            }
+            style_setting = DataProviderManager.getIntValue(context, "accessibility_captioning_style_enabled", 0);
         }
         /* 0 for broadcast 1 for using caption manager */
         if (style_setting == 1)
@@ -1050,7 +1046,7 @@ public class CcImplement {
             class Rows
             {
                 int str_count;
-                int rowStrs_sizes;
+                final int rowStrs_sizes = 6;
                 RowStr rowStrs[];
                 JSONArray rowArray;
                 /* Row length is sum of each string */
@@ -1065,6 +1061,9 @@ public class CcImplement {
                 double row_max_font_size;
 
                 Rows() {
+                    rowStrs = new RowStr[rowStrs_sizes];
+                    for (int i=0; i<rowStrs_sizes; i++)
+                        rowStrs[i] = new RowStr();
                 }
                 void updateRows(JSONObject rows)
                 {
@@ -1081,12 +1080,11 @@ public class CcImplement {
                         int n = 0;
                         double single_char_width = ccVersion.matches("cea708") ?
                                 window_max_font_size : caption_screen.fixed_char_width;
-                        if (str_count > 0) {
-                            rowStrs_sizes = str_count;
+                        if (str_count > rowStrs_sizes) {
                             n = rowStrs_sizes;
-                            rowStrs = new RowStr[rowStrs_sizes];
-                            for (int i=0; i<rowStrs_sizes; i++)
-                                rowStrs[i] = new RowStr();
+                            Log.i(TAG, "updateRows str_count[" +  str_count + "] > rowStrs_sizes[" + rowStrs_sizes + "] ");
+                        } else {
+                            n = str_count;
                         }
                         for (int i=0; i<n; i++) {
                             rowStrs[i].updateRowStr(rowArray.getJSONObject(i));
@@ -1113,7 +1111,13 @@ public class CcImplement {
                     if (row_length_on_paint == 0 || str_count == 0)
                         return;
 
-                    for (int i=0; i<rowStrs.length; i++)
+                    if (str_count > rowStrs_sizes) {
+                        n = rowStrs_sizes;
+                        Log.i(TAG, "draw str_count[" +  str_count + "] > rowStrs_sizes[" + rowStrs_sizes + "] ");
+                    } else {
+                        n = str_count;
+                    }
+                    for (int i=0; i<n; i++)
                         rowStrs[i].draw(canvas);
                 }
 

@@ -16,10 +16,7 @@ import org.xmlpull.v1.XmlPullParserException;
 import com.droidlogic.app.tv.TvInSignalInfo;
 import com.droidlogic.tvinput.Utils;
 
-import com.droidlogic.app.tv.DroidLogicTvInputService;
 import com.droidlogic.app.tv.DroidLogicTvUtils;
-import com.droidlogic.app.tv.TvInputBaseSession;
-import com.droidlogic.app.tv.TvControlDataManager;
 import com.droidlogic.tvinput.R;
 
 import java.lang.reflect.Method;
@@ -33,7 +30,6 @@ import android.media.tv.TvInputInfo;
 import android.media.tv.TvStreamConfig;
 import android.media.tv.TvInputManager.Hardware;
 import android.os.Bundle;
-import android.provider.Settings;
 import android.text.TextUtils;
 import android.view.KeyEvent;
 import android.view.Surface;
@@ -62,6 +58,7 @@ import android.view.accessibility.CaptioningManager;
 import android.view.accessibility.CaptioningManager.CaptionStyle;
 import android.view.accessibility.CaptioningManager.CaptioningChangeListener;
 import android.graphics.Color;
+import com.droidlogic.app.DataProviderManager;
 import com.droidlogic.app.SystemControlManager;
 import android.media.tv.TvTrackInfo;
 import android.widget.Toast;
@@ -73,7 +70,6 @@ public class AV1InputService extends DroidLogicTvInputService {
     private Map<Integer, AV1InputSession> sessionMap = new HashMap<>();
     private ChannelInfo mCurrentChannel = null;
     private TvDataBaseManager mTvDataBaseManager;
-    private TvControlDataManager mTvControlDataManager = null;
     protected List<ChannelInfo.Subtitle> mCurrentSubtitles;
     protected ChannelInfo.Subtitle mCurrentSubtitle;
     ChannelInfo.Subtitle pal_teletext_subtitle = null;
@@ -364,7 +360,6 @@ public class AV1InputService extends DroidLogicTvInputService {
             mCurrentChannel = null;
             needRestartCC = true;
             mTvDataBaseManager = new TvDataBaseManager(mContext);
-            mTvControlDataManager = TvControlDataManager.getInstance(mContext);
             initOverlayView(R.layout.layout_overlay);
             if (mOverlayView != null) {
                 mOverlayView.setImage(R.drawable.bg_no_signal);
@@ -391,7 +386,7 @@ public class AV1InputService extends DroidLogicTvInputService {
         }
 
         private boolean getBlockNoRatingEnable() {
-            int status = mTvControlDataManager.getInt(mContext.getContentResolver(), DroidLogicTvUtils.BLOCK_NORATING, 0) ;
+            int status = DataProviderManager.getIntValue(mContext, DroidLogicTvUtils.BLOCK_NORATING, 0) ;
             Log.d(TAG,"getBlockNoRatingEnable:"+status);
             return (status == 1) ? true : false;
         }
@@ -729,7 +724,7 @@ public class AV1InputService extends DroidLogicTvInputService {
             Log.d(TAG, "updateBlock:"+channelBlocked + " curBlock:"+mChannelBlocked + " channel:"+channelInfo);
 
             //only for block norationg function
-            TvContentRating tcr = TvContentRating.createRating("com.android.tv", "block_norating", "block_norating", null);
+            TvContentRating tcr = TvContentRating.createRating("com.android.tv", "block_norating", "block_norating", "");
 
             boolean needChannelBlock = channelBlocked;
             Log.d(TAG, "isBlockNoRatingEnable:"+isBlockNoRatingEnable+",isUnlockCurrent_NR:"+isUnlockCurrent_NR);
@@ -1279,6 +1274,34 @@ public class AV1InputService extends DroidLogicTvInputService {
             notifyTrackSelected(TvTrackInfo.TYPE_SUBTITLE, SubSelectedId);
         }
 
+        private int getRawUserStyle(){
+           //TODO
+           /* try {
+                Class clazz = ClassLoader.getSystemClassLoader().loadClass("android.view.accessibility.CaptioningManager");
+                Method method = clazz.getMethod("getUserStyle");
+                Object objInt = method.invoke(clazz);
+                return Integer.parseInt(String.valueOf(objInt));
+            } catch (Exception e) {
+                    // TODO Auto-generated catch block
+                e.printStackTrace();
+            }*/
+            return -1;
+        }
+
+        private String getRawTypeface(CaptioningManager.CaptionStyle captionstyle) {
+            //TODO
+            /*try {
+                Class<?> cls = Class.forName("android.view.accessibility.CaptioningManager.CaptionStyle");
+                Object obj = cls.newInstance();
+                obj = captionstyle;
+                Field rawTypeface = cls.getDeclaredField("mRawTypeface");
+                return rawTypeface.get(obj).toString();
+            } catch(Exception e) {
+                e.printStackTrace();
+            }*/
+            return null;
+        }
+
         protected CCStyleParams getCaptionStyle() {
             boolean USE_NEW_CCVIEW = true;
 
@@ -1291,7 +1314,7 @@ public class AV1InputService extends DroidLogicTvInputService {
              */
             CaptioningManager.CaptionStyle userStyle = mCaptioningManager.getUserStyle();
 
-            int style = mCaptioningManager.getRawUserStyle();
+            int style = getRawUserStyle();
             float textSize = mCaptioningManager.getFontScale();
             int fg_color = userStyle.foregroundColor & 0x00ffffff;
             int fg_opacity = userStyle.foregroundColor & 0xff000000;
@@ -1300,12 +1323,12 @@ public class AV1InputService extends DroidLogicTvInputService {
             int fontStyle = DTVSubtitleView.CC_FONTSTYLE_DEFAULT;
 
             for (int i = 0; i < typeface.length; ++i) {
-                if (typeface[i].equals(userStyle.mRawTypeface)) {
+                if (typeface[i].equals(getRawTypeface(userStyle))) {
                     fontStyle = i;
                     break;
                 }
             }
-            Log.d(TAG, "get style: " + style + ", fontStyle" + fontStyle + ", typeface: " + userStyle.mRawTypeface);
+            Log.d(TAG, "get style: " + style + ", fontStyle" + fontStyle + ", typeface: " + getRawTypeface(userStyle));
 
             int fg = userStyle.foregroundColor;
             int bg = userStyle.backgroundColor;

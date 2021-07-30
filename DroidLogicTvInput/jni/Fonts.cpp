@@ -10,9 +10,8 @@
 #include <syslog.h>
 #include "vendor_font_util.h"
 #include "Fonts.h"
-#include <utils/Log.h>
+#include <log/log.h>
 #include <jni.h>
-//#include <nativehelper/JNIHelp.h>
 //#include <android_runtime/AndroidRuntime.h>
 
 using namespace android;

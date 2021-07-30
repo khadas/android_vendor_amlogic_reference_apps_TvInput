@@ -17,7 +17,6 @@ import android.widget.TextView;
 import android.widget.HorizontalScrollView;
 
 import com.droidlogic.tvinput.R;
-import com.droidlogic.app.tv.DroidLogicOverlayView;
 
 public class OverlayView extends DroidLogicOverlayView {
 

@@ -17,7 +17,6 @@ import android.media.tv.TvInputInfo;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
-import android.provider.Settings;
 import android.text.Editable;
 import android.text.TextUtils;
 import android.text.TextWatcher;
@@ -37,10 +36,10 @@ import com.droidlogic.app.tv.ChannelInfo;
 import com.droidlogic.app.tv.DroidLogicTvUtils;
 import com.droidlogic.app.tv.TvChannelParams;
 import com.droidlogic.app.tv.TvControlManager;
-import com.droidlogic.app.tv.TvControlDataManager;
 import com.droidlogic.app.tv.TvDataBaseManager;
 import com.droidlogic.app.tv.TvMultilingualText;
 import com.droidlogic.app.tv.TvScanConfig;
+import com.droidlogic.app.DataProviderManager;
 import com.droidlogic.tvinput.R;
 
 import java.lang.StringBuilder;
@@ -48,7 +47,9 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
-import com.droidlogic.app.tv.TvControlManager.FreqList;
+import vendor.amlogic.hardware.tvserver.V1_0.FreqList;
+
+//import com.droidlogic.app.tv.TvControlManager.FreqList;
 
 public class OptionUiManagerT implements  OnFocusChangeListener, TvControlManager.ScannerEventListener {
     public static final String TAG = "OptionUiManagerT";
@@ -125,7 +126,6 @@ public class OptionUiManagerT implements  OnFocusChangeListener, TvControlManage
     private Resources mResources;
     private SettingsManager mSettingsManager;
     private TvControlManager mTvControlManager;
-    private TvControlDataManager mTvControlDataManager = null;
     private int optionTag = OPTION_PICTURE_MODE;
     private String optionKey = null;
     private int channelNumber = 0;//for setting show searched tv channelNumber
@@ -177,12 +177,6 @@ public class OptionUiManagerT implements  OnFocusChangeListener, TvControlManage
         return (isSearching() && (searchType == MANUAL_SEARCH));
     }
 
-    /*public OptionUiManagerT(Context context) {
-        mContext = context;
-        mResources = mContext.getResources();
-        init(((TvSettingsActivity)mContext).getSettingsManager());
-    }*/
-
    public OptionUiManagerT(Context context, Intent intent, boolean tvscan) {
         mContext = context;
         mResources = mContext.getResources();
@@ -196,7 +190,6 @@ public class OptionUiManagerT implements  OnFocusChangeListener, TvControlManage
         mTvControlManager.setScannerListener(this);
         mSystemControlManager = SystemControlManager.getInstance();
         mTvDataBaseManager = new TvDataBaseManager(mContext);
-        mTvControlDataManager = TvControlDataManager.getInstance(mContext);
         registerChannelScanStartReceiver();
     }
 
@@ -226,11 +219,11 @@ public class OptionUiManagerT implements  OnFocusChangeListener, TvControlManage
     }
 
     private void saveSearchStatus (int searchState) {
-        mTvControlDataManager.putInt(mContext.getContentResolver(), DroidLogicTvUtils.TV_SEARCHING_STATE, searchState);
+        DataProviderManager.putIntValue(mContext, DroidLogicTvUtils.TV_SEARCHING_STATE, searchState);
     }
 
     private int getNumberSearchNeed () {
-        return mTvControlDataManager.getInt(mContext.getContentResolver(), DroidLogicTvUtils.IS_NUMBER_SEARCH, -1);
+        return DataProviderManager.getIntValue(mContext, DroidLogicTvUtils.IS_NUMBER_SEARCH, -1);
     }
 
     private void stopSearch() {
@@ -266,19 +259,8 @@ public class OptionUiManagerT implements  OnFocusChangeListener, TvControlManage
 
     private void startManualSearchAccordingMode() {
         Log.d(TAG, "startManualSearchAccordingMode");
-        String channel;
-        String channelend = DEFAULTSTARTFREQUENCY;
-        if (!isLiveTvScaning) {
-            ViewGroup parent = (ViewGroup) ((TvSettingsActivity) mContext).mOptionLayout.getChildAt(0);
-            OptionEditText edit = (OptionEditText) parent.findViewById(R.id.manual_search_dtv_channel_manual);
-            channel = edit.getText().toString();
-            if (channel == null || channel.length() == 0) {
-                channel = (String)edit.getHint();
-            }
-        } else {
-            channel = mLiveTvFrequencyFrom;
-            channelend = mLiveTvFrequencyTo;
-        }
+        String channel = mLiveTvFrequencyFrom;
+        String channelend = mLiveTvFrequencyTo;
 
         Bundle bundle = new Bundle();
         TvControlManager.TvMode mode = new TvControlManager.TvMode(mSettingsManager.getDtvType());
@@ -288,16 +270,13 @@ public class OptionUiManagerT implements  OnFocusChangeListener, TvControlManage
         int atvfrequencyend;
 
         /* when use all band scan and only atv */
-        if (mATvAutoScanMode == TvControlManager.ScanType.SCAN_ATV_AUTO_ALL_BAND && checkLiveTvAutoScanMode() == ManualScanEdit.SCAN_ONLY_ATV) {
+        if (mATvAutoScanMode == TvControlManager.ScanType.SCAN_ATV_AUTO_ALL_BAND && checkLiveTvAutoScanMode() == ScanType.SCAN_ONLY_ATV) {
             frequency = Integer.valueOf(channel) * 1000000;
             atvfrequency = Integer.valueOf(channel) * 1000000;
             frequencyend = Integer.valueOf(channelend) * 1000000;
             atvfrequencyend = Integer.valueOf(channelend) * 1000000;
-        } else if (TvContract.Channels.TYPE_DVB_C.equals(mSettingsManager.getDtvType()) && DroidLogicTvUtils.TV_SEARCH_MODE_NIT.equals(mTvControlDataManager.getString(mContext.getContentResolver(), DroidLogicTvUtils.TV_SEARCH_MODE))) {
-            //frequency = getDvbFrequencyByPd(Integer.valueOf(channel));
-            //atvfrequency = getAtvFrequencyByPd(Integer.valueOf(channel));
-            //frequencyend = getDvbFrequencyByPd(Integer.valueOf(channelend));
-            //atvfrequencyend = getAtvFrequencyByPd(Integer.valueOf(channelend));
+        } else if (TvContract.Channels.TYPE_DVB_C.equals(mSettingsManager.getDtvType())
+                && DroidLogicTvUtils.TV_SEARCH_MODE_NIT.equals(DataProviderManager.getStringValue(mContext, DroidLogicTvUtils.TV_SEARCH_MODE, ""))) {
             frequency = Integer.valueOf(channel) * 1000000;
             atvfrequency = Integer.valueOf(channel) * 1000000;
             frequencyend = Integer.valueOf(channelend) * 1000000;
@@ -316,12 +295,7 @@ public class OptionUiManagerT implements  OnFocusChangeListener, TvControlManage
         bundle.putInt(DroidLogicTvUtils.PARA_SCAN_PARA2, atvfrequencyend > 0 ? atvfrequencyend : atvfrequency);
         bundle.putInt(DroidLogicTvUtils.PARA_SCAN_PARA3, mSettingsManager.getTvSearchTypeSys());
         bundle.putInt(DroidLogicTvUtils.PARA_SCAN_PARA4, mSettingsManager.getTvSearchSoundSys());
-        int autoscanmode;
-        if (!isLiveTvScaning) {
-            autoscanmode = ((TvSettingsActivity)mContext).mManualScanEdit.checkAutoScanMode();
-        } else {
-            autoscanmode = checkLiveTvAutoScanMode();
-        }
+        int autoscanmode = autoscanmode = checkLiveTvAutoScanMode();
 
         if (mSettingsManager.getDtvType().equals(TvContract.Channels.TYPE_ATSC_C)) {
             if (mAtsccMode == ATSC_C_STD_SET) {
@@ -338,7 +312,7 @@ public class OptionUiManagerT implements  OnFocusChangeListener, TvControlManage
         }
 
         switch (autoscanmode) {
-        case ManualScanEdit.SCAN_ATV_DTV:
+        case ScanType.SCAN_ATV_DTV:
             Log.d(TAG, "MANUAL_SCAN_ATV_DTV");
             deleteOtherTypeAtvOrDtvChannels(mode, true, true);
             mode.setExt(mode.getExt() | 1);//mixed adtv
@@ -346,7 +320,7 @@ public class OptionUiManagerT implements  OnFocusChangeListener, TvControlManage
             bundle.putInt(DroidLogicTvUtils.PARA_SCAN_TYPE_DTV, TvControlManager.ScanType.SCAN_DTV_MANUAL);
             bundle.putInt(DroidLogicTvUtils.PARA_SCAN_TYPE_ATV, TvControlManager.ScanType.SCAN_ATV_FREQ);
         break;
-        case ManualScanEdit.SCAN_ONLY_ATV:
+        case ScanType.SCAN_ONLY_ATV:
             Log.d(TAG, "MANUAL_SCAN_ONLY_ATV");
             deleteOtherTypeAtvOrDtvChannels(mode, true, false);
             mode.setExt(mode.getExt() | 1);//mixed adtv
@@ -358,12 +332,13 @@ public class OptionUiManagerT implements  OnFocusChangeListener, TvControlManage
                 bundle.putInt(DroidLogicTvUtils.PARA_SCAN_TYPE_ATV, TvControlManager.ScanType.SCAN_ATV_FREQ);
             }
         break;
-        case ManualScanEdit.SCAN_ONLY_DTV:
+        case ScanType.SCAN_ONLY_DTV:
             Log.d(TAG, "MANUAL_SCAN_ONLY_DTV");
             deleteOtherTypeAtvOrDtvChannels(mode, false, true);
             mode.setExt(mode.getExt() | 1);//mixed adtv
             bundle.putInt(DroidLogicTvUtils.PARA_SCAN_MODE, mode.getMode());
-            if (TvContract.Channels.TYPE_DVB_C.equals(mSettingsManager.getDtvType()) && DroidLogicTvUtils.TV_SEARCH_MODE_NIT.equals(mTvControlDataManager.getString(mContext.getContentResolver(), DroidLogicTvUtils.TV_SEARCH_MODE))) {
+            if (TvContract.Channels.TYPE_DVB_C.equals(mSettingsManager.getDtvType())
+                    && DroidLogicTvUtils.TV_SEARCH_MODE_NIT.equals(DataProviderManager.getStringValue(mContext, DroidLogicTvUtils.TV_SEARCH_MODE, ""))) {
                 //get more frequency from nit tables
                 bundle.putInt(DroidLogicTvUtils.PARA_SCAN_TYPE_DTV, TvControlManager.ScanType.SCAN_DTV_AUTO);
             } else {
@@ -403,9 +378,9 @@ public class OptionUiManagerT implements  OnFocusChangeListener, TvControlManage
             fe.setVideoStd(atvVideoStd);
             fe.setAudioStd(atvAudioStd);
             if (TvContract.Channels.TYPE_DVB_C.equals(tvMode.toType())) {
-                int qammode = mTvControlDataManager.getInt(mContext.getContentResolver(), DroidLogicTvUtils.TV_SEARCH_DVBC_QAM, DroidLogicTvUtils.TV_SEARCH_DVBC_QAM16);
+                int qammode = DataProviderManager.getIntValue(mContext, DroidLogicTvUtils.TV_SEARCH_DVBC_QAM, DroidLogicTvUtils.TV_SEARCH_DVBC_QAM16);
                 int symbol = 0;
-                String mode = mTvControlDataManager.getString(mContext.getContentResolver(), DroidLogicTvUtils.TV_SEARCH_MODE);
+                String mode = DataProviderManager.getStringValue(mContext, DroidLogicTvUtils.TV_SEARCH_MODE, "");
                 if (qammode == DroidLogicTvUtils.TV_SEARCH_DVBC_QAMAUTO) {
                     mSystemControlManager.writeSysFs(AUTO_QAM_FAST_SEARCH_PATH, AUTO_QAM_FAST_SEARCH_ON);
                 } else {
@@ -413,7 +388,7 @@ public class OptionUiManagerT implements  OnFocusChangeListener, TvControlManage
                 }
                 fe.setModulation(qammode);
                 if (DroidLogicTvUtils.TV_SEARCH_MODE_NIT.equals(mode)) {
-                    symbol = mTvControlDataManager.getInt(mContext.getContentResolver(), DroidLogicTvUtils.TV_SEARCH_DVBC_SYMBOL_RATE, DroidLogicTvUtils.TV_SEARCH_DVBC_SYMBOL_RATE_DEFAULT);
+                    symbol = DataProviderManager.getIntValue(mContext, DroidLogicTvUtils.TV_SEARCH_DVBC_SYMBOL_RATE, DroidLogicTvUtils.TV_SEARCH_DVBC_SYMBOL_RATE_DEFAULT);
                     if (symbol > 0) {
                        fe.setSymbolrate(symbol);
                     }
@@ -435,7 +410,7 @@ public class OptionUiManagerT implements  OnFocusChangeListener, TvControlManage
             scan.setDtvMode(dtvScanType);
             scan.setDtvFrequency1(dtvFreq);
             scan.setDtvFrequency2(dtvFreqend > 0 ? dtvFreqend : dtvFreq);
-            if (checkLiveTvAutoScanMode() == ScanEdit.SCAN_ATV_DTV || checkLiveTvAutoScanMode() == ScanEdit.SCAN_ONLY_ATV) {
+            if (checkLiveTvAutoScanMode() == ScanType.SCAN_ATV_DTV || checkLiveTvAutoScanMode() == ScanType.SCAN_ONLY_ATV) {
                 scan.setAtvModifier(TvControlManager.FEParas.K_MODE, tvMode.setList(tvMode.getList() + DTV_TO_ATV).getMode());
             }
 
@@ -450,21 +425,11 @@ public class OptionUiManagerT implements  OnFocusChangeListener, TvControlManage
 
     private void startManualSearch() {
         Log.d(TAG, "startManualSearch");
-        ViewGroup parent = null;;
-        if (!isLiveTvScaning) {
-            parent = (ViewGroup) ((TvSettingsActivity) mContext).mOptionLayout.getChildAt(0);
-        }
+        ViewGroup parent = null;
+
         if (mSettingsManager.getCurentVirtualTvSource() == TvControlManager.SourceInput_Type.SOURCE_TYPE_ADTV) {
             Log.d(TAG, "ADTV");
-            String channel;
-            if (!isLiveTvScaning) {
-                OptionEditText edit = (OptionEditText) parent.findViewById(R.id.manual_search_dtv_channel);
-                channel = edit.getText().toString();
-                if (channel == null || channel.length() == 0)
-                    channel = (String)edit.getHint();
-            } else {
-                channel = mLiveTvFrequencyFrom;
-            }
+            String channel = mLiveTvFrequencyFrom;
 
             Bundle bundle = new Bundle();
             TvControlManager.TvMode mode = new TvControlManager.TvMode(mSettingsManager.getDtvType());
@@ -484,184 +449,8 @@ public class OptionUiManagerT implements  OnFocusChangeListener, TvControlManage
             isSearching = SEARCH_RUNNING;
             saveSearchStatus(isSearching);
             mSettingsManager.setActivityResult(DroidLogicTvUtils.RESULT_UPDATE);
-        } else if (mSettingsManager.getCurentTvSource() == TvControlManager.SourceInput_Type.SOURCE_TYPE_TV) {
-            String str_begin;
-            String str_end;
-            if (isLiveTvScaning) {
-                OptionEditText edit_from = (OptionEditText) parent.findViewById(R.id.manual_search_edit_from);
-                OptionEditText edit_to = (OptionEditText) parent.findViewById(R.id.manual_search_edit_to);
-                str_begin = edit_from.getText().toString();
-                if (str_begin == null || str_begin.length() == 0)
-                    str_begin = (String) edit_from.getHint();
-                str_end = edit_to.getText().toString();
-                if (str_end == null || str_end.length() == 0)
-                    str_end = (String) edit_to.getHint();
-            } else {
-                str_begin = mLiveTvFrequencyFrom;
-                str_end = DEFAULTSTARTFREQUENCY.equals(mLiveTvFrequencyTo) ? DEFAULTENDFREQUENCY : mLiveTvFrequencyTo;
-            }
-
-            int from = Integer.valueOf(str_begin);
-            int to =  Integer.valueOf(str_end);
-
-            if (from < ATV_MIN_KHZ || from > ATV_MAX_KHZ || to < ATV_MIN_KHZ || to > ATV_MAX_KHZ)
-                showToast(mResources.getString(R.string.error_atv_error_1));
-            //else if (from > to)
-            //    showToast(mResources.getString(R.string.error_atv_error_2));
-            else if (Math.abs(to - from) < 1000)
-                showToast(mResources.getString(R.string.error_atv_error_3));
-            else {
-                //mSettingsManager.sendBroadcastToTvapp("search_channel");
-                mSettingsManager.setManualSearchProgress(0);
-                mSettingsManager.setManualSearchSearchedNumber(0);
-                //int ret = mTvControlManager.AtvManualScan(from * 1000, to * 1000,
-                //                                mSettingsManager.getTvSearchTypeSys(), mSettingsManager.getTvSearchSoundSys());
-                //Log.d(TAG, "mTvControlManager.AtvManualScan return " + ret);
-                //if (ret < 0) {
-                //    showToast(mResources.getString(R.string.error_atv_startSearch));
-                //    return;
-                //}
-                Bundle bundle = new Bundle();
-                bundle.putInt(DroidLogicTvUtils.PARA_SCAN_PARA1, from * 1000);
-                bundle.putInt(DroidLogicTvUtils.PARA_SCAN_PARA2, to * 1000);
-                bundle.putInt(DroidLogicTvUtils.PARA_SCAN_PARA3, mSettingsManager.getTvSearchTypeSys());
-                bundle.putInt(DroidLogicTvUtils.PARA_SCAN_PARA4, mSettingsManager.getTvSearchSoundSys());
-                bundle.putString(TvInputInfo.EXTRA_INPUT_ID,mSettingsManager.getInputId());
-                mSettingsManager.sendBroadcastToTvapp(DroidLogicTvUtils.ACTION_ATV_MANUAL_SCAN, bundle);
-                doScanCmd(DroidLogicTvUtils.ACTION_ATV_MANUAL_SCAN, bundle); //ww
-                isSearching = SEARCH_RUNNING;
-                saveSearchStatus(isSearching);
-                mSettingsManager.setActivityResult(DroidLogicTvUtils.RESULT_UPDATE);
-            }
-        } else if (mSettingsManager.getCurentTvSource() == TvControlManager.SourceInput_Type.SOURCE_TYPE_DTV) {
-            //mSettingsManager.sendBroadcastToTvapp("search_channel");
-            String channel;
-            if (!isLiveTvScaning) {
-                OptionEditText edit = (OptionEditText) parent.findViewById(R.id.manual_search_dtv_channel);
-                channel = edit.getText().toString();
-                if (channel == null || channel.length() == 0)
-                    channel = (String)edit.getHint();
-            } else {
-                channel = mLiveTvFrequencyFrom;
-            }
-
-            //mTvControlManager.DtvSetTextCoding("GB2312");
-            //mTvControlManager.DtvManualScan(new TvControlManager.TvMode(mSettingsManager.getDtvType()).getMode(),
-            //    getDvbFrequencyByPd(Integer.valueOf(channel)));
-            //Intent intent = new Intent(DroidLogicTvUtils.ACTION_SUBTITLE_SWITCH);
-            //intent.putExtra(DroidLogicTvUtils.EXTRA_SWITCH_VALUE, 0);
-            //mContext.sendBroadcast(intent);
-            Bundle bundle = new Bundle();
-            TvControlManager.TvMode mode = new TvControlManager.TvMode(mSettingsManager.getDtvType());
-            bundle.putInt(DroidLogicTvUtils.PARA_SCAN_MODE, mode.getMode());
-            bundle.putInt(DroidLogicTvUtils.PARA_MANUAL_SCAN, getDvbFrequencyByPd(Integer.valueOf(channel)));
-            bundle.putString(TvInputInfo.EXTRA_INPUT_ID,mSettingsManager.getInputId());
-            mSettingsManager.sendBroadcastToTvapp(DroidLogicTvUtils.ACTION_DTV_MANUAL_SCAN, bundle);
-            doScanCmd(DroidLogicTvUtils.ACTION_DTV_MANUAL_SCAN, bundle);
-            isSearching = SEARCH_RUNNING;
-            saveSearchStatus(isSearching);
-            mSettingsManager.setActivityResult(DroidLogicTvUtils.RESULT_UPDATE);
         }
         searchType = MANUAL_SEARCH;
-    }
-
-    public void setManualSearchEditStyle(View view) {
-        if (mSettingsManager.getCurentVirtualTvSource() == TvControlManager.SourceInput_Type.SOURCE_TYPE_ADTV) {
-            final OptionEditText edit = (OptionEditText) view.findViewById(R.id.manual_search_dtv_channel_manual);
-            edit.setNextFocusLeftId(R.id.content_list);
-            edit.setNextFocusRightId(edit.getId());
-            edit.setNextFocusUpId(edit.getId());
-            final TextView start_frequency = (TextView)view.findViewById(R.id.manual_search_dtv_start_frequency_manual);
-
-            TextWatcher textWatcher = new TextWatcher() {
-                public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-                }
-
-                public void onTextChanged(CharSequence s, int start, int before, int count) {
-                }
-
-                public void afterTextChanged(Editable s) {
-                    if (s.length() > 0) {
-                        int pos = s.length() - 1;
-                        char c = s.charAt(pos);
-                        if (c < '0' || c > '9') {
-                            s.delete(pos, pos + 1);
-                            showToast(mResources.getString(R.string.error_not_number));
-                        } else {
-                            String number = edit.getText().toString();
-                            if (number == null || number.length() == 0)
-                                number = (String)edit.getHint();
-
-                            if (number.matches("[0-9]+"))
-                                start_frequency.setText(parseChannelFrequency(getDvbFrequencyByPd(Integer.valueOf(number))));
-                        }
-                    }
-                }
-            };
-            edit.addTextChangedListener(textWatcher);
-        } else if (mSettingsManager.getCurentTvSource() == TvControlManager.SourceInput_Type.SOURCE_TYPE_DTV) {
-            final OptionEditText edit = (OptionEditText) view.findViewById(R.id.manual_search_dtv_channel);
-            edit.setNextFocusLeftId(R.id.content_list);
-            edit.setNextFocusRightId(edit.getId());
-            edit.setNextFocusUpId(edit.getId());
-            final TextView start_frequency = (TextView)view.findViewById(R.id.manual_search_dtv_start_frequency);
-
-            TextWatcher textWatcher = new TextWatcher() {
-                public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-                }
-
-                public void onTextChanged(CharSequence s, int start, int before, int count) {
-                }
-
-                public void afterTextChanged(Editable s) {
-                    if (s.length() > 0) {
-                        int pos = s.length() - 1;
-                        char c = s.charAt(pos);
-                        if (c < '0' || c > '9') {
-                            s.delete(pos, pos + 1);
-                            showToast(mResources.getString(R.string.error_not_number));
-                        } else {
-                            String number = edit.getText().toString();
-                            if (number == null || number.length() == 0)
-                                number = (String)edit.getHint();
-
-                            if (number.matches("[0-9]+"))
-                                start_frequency.setText(parseChannelFrequency(getDvbFrequencyByPd(Integer.valueOf(number))));
-                        }
-                    }
-                }
-            };
-            edit.addTextChangedListener(textWatcher);
-        } else if (mSettingsManager.getCurentTvSource() == TvControlManager.SourceInput_Type.SOURCE_TYPE_TV) {
-            OptionEditText edit_from = (OptionEditText) view.findViewById(R.id.manual_search_edit_from);
-            OptionEditText edit_to = (OptionEditText) view.findViewById(R.id.manual_search_edit_to);
-            edit_from.setNextFocusLeftId(R.id.content_list);
-            edit_from.setNextFocusRightId(edit_from.getId());
-            edit_from.setNextFocusUpId(edit_from.getId());
-            edit_to.setNextFocusLeftId(R.id.content_list);
-            edit_to.setNextFocusRightId(edit_to.getId());
-
-            TextWatcher textWatcher = new TextWatcher() {
-                public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-                }
-
-                public void onTextChanged(CharSequence s, int start, int before, int count) {
-                }
-
-                public void afterTextChanged(Editable s) {
-                    if (s.length() > 0) {
-                        int pos = s.length() - 1;
-                        char c = s.charAt(pos);
-                        if (c < '0' || c > '9') {
-                            s.delete(pos, pos + 1);
-                            showToast(mResources.getString(R.string.error_not_number));
-                        }
-                    }
-                }
-            };
-            edit_from.addTextChangedListener(textWatcher);
-            edit_to.addTextChangedListener(textWatcher);
-        }
     }
 
     private String parseChannelFrequency(double freq) {
@@ -678,36 +467,29 @@ public class OptionUiManagerT implements  OnFocusChangeListener, TvControlManage
             if (mSettingsManager.getDtvType().equals(TvContract.Channels.TYPE_ATSC_C)
                 || mSettingsManager.getDtvType().equals(TvContract.Channels.TYPE_ATSC_T)) {
                 boolean isCable = mSettingsManager.getDtvType().equals(TvContract.Channels.TYPE_ATSC_C);
-                int cableMode;
-                int autoscanmode;
-                if (!isLiveTvScaning) {
-                    cableMode = ((TvSettingsActivity)mContext).mManualScanEdit.checkCableMode();
-                    autoscanmode = ((TvSettingsActivity)mContext).mManualScanEdit.checkAutoScanMode();
-                } else {
-                    cableMode = mAtsccMode + SET_TO_MODE;//select atsc-c std lrc drc
-                    autoscanmode = adtv;
-                }
+                int cableMode = mAtsccMode + SET_TO_MODE;//select atsc-c std lrc drc
+                int autoscanmode = adtv;
 
                 switch (autoscanmode) {
-                    case ScanEdit.SCAN_ATV_DTV:
-                    case ScanEdit.SCAN_ONLY_DTV:
+                    case ScanType.SCAN_ATV_DTV:
+                    case ScanType.SCAN_ONLY_DTV:
                     if (isCable) {
                         switch (cableMode) {
-                            case ScanEdit.CABLE_MODE_STANDARD: return STD;
-                            case ScanEdit.CABLE_MODE_LRC:      return LRC;
-                            case ScanEdit.CABLE_MODE_HRC:      return HRC;
-                            case ScanEdit.CABLE_MODE_AUTO:     return AUTO;
+                            case ScanType.CABLE_MODE_STANDARD: return STD;
+                            case ScanType.CABLE_MODE_LRC:      return LRC;
+                            case ScanType.CABLE_MODE_HRC:      return HRC;
+                            case ScanType.CABLE_MODE_AUTO:     return AUTO;
                         }
                         return STD;
                     }
                     return ATSC_T;
-                    case ScanEdit.SCAN_ONLY_ATV:
+                    case ScanType.SCAN_ONLY_ATV:
                     if (isCable) {
                          switch (cableMode) {
-                            case ScanEdit.CABLE_MODE_STANDARD: return (STD + DTV_TO_ATV);
-                            case ScanEdit.CABLE_MODE_LRC:      return (LRC + DTV_TO_ATV);
-                            case ScanEdit.CABLE_MODE_HRC:      return (HRC + DTV_TO_ATV);
-                            case ScanEdit.CABLE_MODE_AUTO:     return (AUTO + DTV_TO_ATV);
+                            case ScanType.CABLE_MODE_STANDARD: return (STD + DTV_TO_ATV);
+                            case ScanType.CABLE_MODE_LRC:      return (LRC + DTV_TO_ATV);
+                            case ScanType.CABLE_MODE_HRC:      return (HRC + DTV_TO_ATV);
+                            case ScanType.CABLE_MODE_AUTO:     return (AUTO + DTV_TO_ATV);
                         }
                         return (STD + DTV_TO_ATV);
                     }
@@ -733,7 +515,7 @@ public class OptionUiManagerT implements  OnFocusChangeListener, TvControlManage
     }
 
     private int getDvbFrequencyByPd(int tvMode, int pdNumber) {
-        ArrayList<TvControlManager.FreqList> m_fList = mTvControlManager.DTVGetScanFreqList(tvMode);
+        ArrayList<FreqList> m_fList = mTvControlManager.DTVGetScanFreqList(tvMode);
         String type = TvControlManager.TvMode.fromMode(tvMode).toType();
         int size = m_fList.size();
         int the_freq = -1;
@@ -753,51 +535,6 @@ public class OptionUiManagerT implements  OnFocusChangeListener, TvControlManage
         }
         Log.d(TAG, "pdNumber: " + pdNumber + ", the_freq: " + the_freq);
         return (the_freq < 0)? m_fList.get(0).freq : the_freq;
-    }
-
-    private void setManualSearchInfo(TvControlManager.ScannerEvent event) {
-        if (isLiveTvScaning) return;
-        Log.d(TAG, "mSettingsManager.getCurentVirtualTvSource()="+mSettingsManager.getCurentVirtualTvSource());
-        ViewGroup optionView = (ViewGroup)((TvSettingsActivity) mContext).mOptionLayout.getChildAt(0);
-        if (event == null)
-            return;
-        if (mSettingsManager.getCurentVirtualTvSource() == TvControlManager.SourceInput_Type.SOURCE_TYPE_ADTV) {
-            OptionListView listView = (OptionListView)optionView.findViewById(R.id.manual_search_dtv_info_manual);
-            ArrayList<HashMap<String, Object>> dataList = getSearchedDtvInfo(event);
-            SimpleAdapter adapter = new SimpleAdapter(mContext, dataList,
-                    R.layout.layout_option_double_text,
-                    new String[] {SettingsManager.STRING_NAME, SettingsManager.STRING_STATUS},
-                    new int[] {R.id.text_name, R.id.text_status});
-            listView.setAdapter(adapter);
-        }else if (mSettingsManager.getCurentTvSource() == TvControlManager.SourceInput_Type.SOURCE_TYPE_DTV) {
-            OptionListView listView = (OptionListView)optionView.findViewById(R.id.manual_search_dtv_info);
-            ArrayList<HashMap<String, Object>> dataList = getSearchedDtvInfo(event);
-            SimpleAdapter adapter = new SimpleAdapter(mContext, dataList,
-                    R.layout.layout_option_double_text,
-                    new String[] {SettingsManager.STRING_NAME, SettingsManager.STRING_STATUS},
-                    new int[] {R.id.text_name, R.id.text_status});
-            listView.setAdapter(adapter);
-        } else if (mSettingsManager.getCurentTvSource() == TvControlManager.SourceInput_Type.SOURCE_TYPE_TV) {
-            OptionEditText begin = (OptionEditText)optionView.findViewById(R.id.manual_search_edit_from);
-            TextView frequency = (TextView)optionView.findViewById(R.id.manual_search_frequency);
-            TextView frequency_band = (TextView)optionView.findViewById(R.id.manual_search_frequency_band);
-            TextView searched_number = (TextView)optionView.findViewById(R.id.manual_search_searched_number);
-            double freq = 0.0;
-
-            if (event == null) {
-                freq = Double.valueOf((String)begin.getHint()).doubleValue();
-                freq /= 1000;// KHZ to MHZ
-            } else {
-                freq = event.freq;
-                freq /= 1000 * 1000;// HZ to MHZ
-            }
-
-            if (frequency != null && frequency_band != null && searched_number != null) {
-                frequency.setText(Double.toString(freq) + mResources.getString(R.string.mhz));
-                frequency_band.setText(parseFrequencyBand(freq));
-                searched_number.setText(mResources.getString(R.string.searched_number) + ": " + channelNumber);
-            }
-        }
     }
 
     public ArrayList<HashMap<String, Object>> getSearchedDtvInfo (TvControlManager.ScannerEvent event) {
@@ -856,32 +593,7 @@ public class OptionUiManagerT implements  OnFocusChangeListener, TvControlManage
             bundle.putString(TvInputInfo.EXTRA_INPUT_ID,mSettingsManager.getInputId());
             mSettingsManager.sendBroadcastToTvapp(DroidLogicTvUtils.ACTION_DTV_AUTO_SCAN, bundle);
             doScanCmd(DroidLogicTvUtils.ACTION_DTV_AUTO_SCAN, bundle);  //ww
-            mTvControlDataManager.putInt(mContext.getContentResolver(), DroidLogicTvUtils.TV_DTV_CHANNEL_INDEX, -1);
-        } else if (mSettingsManager.getCurentTvSource() == TvControlManager.SourceInput_Type.SOURCE_TYPE_TV) {
-            Log.d(TAG, "startAutosearch SOURCE_TYPE_TV");
-
-            deleteChannels(mode, true, false);
-
-            Bundle bundle = new Bundle();
-            bundle.putInt(DroidLogicTvUtils.PARA_SCAN_PARA1, 0);
-            bundle.putInt(DroidLogicTvUtils.PARA_SCAN_PARA2, 0);
-            bundle.putInt(DroidLogicTvUtils.PARA_SCAN_PARA3, mSettingsManager.getTvSearchTypeSys());
-            bundle.putInt(DroidLogicTvUtils.PARA_SCAN_PARA4, mSettingsManager.getTvSearchSoundSys());
-            bundle.putString(TvInputInfo.EXTRA_INPUT_ID,mSettingsManager.getInputId());
-            mSettingsManager.sendBroadcastToTvapp(DroidLogicTvUtils.ACTION_ATV_AUTO_SCAN, bundle);
-            doScanCmd(DroidLogicTvUtils.ACTION_ATV_AUTO_SCAN, bundle);
-            mTvControlDataManager.putInt(mContext.getContentResolver(), DroidLogicTvUtils.TV_ATV_CHANNEL_INDEX, -1);
-        } else if (mSettingsManager.getCurentTvSource() == TvControlManager.SourceInput_Type.SOURCE_TYPE_DTV) {
-            Log.d(TAG, "startAutosearch SOURCE_TYPE_DTV");
-
-            deleteChannels(mode, true, false);
-
-            Bundle bundle = new Bundle();
-            bundle.putInt(DroidLogicTvUtils.PARA_SCAN_MODE, mode.getMode());
-            bundle.putString(TvInputInfo.EXTRA_INPUT_ID,mSettingsManager.getInputId());
-            mSettingsManager.sendBroadcastToTvapp(DroidLogicTvUtils.ACTION_DTV_AUTO_SCAN, bundle);
-            doScanCmd(DroidLogicTvUtils.ACTION_DTV_AUTO_SCAN, bundle);
-            mTvControlDataManager.putInt(mContext.getContentResolver(), DroidLogicTvUtils.TV_DTV_CHANNEL_INDEX, -1);
+            DataProviderManager.putIntValue(mContext, DroidLogicTvUtils.TV_DTV_CHANNEL_INDEX, -1);
         }
         isSearching = SEARCH_RUNNING;
         saveSearchStatus(isSearching);
@@ -889,27 +601,13 @@ public class OptionUiManagerT implements  OnFocusChangeListener, TvControlManage
         mSettingsManager.setActivityResult(DroidLogicTvUtils.RESULT_UPDATE);
     }
 
-    private void deleteChannels(TvControlManager.TvMode mode, boolean deleteAtv, boolean deleteDtv)
-    {
+    private void deleteChannels(TvControlManager.TvMode mode, boolean deleteAtv, boolean deleteDtv) {
         Log.d(TAG, " delete mode:"+mode.getBase()+" atv:"+deleteAtv+" dtv:"+deleteDtv);
-        //ArrayList<ChannelInfo> allChannels = mTvDataBaseManager.getChannelList(mSettingsManager.getInputId(), TvContract.Channels.SERVICE_TYPE_AUDIO_VIDEO);
-        //allChannels.addAll(mTvDataBaseManager.getChannelList(mSettingsManager.getInputId(), TvContract.Channels.SERVICE_TYPE_AUDIO));
+
         if (deleteAtv) {
-            /*if (DroidLogicTvUtils.isAtscCountry(mContext)) {
-                for (ChannelInfo channelInfo : allChannels) {
-                    if (channelInfo.isAnalogChannel() && mode.toType().equals(channelInfo.getSignalType())) {
-                        mTvDataBaseManager.deleteChannel(channelInfo);
-                    }
-                }
-            } else {
-                mSettingsManager.deleteChannels(TvContract.Channels.TYPE_NTSC);
-                mSettingsManager.deleteChannels(TvContract.Channels.TYPE_PAL);
-                mSettingsManager.deleteChannels(TvContract.Channels.TYPE_SECAM);
-            }*/
             mSettingsManager.deleteAtvOrDtvChannels(true);//delete all atv channels
         }
         if (deleteDtv) {
-            //mSettingsManager.deleteChannels(mode.toType());
             mSettingsManager.deleteAtvOrDtvChannels(false);//delete all dtv channels
         }
     }
@@ -936,17 +634,11 @@ public class OptionUiManagerT implements  OnFocusChangeListener, TvControlManage
         Bundle bundle = new Bundle();
         int[] freqPair = new int[2];
         int checkcablemode;
-        int autoscanmode;
-
-        if (!isLiveTvScaning) {
-            autoscanmode = ((TvSettingsActivity)mContext).mScanEdit.checkAutoScanMode();
-        } else {
-            autoscanmode = checkLiveTvAutoScanMode();
-        }
+        int autoscanmode = autoscanmode = checkLiveTvAutoScanMode();
 
         String countryId = DroidLogicTvUtils.getCountry(mContext);
         mATvAutoScanMode = TvScanConfig.GetTvAtvStepScan(countryId);
-        if (mATvAutoScanMode == TvControlManager.ScanType.SCAN_ATV_AUTO_ALL_BAND && autoscanmode == ScanEdit.SCAN_ONLY_ATV) {
+        if (mATvAutoScanMode == TvControlManager.ScanType.SCAN_ATV_AUTO_ALL_BAND && autoscanmode == ScanType.SCAN_ONLY_ATV) {
             TvScanConfig.GetTvAtvMinMaxFreq(countryId, freqPair);
             Log.d(TAG, "freqPair[0] " + freqPair[0] + ", freqPair[1] " + freqPair[1]);
         }
@@ -958,23 +650,20 @@ public class OptionUiManagerT implements  OnFocusChangeListener, TvControlManage
 
         Log.d(TAG, "[startAutosearchAccrodingTvMode] autoscanmode = " + autoscanmode);
         switch (autoscanmode) {
-            case ScanEdit.SCAN_ATV_DTV:
+            case ScanType.SCAN_ATV_DTV:
                 Log.d(TAG, "ADTV");
 
                 deleteChannels(mode, true, true);
-                if (!isLiveTvScaning) {
-                    checkcablemode = ((TvSettingsActivity)mContext).mScanEdit.checkCableMode();
-                } else {
-                    checkcablemode = mAtsccMode + 1;//mAtsccMode value change from 0~2
-                }
+                checkcablemode = mAtsccMode + 1;//mAtsccMode value change from 0~2
+
                 if (mSettingsManager.getDtvType().equals(TvContract.Channels.TYPE_ATSC_C)) {
-                    if (checkcablemode == ScanEdit.CABLE_MODE_STANDARD) {
+                    if (checkcablemode == ScanType.CABLE_MODE_STANDARD) {
                         mode.setList(STD);
                         bundle.putInt(DroidLogicTvUtils.PARA_SCAN_PARA5, (STD + DTV_TO_ATV));
-                    } else if (checkcablemode == ScanEdit.CABLE_MODE_LRC) {
+                    } else if (checkcablemode == ScanType.CABLE_MODE_LRC) {
                         mode.setList(LRC);
                         bundle.putInt(DroidLogicTvUtils.PARA_SCAN_PARA5, (LRC + DTV_TO_ATV));
-                    } else if (checkcablemode == ScanEdit.CABLE_MODE_HRC) {
+                    } else if (checkcablemode == ScanType.CABLE_MODE_HRC) {
                         mode.setList(HRC);
                         bundle.putInt(DroidLogicTvUtils.PARA_SCAN_PARA5, (HRC + DTV_TO_ATV));
                     } else {
@@ -993,22 +682,18 @@ public class OptionUiManagerT implements  OnFocusChangeListener, TvControlManage
                 else
                     bundle.putInt(DroidLogicTvUtils.PARA_SCAN_TYPE_ATV, TvControlManager.ScanType.SCAN_ATV_FREQ);
             break;
-            case ScanEdit.SCAN_ONLY_ATV:
+            case ScanType.SCAN_ONLY_ATV:
                 Log.d(TAG, "SOURCE_TYPE_TV");
 
                 deleteChannels(mode, true, false);
+                checkcablemode = mAtsccMode + 1;
 
-                if (!isLiveTvScaning) {
-                    checkcablemode = ((TvSettingsActivity)mContext).mScanEdit.checkCableMode();
-                } else {
-                    checkcablemode = mAtsccMode + 1;
-                }
                 if (mSettingsManager.getDtvType().equals(TvContract.Channels.TYPE_ATSC_C)) {
-                    if (checkcablemode == ScanEdit.CABLE_MODE_STANDARD) {
+                    if (checkcablemode == ScanType.CABLE_MODE_STANDARD) {
                         bundle.putInt(DroidLogicTvUtils.PARA_SCAN_PARA5, (STD + DTV_TO_ATV));
-                    } else if (checkcablemode == ScanEdit.CABLE_MODE_LRC) {
+                    } else if (checkcablemode == ScanType.CABLE_MODE_LRC) {
                         bundle.putInt(DroidLogicTvUtils.PARA_SCAN_PARA5, (LRC + DTV_TO_ATV));
-                    } else if (checkcablemode == ScanEdit.CABLE_MODE_HRC) {
+                    } else if (checkcablemode == ScanType.CABLE_MODE_HRC) {
                         bundle.putInt(DroidLogicTvUtils.PARA_SCAN_PARA5, (HRC + DTV_TO_ATV));
                     } else {
                         bundle.putInt(DroidLogicTvUtils.PARA_SCAN_PARA5, (AUTO + DTV_TO_ATV));
@@ -1025,22 +710,18 @@ public class OptionUiManagerT implements  OnFocusChangeListener, TvControlManage
                 else
                     bundle.putInt(DroidLogicTvUtils.PARA_SCAN_TYPE_ATV, TvControlManager.ScanType.SCAN_ATV_FREQ);
             break;
-            case ScanEdit.SCAN_ONLY_DTV:
+            case ScanType.SCAN_ONLY_DTV:
                 Log.d(TAG, "SOURCE_TYPE_DTV");
 
                 deleteChannels(mode, false, true);
+                checkcablemode = mAtsccMode + 1;
 
-                if (!isLiveTvScaning) {
-                    checkcablemode = ((TvSettingsActivity)mContext).mScanEdit.checkCableMode();
-                } else {
-                    checkcablemode = mAtsccMode + 1;
-                }
                 if (mSettingsManager.getDtvType().equals(TvContract.Channels.TYPE_ATSC_C)) {
-                    if (checkcablemode == ScanEdit.CABLE_MODE_STANDARD) {
+                    if (checkcablemode == ScanType.CABLE_MODE_STANDARD) {
                         mode.setList(STD);
-                    } else if (checkcablemode == ScanEdit.CABLE_MODE_LRC) {
+                    } else if (checkcablemode == ScanType.CABLE_MODE_LRC) {
                         mode.setList(LRC);
-                    } else if (checkcablemode == ScanEdit.CABLE_MODE_HRC) {
+                    } else if (checkcablemode == ScanType.CABLE_MODE_HRC) {
                         mode.setList(HRC);
                     } else {
                         mode.setList(AUTO);
@@ -1057,7 +738,7 @@ public class OptionUiManagerT implements  OnFocusChangeListener, TvControlManage
         bundle.putString(TvInputInfo.EXTRA_INPUT_ID,mSettingsManager.getInputId());
         mSettingsManager.sendBroadcastToTvapp(DroidLogicTvUtils.ACTION_DTV_AUTO_SCAN, bundle);
         doScanCmd(DroidLogicTvUtils.ACTION_DTV_AUTO_SCAN, bundle);  //ww
-        mTvControlDataManager.putInt(mContext.getContentResolver(), DroidLogicTvUtils.TV_DTV_CHANNEL_INDEX, -1);
+        DataProviderManager.putIntValue(mContext, DroidLogicTvUtils.TV_DTV_CHANNEL_INDEX, -1);
         isSearching = SEARCH_RUNNING;
         saveSearchStatus(isSearching);
         searchType = AUTO_SEARCH;
@@ -1110,7 +791,7 @@ public class OptionUiManagerT implements  OnFocusChangeListener, TvControlManage
                 fe.setVideoStd(atvVideoStd);
                 fe.setAudioStd(atvAudioStd);
                 if (TvContract.Channels.TYPE_DVB_C.equals(tvMode.toType())) {
-                    int qammode = mTvControlDataManager.getInt(mContext.getContentResolver(), DroidLogicTvUtils.TV_SEARCH_DVBC_QAM, DroidLogicTvUtils.TV_SEARCH_DVBC_QAM16);
+                    int qammode = DataProviderManager.getIntValue(mContext, DroidLogicTvUtils.TV_SEARCH_DVBC_QAM, DroidLogicTvUtils.TV_SEARCH_DVBC_QAM16);
                     if (qammode == DroidLogicTvUtils.TV_SEARCH_DVBC_QAMAUTO) {
                         mSystemControlManager.writeSysFs(AUTO_QAM_FAST_SEARCH_PATH, AUTO_QAM_FAST_SEARCH_ON);
                     } else {
@@ -1202,36 +883,6 @@ public class OptionUiManagerT implements  OnFocusChangeListener, TvControlManage
         }
     }
 
-    private void setAutoSearchFrequency(TvControlManager.ScannerEvent event) {
-        if (isLiveTvScaning) {
-            return;
-        }
-        ViewGroup optionView = (ViewGroup) ((TvSettingsActivity) mContext).mOptionLayout.getChildAt(0);
-        if (mSettingsManager.getCurentTvSource() == TvControlManager.SourceInput_Type.SOURCE_TYPE_DTV
-            || mSettingsManager.getCurentVirtualTvSource() == TvControlManager.SourceInput_Type.SOURCE_TYPE_ADTV) {
-            OptionListView listView = (OptionListView)optionView.findViewById(R.id.auto_search_dtv_info);
-            ArrayList<HashMap<String, Object>> dataList = getSearchedDtvInfo(event);
-            SimpleAdapter adapter = new SimpleAdapter(mContext, dataList,
-                    R.layout.layout_option_double_text,
-                    new String[] {SettingsManager.STRING_NAME, SettingsManager.STRING_STATUS},
-                    new int[] {R.id.text_name, R.id.text_status});
-            listView.setAdapter(adapter);
-        } else if (mSettingsManager.getCurentTvSource() == TvControlManager.SourceInput_Type.SOURCE_TYPE_TV) {
-            TextView frequency = (TextView) optionView.findViewById(R.id.auto_search_frequency_atv);
-            TextView frequency_band = (TextView) optionView.findViewById(R.id.auto_search_frequency_band_atv);
-            TextView searched_number = (TextView) optionView.findViewById(R.id.auto_search_searched_number_atv);
-            if (frequency != null && frequency_band != null && searched_number != null) {
-                double freq = event.freq;
-                freq /= 1000 * 1000;
-                frequency.setText(Double.toString(freq) + mResources.getString(R.string.mhz));
-                frequency_band.setText(parseFrequencyBand(freq));
-                searched_number.setText(mResources.getString(R.string.searched_number) + ": " + channelNumber);
-            }
-        }
-    }
-
-
-
     private String parseFrequencyBand(double freq) {
         String band = "";
         if (freq > 44.25 && freq < 143.25) {
@@ -1266,11 +917,11 @@ public class OptionUiManagerT implements  OnFocusChangeListener, TvControlManage
 
                 if (((event.mode & 0xff) == TvChannelParams.MODE_ANALOG) && (event.lock == 0x11)) { //trick here
                     isNewProgram = 1;
-                    String mode = mTvControlDataManager.getString(mContext.getContentResolver(), "tv_search_mode");
+                    String mode = DataProviderManager.getStringValue(mContext, "tv_search_mode", "");
                     if ((mTvControlManager.AtvDtvGetScanStatus() & TvControlManager.ATV_DTV_SCAN_STATUS_PAUSED)
                             == TvControlManager.ATV_DTV_SCAN_STATUS_PAUSED) {
                         if (mATvAutoScanMode == TvControlManager.ScanType.SCAN_ATV_AUTO_ALL_BAND && mode.equals("manual")
-                                && checkLiveTvAutoScanMode() == ManualScanEdit.SCAN_ONLY_ATV) {
+                                && checkLiveTvAutoScanMode() == ScanType.SCAN_ONLY_ATV) {
                             isSearching = SEARCH_PAUSED;
                             sendMessage(STATUS, -1, "pause");
                         } else {
@@ -1307,9 +958,7 @@ public class OptionUiManagerT implements  OnFocusChangeListener, TvControlManage
                     Log.d(TAG, "New DTV Program : [" + name + "] type[" + event.srvType + "]");
                 }
 
-                if (!isLiveTvScaning) {
-                    //setProgress(event.precent);
-                } else {
+                if (isLiveTvScaning) {
                     sendMessage(PROCCESS, event.precent, null);
                     if (mLiveTvManualSearch) {
                         setLiveTvManualSearchInfo(event);
@@ -1317,10 +966,6 @@ public class OptionUiManagerT implements  OnFocusChangeListener, TvControlManage
                         setLiveTvAutoSearchFrequency(event);
                     }
                 }
-                if (optionTag == OPTION_MANUAL_SEARCH)
-                    setManualSearchInfo(event);
-                else
-                    setAutoSearchFrequency(event);
 
                 if (((event.mode & 0xff)  == TvChannelParams.MODE_ANALOG) && ((optionTag == OPTION_MANUAL_SEARCH) || isLiveTvScaning)
                     && event.precent == 100)
@@ -1368,9 +1013,7 @@ public class OptionUiManagerT implements  OnFocusChangeListener, TvControlManage
                 if (channelNumber == 0 && radioNumber == 0) {
                     showToast(mResources.getString(R.string.searched) + " 0 " + mResources.getString(R.string.channel));
                 }
-                if (!isLiveTvScaning) {
-                    ((TvSettingsActivity) mContext).finish();
-                } else {
+                if (isLiveTvScaning) {
                     if (getNumberSearchNeed() != 1) {
                         //Log.d(TAG, "=====not number search: EXIT_SCAN");
                         //sendMessage(EXIT_SCAN, -1, null);
@@ -1412,9 +1055,7 @@ public class OptionUiManagerT implements  OnFocusChangeListener, TvControlManage
                         switch (status) {
                             case TvControlManager.EVENT_SCAN_EXIT:
                                 Log.d(TAG, "excuteChannelScanStoreStatusByThread Scan exit");
-                                if (!isLiveTvScaning) {
-                                    ((TvSettingsActivity) mContext).finish();
-                                } else {
+                                if (isLiveTvScaning) {
                                     if (getNumberSearchNeed() != 1) {
                                         Log.d(TAG, "=====not number search: EXIT_SCAN");
                                         sendMessage(EXIT_SCAN, SAVING, null);
@@ -1439,36 +1080,6 @@ public class OptionUiManagerT implements  OnFocusChangeListener, TvControlManage
     private void unRegisterChannelScanStartReceiver() {
         mContext.unregisterReceiver(mChannelScanStoreStatusReceiver);
     }
-
-    /*private void createFactoryResetUi () {
-        LayoutInflater inflater = (LayoutInflater)mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-        View view = inflater.inflate(R.layout.layout_dialog, null);
-
-        AlertDialog.Builder builder = new AlertDialog.Builder(mContext);
-        final AlertDialog mAlertDialog = builder.create();
-        mAlertDialog.show();
-        mAlertDialog.getWindow().setContentView(view);
-        //mAlertDialog.getWindow().setLayout(150, 320);
-
-        TextView button_cancel = (TextView)view.findViewById(R.id.dialog_cancel);
-        button_cancel.setOnClickListener(new OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                if (mAlertDialog != null)
-                    mAlertDialog.dismiss();
-            }
-        });
-        button_cancel.setOnFocusChangeListener(this);
-        TextView button_ok = (TextView)view.findViewById(R.id.dialog_ok);
-        button_ok.setOnClickListener(new OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                mSettingsManager.doFactoryReset();
-                ((PowerManager) mContext.getSystemService(Context.POWER_SERVICE)).reboot("");
-            }
-        });
-        button_ok.setOnFocusChangeListener(this);
-    }*/
 
     private void showToast(String text) {
         LayoutInflater inflater = (LayoutInflater)mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
@@ -1624,13 +1235,13 @@ public class OptionUiManagerT implements  OnFocusChangeListener, TvControlManage
     private int checkLiveTvAutoScanMode() {
         Log.d(TAG," TvAutoScanMode mSearchDtv = " + mSearchDtv + ", mSearchAtv = " + mSearchAtv);
         if (mSearchDtv && !mSearchAtv) {
-            return ManualScanEdit.SCAN_ONLY_DTV;
+            return ScanType.SCAN_ONLY_DTV;
         } else if (!mSearchDtv && mSearchAtv){
-            return ManualScanEdit.SCAN_ONLY_ATV;
+            return ScanType.SCAN_ONLY_ATV;
         }else if (mSearchDtv && mSearchAtv){
-            return ManualScanEdit.SCAN_ATV_DTV;
+            return ScanType.SCAN_ATV_DTV;
         }else {
-            return ManualScanEdit.SCAN_FAULT;
+            return ScanType.SCAN_FAULT;
         }
     }
 
@@ -1646,35 +1257,13 @@ public class OptionUiManagerT implements  OnFocusChangeListener, TvControlManage
             return;
         String eventParams = getEventParams(event.freq, event.quality, event.strength, channelNumber, radioNumber);
         if (mSettingsManager.getCurentVirtualTvSource() == TvControlManager.SourceInput_Type.SOURCE_TYPE_ADTV) {
-            /*ArrayList<HashMap<String, Object>> dataList = getSearchedDtvInfo(event);
-            SimpleAdapter adapter = new SimpleAdapter(mContext, dataList,
-                    R.layout.tv_channel_list,
-                    new String[] {SettingsManager.STRING_NAME, SettingsManager.STRING_STATUS},
-                    new int[] {R.id.text_name, R.id.text_status});
-            sendMessage(ChannelSearchActivity.CHANNEL, 0, adapter);*/
             sendMessage(STATUS, channelNumber, null);//send searched channelnumber
             sendMessage(CHANNEL, 0, eventParams);
-        } else if (mSettingsManager.getCurentTvSource() == TvControlManager.SourceInput_Type.SOURCE_TYPE_DTV) {
-            /*ArrayList<HashMap<String, Object>> dataList = getSearchedDtvInfo(event);
-            SimpleAdapter adapter = new SimpleAdapter(mContext, dataList,
-                    R.layout.tv_channel_list,
-                    new String[] {SettingsManager.STRING_NAME, SettingsManager.STRING_STATUS},
-                    new int[] {R.id.text_name, R.id.text_status});
-            sendMessage(ChannelSearchActivity.CHANNEL, 0, adapter);*/
-            sendMessage(CHANNEL, 0, eventParams);
-            sendMessage(STATUS, channelNumber, null);//send searched channelnumber
         }
     }
 
     private void setLiveTvAutoSearchFrequency(TvControlManager.ScannerEvent event) {
-        if (mSettingsManager.getCurentTvSource() == TvControlManager.SourceInput_Type.SOURCE_TYPE_DTV
-            || mSettingsManager.getCurentVirtualTvSource() == TvControlManager.SourceInput_Type.SOURCE_TYPE_ADTV) {
-            /*ArrayList<HashMap<String, Object>> dataList = getSearchedDtvInfo(event);
-            SimpleAdapter adapter = new SimpleAdapter(mContext, dataList,
-                    R.layout.tv_channel_list,
-                    new String[] {SettingsManager.STRING_NAME, SettingsManager.STRING_STATUS},
-                    new int[] {R.id.text_name, R.id.text_status});
-            sendMessage(ChannelSearchActivity.CHANNEL, 0, adapter);*/
+        if (mSettingsManager.getCurentVirtualTvSource() == TvControlManager.SourceInput_Type.SOURCE_TYPE_ADTV) {
             sendMessage(CHANNEL, 0, getEventParams(event.freq, event.quality, event.strength, channelNumber, radioNumber));
         }
     }

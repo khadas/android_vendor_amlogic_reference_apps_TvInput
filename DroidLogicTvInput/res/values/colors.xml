@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <color name="side_panel_header_droid_background">#37474F</color>
 	<color name="transparent">#00000000</color>
 	<color name="selected">#FF019587</color>
 	<color name="save_selected">#55019587</color>

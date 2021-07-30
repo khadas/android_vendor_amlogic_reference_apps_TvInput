@@ -28,10 +28,8 @@ import android.util.Log;
 import com.droidlogic.tvinput.Utils;
 
 import com.droidlogic.app.tv.ChannelInfo;
-import com.droidlogic.app.tv.DroidLogicTvInputService;
 import com.droidlogic.app.tv.TvDataBaseManager;
 import com.droidlogic.app.tv.DroidLogicTvUtils;
-import com.droidlogic.app.tv.TvInputBaseSession;
 import com.droidlogic.tvinput.R;
 
 import java.util.HashSet;

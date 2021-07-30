@@ -14,11 +14,32 @@ ifeq ($(DVB_PATH), )
 	DVB_PATH := $(wildcard vendor/amlogic/dvb)
 endif
 
+ifeq (,$(wildcard $(LOCAL_PATH)/../../../../external/libzvbi))
+LIBZVBI_C_INCLUDES:=vendor/amlogic/common/prebuilt/libzvbi/include
+else
+LIBZVBI_C_INCLUDES:=vendor/amlogic/common/external/libzvbi/src
+endif
+
+ifeq (,$(wildcard $(LOCAL_PATH)/../../../../external/dvb))
+DVB_C_INCLUDES:=vendor/amlogic/common/prebuilt/dvb/include/am_adp \
+  vendor/amlogic/common/prebuilt/dvb/include/am_mw \
+  vendor/amlogic/common/prebuilt/dvb/include/am_ver \
+  vendor/amlogic/common/prebuilt/dvb/ndk/include
+else
+DVB_C_INCLUDES:=vendor/amlogic/common/external/dvb/include/am_adp \
+  vendor/amlogic/common/external/dvb/include/am_mw \
+  vendor/amlogic/common/external/dvb/include/am_ver \
+  vendor/amlogic/common/external/dvb/android/ndk/include
+endif
+
 #######################################################################
 
 include $(CLEAR_VARS)
 
 LOCAL_MODULE    := libjnidtvepgscanner
+LOCAL_MULTILIB := 32
+LOCAL_LICENSE_KINDS := SPDX-license-identifier-Apache-2.0 SPDX-license-identifier-FTL SPDX-license-identifier-GPL SPDX-license-identifier-LGPL-2.1 SPDX-license-identifier-MIT legacy_by_exception_only legacy_notice
+LOCAL_LICENSE_CONDITIONS := by_exception_only notice restricted
 LOCAL_MODULE_TAGS := optional
 LOCAL_SRC_FILES := DTVEpgScanner.c
 LOCAL_ARM_MODE := arm
@@ -27,40 +48,33 @@ LOCAL_C_INCLUDES := \
 	external/skia/include\
 	external/skia/include/core \
 	external/skia/include/config \
-	libnativehelper/include_jni \
 	bionic/libc/include
 
+LOCAL_HEADER_LIBRARIES := jni_headers
 LOCAL_SHARED_LIBRARIES += \
-  libicui18n \
-  libicuuc \
   liblog \
   libcutils
 
 #LOCAL_STATIC_LIBRARIES := libskia
 
 LOCAL_PRELINK_MODULE := false
-LOCAL_PRODUCT_MODULE := true
 
 #DVB define
 ifeq ($(BOARD_HAS_ADTV),true)
 LOCAL_CFLAGS += -DSUPPORT_ADTV
 
 LOCAL_C_INCLUDES += \
-  external/libzvbi/src \
-	$(DVB_PATH)/include/am_mw \
-	$(DVB_PATH)/include/am_adp \
-	$(DVB_PATH)/android/ndk/include \
-LOCAL_PRIVATE_PLATFORM_APIS := true
+  $(LIBZVBI_C_INCLUDES)\
+  $(DVB_C_INCLUDES)
 
-LOCAL_STATIC_LIBRARIES += \
+LOCAL_SHARED_LIBRARIES += \
   libam_mw \
-  libzvbi_static \
-  libsqlite \
+  libzvbi \
   libam_adp
 endif
 
 ifeq ($(shell test $(PLATFORM_SDK_VERSION) -ge 26 && echo OK),OK)
-#LOCAL_PROPRIETARY_MODULE := true
+LOCAL_PROPRIETARY_MODULE := true
 endif
 
 include $(BUILD_SHARED_LIBRARY)
@@ -74,7 +88,7 @@ include $(BUILD_SHARED_LIBRARY)
 #LOCAL_MODULE_TAGS := optional
 #LOCAL_MODULE_CLASS := SHARED_LIBRARIES
 
-#LOCAL_PRODUCT_MODULE := true
+#LOCAL_VENDOR_MODULE := true
 #LOCAL_SRC_FILES_arm := arm/$(LOCAL_MODULE)$(LOCAL_MODULE_SUFFIX)
 #LOCAL_SRC_FILES_arm64 := arm64/$(LOCAL_MODULE)$(LOCAL_MODULE_SUFFIX)
 
@@ -85,23 +99,22 @@ include $(BUILD_SHARED_LIBRARY)
 include $(CLEAR_VARS)
 
 LOCAL_MODULE    := libjnifont
+LOCAL_LICENSE_KINDS := SPDX-license-identifier-Apache-2.0 SPDX-license-identifier-FTL SPDX-license-identifier-GPL SPDX-license-identifier-LGPL-2.1 SPDX-license-identifier-MIT legacy_by_exception_only legacy_notice
+LOCAL_LICENSE_CONDITIONS := by_exception_only notice restricted
 LOCAL_MODULE_TAGS := optional
 LOCAL_SRC_FILES := Fonts.cpp
 LOCAL_ARM_MODE := arm
 LOCAL_C_INCLUDES := \
-    $(JNI_H_INCLUDE) \
-    libnativehelper/include_jni \
     system/core/libutils/include \
-    system/core/liblog/include \
-    libnativehelper/include/nativehelper
+    system/core/liblog/include
 
-LOCAL_SHARED_LIBRARIES += liblog libcutils libvendorfont
-LOCAL_PRODUCT_MODULE := true
+LOCAL_HEADER_LIBRARIES := jni_headers
+LOCAL_SHARED_LIBRARIES += libvendorfont liblog libcutils
 
 LOCAL_PRELINK_MODULE := false
 
 ifeq ($(shell test $(PLATFORM_SDK_VERSION) -ge 26 && echo OK),OK)
-#LOCAL_PROPRIETARY_MODULE := true
+LOCAL_PROPRIETARY_MODULE := true
 endif
 
 include $(BUILD_SHARED_LIBRARY)

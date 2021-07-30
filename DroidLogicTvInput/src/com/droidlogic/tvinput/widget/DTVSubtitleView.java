@@ -25,7 +25,6 @@ import android.graphics.PorterDuff;
 import android.graphics.PorterDuffXfermode;
 import android.os.Handler;
 import android.os.Message;
-import android.provider.Settings;
 import android.text.TextUtils;
 import android.util.DisplayMetrics;
 import android.view.KeyEvent;
@@ -48,6 +47,7 @@ import java.util.Locale;
 import android.util.Log;
 import android.view.accessibility.CaptioningManager;
 import android.widget.Toast;
+import com.droidlogic.app.DataProviderManager;
 import com.droidlogic.app.SystemControlManager;
 import com.droidlogic.app.SubtitleManager;
 import com.droidlogic.app.tv.ChannelInfo;
@@ -211,6 +211,7 @@ public class DTVSubtitleView extends View {
         synchronized(lock) {
             if (mSubtitleManager != null) {
                 mSubtitleManager.close();
+                mSubtitleManager.destory();
                 mSubtitleManager = null;
             }
         }
@@ -1018,7 +1019,7 @@ public class DTVSubtitleView extends View {
     public int setTTRegion(int region_id)
     {
         Log.e(TAG, "setTTRegion " + region_id);
-        Settings.Global.putInt(getContext().getContentResolver(), TT_REGION_DB, region_id);
+        DataProviderManager.putIntValue(getContext(), TT_REGION_DB, region_id);
         return subtitlemanager_tt_set_region(region_id);
     }
 
@@ -1301,24 +1302,7 @@ public class DTVSubtitleView extends View {
         }
     }
 
-    public void dispose() {
-        Log.e(TAG, "Subview dispose");
-        synchronized(lock) {
-            if (!destroy) {
-                destroy = true;
-                if (init_count == 0) {
-                    stopDecoder();
-                    subtitlemanager_clear();
-                    subtitlemanager_destroy();
-                }
-            }
-        }
-    }
-
     protected void finalize() throws Throwable {
-        Log.e(TAG, "Subview finalize");
-        // Resource may not be available during gc process
-        dispose();
         Log.e(TAG, "Finalize");
         super.finalize();
     }
@@ -1439,12 +1423,13 @@ public class DTVSubtitleView extends View {
                     int widtmp = width;
                     int heitmp = height;
                     if (type == SubtitleManager.SUBTITLE_IMAGE_CENTER) {
-                        dis_w = 720;
-                        dis_h = 576;
-                        widtmp = 480;
-                        heitmp = 525;
-                        src_x = (dis_w - widtmp)/2;
-                        src_y = (dis_h - heitmp)/2;
+                        dis_w = widtmp;//720;
+                        dis_h = heitmp;//576;
+                        //widtmp = 480;
+                        //heitmp = 525;
+                        //display full screen
+                        src_x = 0;//(dis_w - widtmp)/2;
+                        src_y = 0;//(dis_h - heitmp)/2;
                     }
                     if (showOrHide == true
                         && width > 0
@@ -1457,8 +1442,8 @@ public class DTVSubtitleView extends View {
                         bitmap = Bitmap.createBitmap(dis_w, dis_h, Bitmap.Config.ARGB_8888);
                         Canvas canvas = new Canvas(bitmap);
                         Log.d(TAG, "mixmode = " + mMixMode);
-                        if ((type == SubtitleManager.SUBTITLE_IMAGE_CENTER) && mMixMode == TTX_MIX_MODE_NORAML)
-                            canvas.drawColor(0xFF000000);
+                        //if ((type == SubtitleManager.SUBTITLE_IMAGE_CENTER) && mMixMode == TTX_MIX_MODE_NORAML)
+                        //    canvas.drawColor(0xFF000000);
                         Bitmap databm = Bitmap.createBitmap(colors, 0, width, width, height, Bitmap.Config.ARGB_8888);
                         Rect src = new Rect(0, 0, width, height);
                         Rect dsc = new Rect(src_x, src_y, src_x + widtmp, src_y + heitmp);
