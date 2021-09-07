@@ -113,7 +113,7 @@ public abstract class TvInputBaseSession extends TvInputService.Session implemen
 
         Log.d(TAG, "TvInputBaseSession, inputId " + inputId + " deviceId " + deviceId);
         mSystemControlManager = SystemControlManager.getInstance();
-        mSystemControlEvent = new SystemControlEvent(context);
+        mSystemControlEvent = SystemControlEvent.getInstance(context);
         mSystemControlManager.setListener(mSystemControlEvent);
         mSystemControlEvent.setHdrInfoListener(this);
         setSessionStateMachine(SESSION_CTEATED);
