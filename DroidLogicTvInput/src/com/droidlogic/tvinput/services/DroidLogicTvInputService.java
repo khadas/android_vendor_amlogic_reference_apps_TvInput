@@ -1041,10 +1041,6 @@ public abstract class DroidLogicTvInputService extends TvInputService implements
 
     // refresh audio delay param when select source or deselect source
     private void setAudioDelay(boolean isTvSource) {
-        if (!getAudioDelayEnabled()) {
-            return;
-        }
-
         String searchType = DroidLogicTvUtils.getSearchType(mContext);
         int audioSource = 0;
         if (!isTvSource) {
@@ -1064,16 +1060,7 @@ public abstract class DroidLogicTvInputService extends TvInputService implements
                 audioSource = AudioConfigManager.AUDIO_OUTPUT_DELAY_SOURCE_MEDIA;
             }
         }
-        Log.d(TAG, "setAudioDelay, audioSource:" + audioSource + ",speaker delay:" + mAudioConfigManager.getAudioOutputSpeakerDelay(audioSource)
-                + ", spdif delay:"+ mAudioConfigManager.getAudioOutputSpdifDelay(audioSource));
-        DroidLogicTvUtils.setTvSourceType(mContext, audioSource);
-        mAudioConfigManager.setAudioOutputSpeakerDelay(audioSource, mAudioConfigManager.getAudioOutputSpeakerDelay(audioSource));
-        mAudioConfigManager.setAudioOutputSpdifDelay(audioSource, mAudioConfigManager.getAudioOutputSpdifDelay(audioSource));
-    }
-
-    private boolean getAudioDelayEnabled () {
-        return SystemControlManager.getInstance()
-                .getPropertyBoolean(AudioConfigManager.PROP_AUDIO_DELAY_ENABLED, false);
+        mAudioConfigManager.refreshAudioCfgBySrc(audioSource);
     }
 
     private boolean isHdmiDeviceId(int deviceId) {
