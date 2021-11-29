@@ -22,6 +22,8 @@ import java.util.zip.ZipException;
 import java.util.zip.ZipEntry;
 import java.util.Enumeration;
 
+import com.droidlogic.app.tv.DroidLogicHdmiCecManager;
+
 public class TvApplication extends Application{
     private static Context mContext;
     private static String unZipDirStr = "vendorfont";
@@ -42,6 +44,7 @@ public class TvApplication extends Application{
                 }
             }catch (IOException ex) {}
         }
+        DroidLogicHdmiCecManager.getInstance(mContext);
     }
 
     static class FileUtils {
