@@ -198,13 +198,13 @@ public class DTVSubtitleView extends View {
     public static final int TTX_MIX_MODE_TRANSPARENT = 1;
     public static final int TTX_MIX_MODE_LEFT_RIGHT = 2;
     private int mMixMode = TTX_MIX_MODE_NORAML;
-    private int subtitlemanager_init(Context context) {
+    private static SubtitleManager subtitlemanager_init(Context context) {
         synchronized(lock) {
             if (mSubtitleManager == null) {
                 mSubtitleManager = new SubtitleManager(context);
             }
         }
-        return 0;
+        return mSubtitleManager;
     }
 
     private int subtitlemanager_destroy() {
@@ -229,25 +229,19 @@ public class DTVSubtitleView extends View {
     }
     private int subtitlemanager_start_dvb_sub(int dmx_id, int pid, int page_id, int anc_page_id) {
         synchronized(lock) {
-            if (mSubtitleManager != null)
-            {
-                mSubtitleManager.setSubType(SUBTITLE_IOTYPE_SUB);
-                mSubtitleManager.setSubPid(pid);
-                mSubtitleManager.open("", (dmx_id << 16)|SUBTITLE_DEMUX_SOURCE);
-            }
+            subtitlemanager_init(getContext()).setSubType(SUBTITLE_IOTYPE_SUB);
+            subtitlemanager_init(getContext()).setSubPid(pid);
+            subtitlemanager_init(getContext()).open("", (dmx_id << 16)|SUBTITLE_DEMUX_SOURCE);
         }
         return 0;
     }
     private int subtitlemanager_start_dtv_tt(int dmx_id, int region_id, int pid, int page, int sub_page, boolean is_sub) {
         synchronized(lock) {
-            if (mSubtitleManager != null)
-            {
-                mSubtitleManager.setSubType(SUBTITLE_IOTYPE_TTX);
-                mSubtitleManager.setSubPid(pid);
-                if (mSubtitleManager.open("", (dmx_id << 16)|SUBTITLE_DEMUX_SOURCE)) {
-                    if (!is_sub) {
-                        mSubtitleManager.ttGoHome();
-                    }
+            subtitlemanager_init(getContext()).setSubType(SUBTITLE_IOTYPE_TTX);
+            subtitlemanager_init(getContext()).setSubPid(pid);
+            if (subtitlemanager_init(getContext()).open("", (dmx_id << 16)|SUBTITLE_DEMUX_SOURCE)) {
+                if (!is_sub) {
+                    subtitlemanager_init(getContext()).ttGoHome();
                 }
             }
         }
@@ -256,14 +250,11 @@ public class DTVSubtitleView extends View {
     private int subtitlemanager_start_atv_tt(int region_id, int page_no, int sub_page_no, boolean is_sub)
     {
         synchronized(lock) {
-            if (mSubtitleManager != null)
-            {
-                mSubtitleManager.setSubType(SUBTITLE_IOTYPE_TTX);
-                mSubtitleManager.setSubPid(region_id);
-                if (mSubtitleManager.open("", SUBTITLE_VBI_SOURCE)) {
-                    if (!is_sub) {
-                        mSubtitleManager.ttGoHome();
-                    }
+            subtitlemanager_init(getContext()).setSubType(SUBTITLE_IOTYPE_TTX);
+            subtitlemanager_init(getContext()).setSubPid(region_id);
+            if (mSubtitleManager.open("", SUBTITLE_VBI_SOURCE)) {
+                if (!is_sub) {
+                    mSubtitleManager.ttGoHome();
                 }
             }
         }
@@ -276,6 +267,8 @@ public class DTVSubtitleView extends View {
                 mSubtitleManagerListener = null;
                 mSubtitleManager.setSubtitleDataListner(null);
                 mSubtitleManager.close();
+                mSubtitleManager.destory();
+                mSubtitleManager = null;
             }
         }
         return 0;
@@ -283,7 +276,7 @@ public class DTVSubtitleView extends View {
     private int subtitlemanager_tt_control(int event, int para0, int para1) {
         synchronized(lock) {
             if (mSubtitleManager != null) {
-                return mSubtitleManager.ttControl(event, para0, para1);
+                return subtitlemanager_init(getContext()).ttControl(event, para0, para1);
             }
         }
         return 0;
@@ -292,7 +285,7 @@ public class DTVSubtitleView extends View {
     {
         synchronized(lock) {
             if (mSubtitleManager != null) {
-                return mSubtitleManager.ttControl(SubtitleManager.TT_EVENT_SET_REGION_ID, -1, -1, region_id);
+                return subtitlemanager_init(getContext()).ttControl(SubtitleManager.TT_EVENT_SET_REGION_ID, -1, -1, region_id);
             }
         }
         return 0;
@@ -306,10 +299,8 @@ public class DTVSubtitleView extends View {
     private int subtitlemanager_start_atsc_cc(int source, int vfmt, int caption, int decoder_param, String lang, int fg_color, int fg_opacity, int bg_color, int bg_opacity, int font_style, int font_size)
     {
         synchronized(lock) {
-            if (mSubtitleManager != null) {
-                //mSubtitleManager.open("", SUBTITLE_DEMUX_SOURCE);
-                mSubtitleManager.startCCchanel(caption|source<<8);
-            }
+            //mSubtitleManager.open("", SUBTITLE_DEMUX_SOURCE);
+            subtitlemanager_init(getContext()).startCCchanel(caption|source<<8);
         }
         return 0;
     }
@@ -332,13 +323,10 @@ public class DTVSubtitleView extends View {
     private int subtitlemanager_start_scte27(int dmx_id, int pid)
     {
         synchronized(lock) {
-            if (mSubtitleManager != null)
-            {
-                mSubtitleManager.setSubType(SUBTITLE_IOTYPE_SCTE27);
-                mSubtitleManager.setSubPid(pid);
-                mSubtitleManager.open("", (dmx_id << 16)|SUBTITLE_DEMUX_SOURCE);
-            }
-            }
+            subtitlemanager_init(getContext()).setSubType(SUBTITLE_IOTYPE_SCTE27);
+            subtitlemanager_init(getContext()).setSubPid(pid);
+            subtitlemanager_init(getContext()).open("", (dmx_id << 16)|SUBTITLE_DEMUX_SOURCE);
+        }
         return 0;
 
     }
@@ -552,8 +540,7 @@ public class DTVSubtitleView extends View {
                 sub_params = new SubParams();
                 need_clear_canvas = true;
 
-                if (subtitlemanager_init(context) < 0) {
-                }
+                 subtitlemanager_init(context);
 
                 decoding_status = false;
                 cf = new CustomFonts(context);
@@ -907,7 +894,7 @@ public class DTVSubtitleView extends View {
 
             if (ret >= 0) {
                 mSubtitleManagerListener = new SubtitleManagerListener();
-                mSubtitleManager.setSubtitleDataListner(mSubtitleManagerListener);
+                subtitlemanager_init(getContext()).setSubtitleDataListner(mSubtitleManagerListener);
                 cc_is_started = true;
             }
         }
