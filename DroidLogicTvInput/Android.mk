@@ -19,7 +19,9 @@ LOCAL_PACKAGE_NAME := DroidLogicTvInput
 
 LOCAL_PROGUARD_ENABLED := disabled
 
-LOCAL_JAVA_LIBRARIES := droidlogic droidlogic-tv
+LOCAL_REQUIRED_MODULES := droidlogic.software.core droidlogic.tv.software.core
+LOCAL_JAVA_LIBRARIES := droidlogic.software.core droidlogic.tv.software.core
+LOCAL_USES_LIBRARIES := droidlogic.software.core droidlogic.tv.software.core
 
 LOCAL_STATIC_JAVA_LIBRARIES := \
     vendor.amlogic.hardware.tvserver-V1.0-java
@@ -30,10 +32,6 @@ LOCAL_JNI_SHARED_LIBRARIES := \
 
 LOCAL_REQUIRED_MODULES := libsubtitlemanager_jni
 LOCAL_VENDOR_MODULE := true
-
-LOCAL_USES_LIBRARIES := \
-	droidlogic \
-	droidlogic-tv
 
 include $(BUILD_PACKAGE)
 
