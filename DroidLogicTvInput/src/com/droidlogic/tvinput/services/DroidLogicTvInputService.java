@@ -82,7 +82,7 @@ public abstract class DroidLogicTvInputService extends TvInputService implements
     public Hardware mHardware;
     public TvStreamConfig[] mConfigs;
     private int mDeviceId = -1;
-    private int mSourceType = DroidLogicTvUtils.SOURCE_TYPE_OTHER;
+    private int mSourceType = -1;
     private String mChildClassName;
     private SurfaceHandler mSessionHandler;
     private static final int MSG_DO_TUNE = 0;
@@ -137,6 +137,7 @@ public abstract class DroidLogicTvInputService extends TvInputService implements
             if (mHardware != null && mConfigs != null) {
                 if (mConfigs.length == 0) {
                     mHardware.setSurface(null, null);
+                    updateAudioPortGain(DroidLogicTvUtils.SOURCE_TYPE_OTHER);
                     /*SystemControlManager mSystemControlManager = new SystemControlManager(mContext);
                     mSystemControlManager.SetCurrentSourceInputInfo(SystemControlManager.SourceInput.values()[mDeviceId]);
                     if (mSession != null) {
@@ -148,6 +149,7 @@ public abstract class DroidLogicTvInputService extends TvInputService implements
                     //createDecoder();
                     //decoderRelease();
                     mHardware.setSurface(mSurface, mConfigs[0]);
+                    updateAudioPortGain();
                 }
             } else {
                 if (DEBUG)
@@ -691,6 +693,14 @@ public abstract class DroidLogicTvInputService extends TvInputService implements
         Log.d(TAG, "decoderRelease done");
     }
 
+    private void updateAudioPortGain() {
+        updateAudioPortGain(mSourceType);
+    }
+    private void updateAudioPortGain(int deviceId) {
+        if (mSession != null) {
+            mSession.updateAudioPortGain(DroidLogicTvUtils.getSourceType(deviceId));
+        }
+    }
 
     private void doSetSurface(Surface surface, TvInputBaseSession session) {
         Log.d(TAG, "doSetSurface inputId=" + mCurrentInputId + " number=" + session.mId + " surface=" + surface);
@@ -728,6 +738,7 @@ public abstract class DroidLogicTvInputService extends TvInputService implements
             //createDecoder();
             //decoderRelease();
             mHardware.setSurface(mSurface, mConfigs[0]);
+            updateAudioPortGain();
             //completeTvViewFastSwitch();
         }
 
@@ -762,6 +773,13 @@ public abstract class DroidLogicTvInputService extends TvInputService implements
 
     private int startTvPlay() {
         Log.d(TAG, "startTvPlay mHardware=" + mHardware + " mConfigs.length=" + mConfigs.length);
+        if (mSourceType != DroidLogicTvUtils.DEVICE_ID_ADTV &&
+                mSourceType != DroidLogicTvUtils.DEVICE_ID_ATV &&
+                mSourceType != DroidLogicTvUtils.DEVICE_ID_DTV) {
+            if (mSession != null) {
+                mSession.openTvAudio(DroidLogicTvUtils.getSourceType(mSourceType));
+            }
+        }
         if (mHardware != null && mConfigs.length > 0) {
             if (mSurface == null) {
                 return ACTION_PENDING;

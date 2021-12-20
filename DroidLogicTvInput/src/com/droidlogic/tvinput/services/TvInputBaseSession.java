@@ -357,6 +357,10 @@ public abstract class TvInputBaseSession extends TvInputService.Session implemen
         }
     }
 
+    public void updateAudioPortGain(int srcType){
+        mAudioSystemCmdManager.updateAudioPortGain(srcType);
+    }
+
     public void openTvAudio (int type){
         mAudioSystemCmdManager.openTvAudio(type);
     }
