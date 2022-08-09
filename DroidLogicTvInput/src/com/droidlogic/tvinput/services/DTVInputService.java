@@ -4906,7 +4906,7 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
 
             String ratingDescription = TvMultilingualText.getTextJ(g.optString("rs"));
             int region = g.optInt("g", -1);
-            if (region > DroidContentRatingsParser.FIXED_REGION_lEVEL_2) {//region > 2, search download rrt
+            if (region > DroidContentRatingsParser.FIXED_REGION_LEVEL_2) {//region > 2, search download rrt
                 if (DEBUG) Log.d(TAG, "parse ratings rrt5 region = " + region + ", title = " + title);
                 rrt5count++;
             } else {

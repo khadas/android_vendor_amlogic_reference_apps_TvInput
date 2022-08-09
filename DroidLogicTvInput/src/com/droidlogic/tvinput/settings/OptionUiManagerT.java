@@ -913,7 +913,7 @@ public class OptionUiManagerT implements  OnFocusChangeListener, TvControlManage
         switch (event.type) {
             case TvControlManager.EVENT_SCAN_PROGRESS:
                 int isNewProgram = 0;
-                Log.d(TAG, "onEvent:"+event.precent + "%\tfreq[" + event.freq + "] lock[" + event.lock + "] strength[" + event.strength + "] quality[" + event.quality + "]");
+                Log.d(TAG, "onEvent:"+event.percent + "%\tfreq[" + event.freq + "] lock[" + event.lock + "] strength[" + event.strength + "] quality[" + event.quality + "]");
 
                 if (((event.mode & 0xff) == TvChannelParams.MODE_ANALOG) && (event.lock == 0x11)) { //trick here
                     isNewProgram = 1;
@@ -959,7 +959,7 @@ public class OptionUiManagerT implements  OnFocusChangeListener, TvControlManage
                 }
 
                 if (isLiveTvScaning) {
-                    sendMessage(PROCCESS, event.precent, null);
+                    sendMessage(PROCCESS, event.percent, null);
                     if (mLiveTvManualSearch) {
                         setLiveTvManualSearchInfo(event);
                     } else if (mLiveTvAutoSearch) {
@@ -968,7 +968,7 @@ public class OptionUiManagerT implements  OnFocusChangeListener, TvControlManage
                 }
 
                 if (((event.mode & 0xff)  == TvChannelParams.MODE_ANALOG) && ((optionTag == OPTION_MANUAL_SEARCH) || isLiveTvScaning)
-                    && event.precent == 100)
+                    && event.percent == 100)
                     stopSearch();
                 break;
 
