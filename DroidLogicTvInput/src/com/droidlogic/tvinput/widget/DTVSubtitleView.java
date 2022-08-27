@@ -211,7 +211,7 @@ public class DTVSubtitleView extends View {
         synchronized(lock) {
             if (mSubtitleManager != null) {
                 mSubtitleManager.close();
-                mSubtitleManager.destory();
+                mSubtitleManager.destroy();
                 mSubtitleManager = null;
             }
         }
@@ -265,9 +265,9 @@ public class DTVSubtitleView extends View {
         synchronized(lock) {
             if (mSubtitleManager != null) {
                 mSubtitleManagerListener = null;
-                mSubtitleManager.setSubtitleDataListner(null);
+                mSubtitleManager.setSubtitleDataListener(null);
                 mSubtitleManager.close();
-                mSubtitleManager.destory();
+                mSubtitleManager.destroy();
                 mSubtitleManager = null;
             }
         }
@@ -300,7 +300,7 @@ public class DTVSubtitleView extends View {
     {
         synchronized(lock) {
             //mSubtitleManager.open("", SUBTITLE_DEMUX_SOURCE);
-            subtitlemanager_init(getContext()).startCCchanel(caption|source<<8);
+            subtitlemanager_init(getContext()).startClosedCaptionChannel(caption|source<<8);
         }
         return 0;
     }
@@ -894,7 +894,7 @@ public class DTVSubtitleView extends View {
 
             if (ret >= 0) {
                 mSubtitleManagerListener = new SubtitleManagerListener();
-                subtitlemanager_init(getContext()).setSubtitleDataListner(mSubtitleManagerListener);
+                subtitlemanager_init(getContext()).setSubtitleDataListener(mSubtitleManagerListener);
                 cc_is_started = true;
             }
         }
