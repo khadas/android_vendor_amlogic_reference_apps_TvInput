@@ -33,7 +33,7 @@
 
     <Preference
         android:key="default_language"
-        android:title="@string/defalut_lan" >
+        android:title="@string/default_lan" >
     </Preference>
 
     <Preference

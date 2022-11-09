@@ -43,7 +43,7 @@
     <string name="audio_track">Audio Track</string>
     <string name="sound_channel">Sound Channel</string>
     <string name="channel_info">Channel Info</string>
-    <string name="defalut_lan">Default Language</string>
+    <string name="default_lan">Default Language</string>
     <string name="sub_switch">Subtitle Switch</string>
     <string name="ad_switch">Audio AD Switch</string>
     <string name="ad_mix">Audio AD Mix Level</string>
@@ -179,7 +179,7 @@
     <!-- for scan ui -->
     <string name="ut_channel_scan">TV channel tuner setup</string>
     <string name="ut_channel_scan_time">This may take several minutes</string>
-    <string name="ut_stop_channel_scan">Pause Scan</string>
+    <string name="ut_stop_channel_scan">Stop Scan</string>
     <string name="ut_manual_scan">Manual Scan</string>
     <string name="ut_auto_scan">Auto Scan</string>
     <string name="ut_nit_scan">Nit Scan</string>
@@ -196,7 +196,7 @@
     <string name="tv_search_type">Type</string>
     <string name="tv_search_option">Search Option:</string>
     <string name="tv_search_order">Order</string>
-    <string name="tv_search_atv_clolor">ATV Color System</string>
+    <string name="tv_search_atv_color">ATV Color System</string>
     <string name="tv_search_atv_sound">ATV Sound System</string>
     <string name="tv_search_order_high">High to Low</string>
     <string name="tv_search_order_low">Low to High</string>

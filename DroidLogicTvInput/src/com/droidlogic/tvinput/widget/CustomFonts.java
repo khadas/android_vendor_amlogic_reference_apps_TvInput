@@ -29,6 +29,8 @@ public class CustomFonts {
     Typeface small_capital_it_tf;
     Typeface cursive_tf;
     Typeface cursive_it_tf;
+    Typeface serif_tf;
+    Typeface serif_it_tf;
 
     CustomFonts(Context context)
     {
@@ -37,12 +39,14 @@ public class CustomFonts {
             mono_serif_it_tf = Typeface.createFromFile(new File(context.getDataDir(), "font/cinecavD_mono_it.ttf"));
             casual_tf = Typeface.createFromFile(new File(context.getDataDir(), "font/cinecavD_casual.ttf"));
             casual_it_tf = Typeface.createFromFile(new File(context.getDataDir(), "font/cinecavD_casual_it.ttf"));
-            prop_sans_tf = Typeface.createFromFile(new File(context.getDataDir(), "font/cinecavD_serif.ttf"));
-            prop_sans_it_tf = Typeface.createFromFile(new File(context.getDataDir(), "font/cinecavD_serif_it.ttf"));
+            prop_sans_tf = Typeface.createFromFile(new File(context.getDataDir(), "font/cinecavD_sans.ttf"));
+            prop_sans_it_tf = Typeface.createFromFile(new File(context.getDataDir(), "font/cinecavD_sans_it.ttf"));
             small_capital_tf = Typeface.createFromFile(new File(context.getDataDir(), "font/cinecavD_sc.ttf"));
             small_capital_it_tf = Typeface.createFromFile(new File(context.getDataDir(), "font/cinecavD_sc_it.ttf"));
             cursive_tf = Typeface.createFromFile(new File(context.getDataDir(), "font/cinecavD_script.ttf"));
             cursive_it_tf = Typeface.createFromFile(new File(context.getDataDir(), "font/cinecavD_script_it.ttf"));
+            serif_tf = Typeface.createFromFile(new File(context.getDataDir(), "font/cinecavD_serif.ttf"));
+            serif_it_tf = Typeface.createFromFile(new File(context.getDataDir(), "font/cinecavD_serif_it.ttf"));
         } catch (Exception e) {
             Log.e(TAG, "error " + e.toString());
         } finally {
@@ -54,6 +58,8 @@ public class CustomFonts {
             if (prop_sans_it_tf == null) prop_sans_it_tf = Typeface.DEFAULT;
             if (small_capital_tf == null) small_capital_tf = Typeface.DEFAULT;
             if (small_capital_it_tf == null) small_capital_it_tf = Typeface.DEFAULT;
+            if (serif_tf == null) serif_tf = Typeface.DEFAULT;
+            if (serif_it_tf == null) serif_it_tf = Typeface.DEFAULT;
         }
     }
 }

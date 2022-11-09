@@ -13,6 +13,8 @@ LOCAL_SRC_FILES := $(call all-java-files-under, src)
 
 LOCAL_SRC_FILES += src/com/droidlogic/tvinput/services/ITvScanService.aidl
 LOCAL_SRC_FILES += src/com/droidlogic/tvinput/services/IUpdateUiCallbackListener.aidl
+LOCAL_SRC_FILES += src/com/android/tv/droidlogic/tvtest/ITvTestService.aidl
+LOCAL_SRC_FILES += src/com/android/tv/droidlogic/tvtest/ITvTestCallbackListener.aidl
 
 LOCAL_CERTIFICATE := platform
 LOCAL_PACKAGE_NAME := DroidLogicTvInput
@@ -24,7 +26,8 @@ LOCAL_JAVA_LIBRARIES := droidlogic.software.core droidlogic.tv.software.core
 LOCAL_USES_LIBRARIES := droidlogic.software.core droidlogic.tv.software.core
 
 LOCAL_STATIC_JAVA_LIBRARIES := \
-    vendor.amlogic.hardware.tvserver-V1.0-java
+    vendor.amlogic.hardware.tvserver-V1.0-java \
+    androidx-constraintlayout_constraintlayout
 
 LOCAL_JNI_SHARED_LIBRARIES := \
     libjnidtvepgscanner \

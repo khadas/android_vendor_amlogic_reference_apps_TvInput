@@ -1015,7 +1015,7 @@ static int sdt_get_services(dvbpsi_sdt_t *sdts, EPGChannelData *pch_cur) {
 
                 if (pch_cur->mServiceId == pservice->id) {
                     log_info("SDT Update: Program name changed: %s -> %s", old_name, name);
-                    memcpy(pch_cur->name, name, sizeof(pch_cur->name));
+                    memcpy(pch_cur->name, name, sizeof(name));
                 }
             }
         }
@@ -1458,7 +1458,7 @@ static void epg_destroy(JNIEnv* env, jobject obj)
         AM_EVT_Unsubscribe((long)data->handle,AM_EPG_EVT_UPDATE_PROGRAM_NAME,epg_evt_callback,NULL);
         AM_EVT_Unsubscribe((long)data->handle,AM_EPG_EVT_UPDATE_TS,epg_evt_callback,NULL);
         AM_EPG_Destroy(data->handle);
-        log_info("EPGScanner on demux%d sucessfully destroyed", data->dmx_id);
+        log_info("EPGScanner on demux%d successfully destroyed", data->dmx_id);
         log_info("Closing demux%d ...", data->dmx_id);
         AM_DMX_Close(data->dmx_id);
         if (data->obj)
@@ -1527,10 +1527,12 @@ static int get_channel_data(JNIEnv* env, jobject obj, jobject channel, EPGChanne
         for (i=0; i<pch->mAudioInfo.audio_count; i++) {
             jstring jstr = (*env)->GetObjectArrayElement(env, alangs, i);
             const char *str = (char *)(*env)->GetStringUTFChars(env, jstr, 0);
+            int nLen = strlen(str) < sizeof(pch->mAudioInfo.audios[i].lang)-1 ? strlen(str) : sizeof(pch->mAudioInfo.audios[i].lang)-1;
             pch->mAudioInfo.audios[i].pid = paids[i];
             pch->mAudioInfo.audios[i].fmt = pafmts[i];
             pch->mAudioInfo.audios[i].audio_exten = paexts[i];
-            strncpy(pch->mAudioInfo.audios[i].lang, str, 10);
+            strncpy(pch->mAudioInfo.audios[i].lang,str,nLen);
+            pch->mAudioInfo.audios[i].lang[nLen]='\0';
             (*env)->ReleaseStringUTFChars(env, jstr, str);
             (*env)->DeleteLocalRef(env, jstr);
         }

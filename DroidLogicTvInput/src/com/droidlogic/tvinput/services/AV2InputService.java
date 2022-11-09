@@ -15,6 +15,7 @@ import org.xmlpull.v1.XmlPullParserException;
 
 import com.droidlogic.app.tv.TvInSignalInfo;
 import com.droidlogic.tvinput.Utils;
+import com.droidlogic.tvinput.customer.CustomerOps;
 
 import com.droidlogic.app.tv.DroidLogicTvUtils;
 import com.droidlogic.tvinput.R;
@@ -316,7 +317,7 @@ public class AV2InputService extends DroidLogicTvInputService {
             }
 
             if (i >= supportedRegions.length) {
-                Log.d(TAG, "Teletext defaut region " + ttxRegionName +
+                Log.d(TAG, "Teletext default region " + ttxRegionName +
                         " not found, using 'English' as default!");
                 i = 0;
             }
@@ -346,8 +347,8 @@ public class AV2InputService extends DroidLogicTvInputService {
                 int pgno;
                 pgno = (id1 == 0) ? 800 : id1 * 100;
                 pgno += (id2 & 15) + ((id2 >> 4) & 15) * 10 + ((id2 >> 8) & 15) * 100;
-                DTVSubtitleView.ATVTTParams params =
-                        new DTVSubtitleView.ATVTTParams(pgno, 0x3F7F, getTeletextRegionID("English"));
+                DTVSubtitleView.AtvTeleTextParams params =
+                        new DTVSubtitleView.AtvTeleTextParams(pgno, 0x3F7F, getTeletextRegionID("English"), getSessionId(), getDeviceId());
                 mSubtitleView.setSubParams(params);
             }
         }
@@ -564,7 +565,10 @@ public class AV2InputService extends DroidLogicTvInputService {
 
         protected TvContentRating[] getContentRatingsOfCurrentProgram(ChannelInfo channelInfo) {
             Log.d(TAG, "getContentRatingsOfCurrentProgram:"+channelInfo);
-            return mATVContentRatings;
+            TvContentRating[] ratings = mATVContentRatings;
+            if (ratings == null || ratings.length == 0)
+                ratings = CustomerOps.getInstance(mContext).getCustomerNoneRatings();
+            return ratings;
         }
 
         protected ChannelInfo.Subtitle parseSubtitleIdString(String subtitleId) {
@@ -630,6 +634,9 @@ public class AV2InputService extends DroidLogicTvInputService {
                 value = mSystemControlManager.readSysFs(node);
             }
             return value;
+        }
+
+        public void onStatus(int status) {
         }
 
         public void onWriteSysFs(String node, String value) {

@@ -46,7 +46,7 @@
     <string name="audio_track">音轨</string>
     <string name="sound_channel">声道</string>
     <string name="channel_info">频道信息</string>
-    <string name="defalut_lan">默认语言</string>
+    <string name="default_lan">默认语言</string>
     <string name="sub_switch">字幕开关</string>
     <string name="ad_switch">声音AD开关</string>
     <string name="ad_mix">声音AD混合度</string>
@@ -160,7 +160,7 @@
     <!-- for scan ui -->
     <string name="ut_channel_scan">电视节目搜台设置</string>
     <string name="ut_channel_scan_time">该过程将需要一段时间</string>
-    <string name="ut_stop_channel_scan">暂停搜索</string>
+    <string name="ut_stop_channel_scan">停止搜索</string>
     <string name="ut_manual_scan">手动搜索</string>
     <string name="ut_auto_scan">自动搜索</string>
     <string name="ut_set_frequency_start">频道</string>
@@ -198,7 +198,7 @@
     <string name="tv_search_type_isdb_t">ISDB-T</string>
     <string name="tv_search_option">搜台选项:</string>
     <string name="tv_search_order">频率顺序</string>
-    <string name="tv_search_atv_clolor">色彩制式</string>
+    <string name="tv_search_atv_color">色彩制式</string>
     <string name="tv_search_atv_sound">伴音制式</string>
     <string name="tv_search_order_high">由高到低</string>
     <string name="tv_search_order_low">由低到高</string>

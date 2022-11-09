@@ -113,7 +113,7 @@ public abstract class TvInputBaseSession extends TvInputService.Session implemen
 
         Log.d(TAG, "TvInputBaseSession, inputId " + inputId + " deviceId " + deviceId);
         mSystemControlManager = SystemControlManager.getInstance();
-        mSystemControlEvent = SystemControlEvent.getInstance(context);
+        mSystemControlEvent = SystemControlEvent.getInstance(null);
         mSystemControlManager.setListener(mSystemControlEvent);
         mSystemControlEvent.setHdrInfoListener(this);
         setSessionStateMachine(SESSION_CTEATED);
@@ -144,6 +144,8 @@ public abstract class TvInputBaseSession extends TvInputService.Session implemen
     }
 
     public void sendSessionMessage(int cmd) {
+        if (mSessionHandler == null)
+            return;
         Message msg = mSessionHandler.obtainMessage(cmd);
         mSessionHandler.removeMessages(msg.what);
         msg.sendToTarget();
@@ -152,6 +154,9 @@ public abstract class TvInputBaseSession extends TvInputService.Session implemen
         Log.d(TAG, "doRelease,input: " + mInputId + " " + this);
 
         mContext.unregisterReceiver(mBroadcastReceiver);
+        mSystemControlEvent.setHdrInfoListener(null);
+        mSessionHandler.removeCallbacksAndMessages(null);
+//        mSessionHandler = null;
 
         if (setSessionStateMachine(SESSION_RELEASED) == 0) {
             ((DroidLogicTvInputService)mContext).stopTvPlay(mId, true);
@@ -210,7 +215,7 @@ public abstract class TvInputBaseSession extends TvInputService.Session implemen
         if (DEBUG)
             Log.d(TAG, "onSetStreamVolume volume = " + volume);
         //this function used for parental control, so HDMI source don't need it.
-        if ((mDeviceId >= DroidLogicTvUtils.DEVICE_ID_HDMI1 && mDeviceId <= DroidLogicTvUtils.DEVICE_ID_HDMI4 && volume == 0.0)) {
+        if ((mDeviceId >= DroidLogicTvUtils.DEVICE_ID_HDMI1 && mDeviceId <= DroidLogicTvUtils.DEVICE_ID_HDMI4) && volume == 0.0) {
             Log.d(TAG, "onSetStreamVolume: hdmi source.");
             return;
         }
@@ -232,7 +237,6 @@ public abstract class TvInputBaseSession extends TvInputService.Session implemen
         if (mSessionHandler == null)
             return;
         Message msg = mSessionHandler.obtainMessage(MSG_DO_PRI_CMD);
-        mSessionHandler.removeMessages(msg.what);
         msg.setData(data);
         msg.obj = action;
         msg.sendToTarget();
@@ -355,10 +359,6 @@ public abstract class TvInputBaseSession extends TvInputService.Session implemen
         } else {
             handleAdtvAudioEvent(AudioSystemCmdManager.AUDIO_SERVICE_CMD_SET_MUTE, 0, 0);
         }
-    }
-
-    public void updateAudioPortGain(int srcType){
-        mAudioSystemCmdManager.updateAudioPortGain(srcType);
     }
 
     public void openTvAudio (int type){
@@ -701,7 +701,7 @@ public abstract class TvInputBaseSession extends TvInputService.Session implemen
         if (arg2 == 1) {
             if (mOverlayView != null) {
                 if (!mOverlayView.isDoblyVisionVisible()) {
-                    mOverlayView.setDoblyVisionVisibility(true);
+                    //mOverlayView.setDoblyVisionVisibility(true);
                 }
             }
         } else if (arg2 == 2) {

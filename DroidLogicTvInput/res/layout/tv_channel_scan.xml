@@ -1,5 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!--
+<?xml version="1.0" encoding="utf-8"?><!--
   ~ Copyright (C) 2015 The Android Open Source Project
   ~
   ~ Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,50 +14,37 @@
   ~ limitations under the License.
   -->
 
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/progress_holder"
-    android:layout_width="fill_parent"
-    android:layout_height="fill_parent"
-    android:gravity="center_vertical|center_horizontal"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
     android:animateLayoutChanges="true"
     android:background="@color/common_tv_background"
-    android:keepScreenOn="true"
-    android:weightSum="5" >
+    android:keepScreenOn="true">
 
-    <LinearLayout
+    <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="wrap_content"
-        android:layout_height="fill_parent"
-        android:gravity="center_vertical|center_horizontal"
-        android:orientation="vertical"
-        android:layout_weight="1" >
-
-        <ImageView
-            android:id="@+id/tune_icon"
-            android:layout_width="@dimen/ut_scan_icon_width"
-            android:layout_height="wrap_content"
-            android:layout_centerVertical="true"
-            android:src="@drawable/tv_antenna" />
-
-    </LinearLayout>
-
-    <LinearLayout
-        android:layout_width="wrap_content"
-        android:layout_height="fill_parent"
-        android:gravity="left|center_vertical"
-        android:orientation="vertical"
-        android:layout_weight="3" >
+        android:layout_height="wrap_content"
+        android:layout_marginStart="130dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
 
         <TextView
             android:id="@+id/tv_tune_title"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginLeft="@dimen/ut_scan_icon_margin_right"
             android:ellipsize="end"
             android:fontFamily="sans-serif-light"
             android:maxLines="@integer/ut_scan_title_max_lines"
+            android:text="@string/ut_channel_scan"
             android:textColor="@color/ut_scan_title_text"
             android:textSize="@dimen/ut_scan_title_text_size"
-            android:text="@string/ut_channel_scan" />
+            android:textStyle="bold"
+            app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
 
         <ProgressBar
             android:id="@+id/tune_progress"
@@ -66,258 +52,270 @@
             android:layout_width="@dimen/ut_scan_progress_width"
             android:layout_height="@dimen/ut_scan_progress_height"
             android:layout_marginTop="@dimen/ut_scan_progress_margin_top"
-            android:layout_marginLeft="@dimen/ut_scan_icon_margin_right"
-            android:progressDrawable="@drawable/tv_scan_progress" />
+            android:progressDrawable="@drawable/tv_scan_progress"
+            app:layout_constraintLeft_toLeftOf="@id/tv_tune_title"
+            app:layout_constraintTop_toBottomOf="@+id/tv_tune_title" />
 
         <TextView
             android:id="@+id/tune_description"
-            android:accessibilityLiveRegion="polite"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="@dimen/ut_scan_description_margin_top"
-            android:layout_marginLeft="@dimen/ut_scan_icon_margin_right"
+            android:accessibilityLiveRegion="polite"
             android:fontFamily="sans-serif"
+            android:text="@string/ut_channel_scan_time"
             android:textColor="@color/ut_scan_description_text"
             android:textSize="@dimen/ut_scan_description_text_size"
-            android:text="@string/ut_channel_scan_time" />
+            app:layout_constraintLeft_toLeftOf="@id/tv_tune_title"
+            app:layout_constraintTop_toBottomOf="@+id/tune_progress" />
 
-       <TextView
+        <LinearLayout
+            android:id="@+id/channel_holder"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="15dp"
+            android:animateLayoutChanges="true"
+            android:orientation="horizontal"
+            android:visibility="gone"
+            app:layout_constraintLeft_toLeftOf="@id/tune_description"
+            app:layout_constraintTop_toBottomOf="@id/tune_description"
+            tools:visibility="visible">
+
+            <TextView
+                android:id="@+id/tv_scan_info"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:maxLines="1"
+                android:textColor="@color/ut_scan_description_text"
+                android:textSize="18sp"
+                tools:text="Searching (41%)" />
+
+        </LinearLayout>
+
+        <TextView
             android:id="@+id/mode_option"
-            android:accessibilityLiveRegion="polite"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="@dimen/ut_scan_description_margin_top"
-            android:layout_marginLeft="@dimen/ut_scan_icon_margin_right"
+            android:accessibilityLiveRegion="polite"
             android:fontFamily="sans-serif"
-            android:textColor="@color/ut_scan_description_text"
+            android:text="@string/tv_mode_option"
+            android:textColor="#FFFFFF"
             android:textSize="@dimen/ut_scan_button_text_size"
-            android:text="@string/tv_mode_option" />
+            android:textStyle="bold"
+            app:layout_constraintLeft_toLeftOf="@id/tv_tune_title"
+            app:layout_constraintTop_toBottomOf="@id/channel_holder" />
 
         <LinearLayout
+            android:id="@+id/mode_option_content"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content" >
+            android:layout_height="wrap_content"
+            android:paddingTop="@dimen/px_30.0"
+            app:layout_constraintLeft_toLeftOf="@id/tv_tune_title"
+            app:layout_constraintTop_toBottomOf="@id/mode_option">
 
             <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:orientation="vertical" >
+                android:orientation="vertical">
 
                 <TextView
                     android:id="@+id/country"
-                    android:accessibilityLiveRegion="polite"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="@dimen/ut_scan_button_margin_top"
-                    android:layout_marginLeft="@dimen/ut_scan_icon_margin_right"
-                    android:paddingLeft="@dimen/ut_scan_button_padding"
+                    android:accessibilityLiveRegion="polite"
                     android:fontFamily="sans-serif"
+                    android:text="@string/tv_country"
                     android:textColor="@color/ut_scan_description_text"
-                    android:textSize="@dimen/ut_scan_description_text_size"
-                    android:text="@string/tv_country" />
+                    android:textSize="@dimen/ut_scan_description_text_size" />
 
                 <Spinner
                     android:id="@+id/country_spinner"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="@dimen/ut_scan_button_margin_top"
-                    android:layout_marginLeft="@dimen/ut_scan_icon_margin_right"
-                    android:paddingLeft="@dimen/ut_scan_button_padding"
+                    android:layout_marginTop="@dimen/px_15.0"
                     android:fontFamily="sans-serif"
                     android:textColor="@color/ut_scan_description_text"
-                    android:textSize="@dimen/ut_scan_description_text_size"
-                    android:popupBackground="@color/side_panel_header_droid_background" />
+                    android:textSize="@dimen/ut_scan_description_text_size" />
 
             </LinearLayout>
 
             <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:orientation="vertical" >
+                android:orientation="vertical">
 
                 <TextView
                     android:id="@+id/search_mode"
-                    android:accessibilityLiveRegion="polite"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="@dimen/ut_scan_button_margin_top"
-                    android:layout_marginLeft="@dimen/ut_scan_icon_margin_right"
-                    android:paddingLeft="@dimen/ut_scan_button_padding"
+                    android:accessibilityLiveRegion="polite"
                     android:fontFamily="sans-serif"
+                    android:text="@string/tv_search_mode"
                     android:textColor="@color/ut_scan_description_text"
-                    android:textSize="@dimen/ut_scan_description_text_size"
-                    android:text="@string/tv_search_mode" />
+                    android:textSize="@dimen/ut_scan_description_text_size" />
+
                 <Spinner
                     android:id="@+id/search_mode_spinner"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="@dimen/ut_scan_button_margin_top"
-                    android:layout_marginLeft="@dimen/ut_scan_icon_margin_right"
-                    android:paddingLeft="@dimen/ut_scan_button_padding"
+                    android:layout_marginTop="@dimen/px_15.0"
                     android:fontFamily="sans-serif"
                     android:textColor="@color/ut_scan_description_text"
-                    android:textSize="@dimen/ut_scan_description_text_size"
-                    android:popupBackground="@color/side_panel_header_droid_background" />
+                    android:textSize="@dimen/ut_scan_description_text_size" />
 
             </LinearLayout>
 
             <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:orientation="vertical" >
+                android:orientation="vertical">
 
                 <TextView
                     android:id="@+id/search_type"
-                    android:accessibilityLiveRegion="polite"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="@dimen/ut_scan_button_margin_top"
-                    android:layout_marginLeft="@dimen/ut_scan_icon_margin_right"
-                    android:paddingLeft="@dimen/ut_scan_button_padding"
+                    android:accessibilityLiveRegion="polite"
                     android:fontFamily="sans-serif"
+                    android:text="@string/tv_search_type"
                     android:textColor="@color/ut_scan_description_text"
-                    android:textSize="@dimen/ut_scan_description_text_size"
-                    android:text="@string/tv_search_type" />
+                    android:textSize="@dimen/ut_scan_description_text_size" />
+
                 <Spinner
                     android:id="@+id/search_type_spinner"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="@dimen/ut_scan_button_margin_top"
-                    android:layout_marginLeft="@dimen/ut_scan_icon_margin_right"
-                    android:paddingLeft="@dimen/ut_scan_button_padding"
+                    android:layout_marginTop="@dimen/px_15.0"
                     android:fontFamily="sans-serif"
                     android:textColor="@color/ut_scan_description_text"
-                    android:textSize="@dimen/ut_scan_description_text_size"
-                    android:popupBackground="@color/side_panel_header_droid_background" />
+                    android:textSize="@dimen/ut_scan_description_text_size" />
 
             </LinearLayout>
         </LinearLayout>
 
         <TextView
             android:id="@+id/search_option"
-            android:accessibilityLiveRegion="polite"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="@dimen/ut_scan_description_margin_top"
-            android:layout_marginLeft="@dimen/ut_scan_icon_margin_right"
+            android:accessibilityLiveRegion="polite"
             android:fontFamily="sans-serif"
-            android:textColor="@color/ut_scan_description_text"
+            android:text="@string/tv_search_option"
+            android:textColor="#FFFFFF"
             android:textSize="@dimen/ut_scan_button_text_size"
-            android:text="@string/tv_search_option" />
+            android:textStyle="bold"
+            app:layout_constraintLeft_toLeftOf="@id/tv_tune_title"
+            app:layout_constraintTop_toBottomOf="@id/mode_option_content" />
 
         <LinearLayout
+            android:id="@+id/search_option_content"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content" >
+            android:layout_height="wrap_content"
+            android:paddingTop="@dimen/px_30.0"
+            app:layout_constraintLeft_toLeftOf="@id/tv_tune_title"
+            app:layout_constraintTop_toBottomOf="@id/search_option">
 
             <LinearLayout
                 android:id="@+id/channel_input_type_container"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:orientation="vertical" >
+                android:orientation="vertical">
 
                 <TextView
                     android:id="@+id/channel"
-                    android:accessibilityLiveRegion="polite"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="@dimen/ut_scan_description_margin_top"
-                    android:layout_marginLeft="@dimen/ut_scan_icon_margin_right"
-                    android:paddingLeft="@dimen/ut_scan_button_padding"
+                    android:accessibilityLiveRegion="polite"
                     android:fontFamily="sans-serif"
+                    android:text="@string/tv_search_channel"
                     android:textColor="@color/ut_scan_description_text"
-                    android:textSize="@dimen/ut_scan_description_text_size"
-                    android:text="@string/tv_search_channel" />
+                    android:textSize="@dimen/ut_scan_description_text_size" />
 
                 <LinearLayout
                     android:id="@+id/channel_input_from_container"
                     android:layout_width="wrap_content"
-                    android:layout_height="wrap_content" >
+                    android:layout_height="wrap_content">
+
                     <TextView
                         android:id="@+id/channel_from"
-                        android:accessibilityLiveRegion="polite"
-                        android:layout_width="wrap_content"
+                        android:layout_width="@dimen/px_80.0"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="@dimen/ut_scan_button_margin_top"
-                        android:layout_marginLeft="@dimen/ut_scan_icon_margin_right"
-                        android:paddingLeft="@dimen/ut_scan_button_padding"
+                        android:accessibilityLiveRegion="polite"
                         android:fontFamily="sans-serif"
-                        android:textColor="@color/black_background"
-                        android:textSize="@dimen/ut_scan_description_text_size"
-                        android:text="@string/tv_search_channel_from" />
+                        android:text="@string/tv_search_channel_from"
+                        android:textColor="@color/ut_scan_description_text"
+                        android:textSize="@dimen/ut_scan_description_text_size" />
 
                     <EditText
                         android:id="@+id/input_channel_from"
-                        android:accessibilityLiveRegion="polite"
                         android:layout_width="@dimen/ut_scan_channel_edit_text_width"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="@dimen/ut_scan_button_margin_top"
+                        android:accessibilityLiveRegion="polite"
                         android:fontFamily="sans-serif"
-                        android:textColor="@color/ut_scan_description_text"
-                        android:textSize="@dimen/ut_scan_description_text_size"
-                        android:inputType="number"
+                        android:hint=""
                         android:imeOptions="actionDone"
-                        android:hint=""/>
+                        android:inputType="number"
+                        android:textColor="@color/ut_scan_description_text"
+                        android:textSize="@dimen/ut_scan_description_text_size" />
                 </LinearLayout>
 
                 <LinearLayout
                     android:id="@+id/channel_input_to_container"
                     android:layout_width="wrap_content"
-                    android:layout_height="wrap_content" >
+                    android:layout_height="wrap_content">
+
                     <TextView
                         android:id="@+id/channel_to"
-                        android:accessibilityLiveRegion="polite"
-                        android:layout_width="wrap_content"
+                        android:layout_width="@dimen/px_80.0"
                         android:layout_height="wrap_content"
-                        android:layout_marginLeft="@dimen/ut_scan_icon_margin_right"
-                        android:paddingLeft="@dimen/ut_scan_button_padding"
+                        android:accessibilityLiveRegion="polite"
                         android:fontFamily="sans-serif"
-                        android:textColor="@color/black_background"
-                        android:textSize="@dimen/ut_scan_description_text_size"
-                        android:text="@string/tv_search_channel_to" />
+                        android:text="@string/tv_search_channel_to"
+                        android:textColor="@color/ut_scan_description_text"
+                        android:textSize="@dimen/ut_scan_description_text_size" />
 
                     <EditText
                         android:id="@+id/input_channel_to"
-                        android:accessibilityLiveRegion="polite"
                         android:layout_width="@dimen/ut_scan_channel_edit_text_width"
                         android:layout_height="wrap_content"
+                        android:accessibilityLiveRegion="polite"
                         android:fontFamily="sans-serif"
-                        android:textColor="@color/ut_scan_description_text"
-                        android:textSize="@dimen/ut_scan_description_text_size"
-                        android:inputType="number"
+                        android:hint=""
                         android:imeOptions="actionDone"
-                        android:hint=""/>
+                        android:inputType="number"
+                        android:textColor="@color/ut_scan_description_text"
+                        android:textSize="@dimen/ut_scan_description_text_size" />
                 </LinearLayout>
 
                 <LinearLayout
                     android:id="@+id/dtmb_select_frequency"
                     android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:paddingLeft="@dimen/ut_scan_icon_margin_right"
-                    android:paddingTop="@dimen/ut_scan_button_margin_top" >
+                    android:layout_height="wrap_content">
 
                     <Button
                         android:id="@+id/button_left"
-                        android:accessibilityLiveRegion="polite"
                         android:layout_width="@dimen/dtmb_select_frequency_array_width"
                         android:layout_height="@dimen/dtmb_select_frequency_array_height"
+                        android:accessibilityLiveRegion="polite"
                         android:background="@drawable/dtmb_arrow_drop_down_selector"
                         android:rotation="90" />
 
                     <TextView
                         android:id="@+id/textview_display"
-                        android:accessibilityLiveRegion="polite"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:accessibilityLiveRegion="polite"
                         android:fontFamily="sans-serif"
-                        android:textColor="@color/ut_scan_description_text"
-                        android:textSize="@dimen/ut_scan_description_text_size"
                         android:paddingLeft="@dimen/dtmb_select_frequency_array_padding"
-                        android:paddingRight="@dimen/dtmb_select_frequency_array_padding" />
+                        android:paddingRight="@dimen/dtmb_select_frequency_array_padding"
+                        android:textColor="@color/ut_scan_description_text"
+                        android:textSize="@dimen/ut_scan_description_text_size" />
 
                     <Button
                         android:id="@+id/button_right"
-                        android:accessibilityLiveRegion="polite"
                         android:layout_width="@dimen/dtmb_select_frequency_array_width"
                         android:layout_height="@dimen/dtmb_select_frequency_array_height"
+                        android:accessibilityLiveRegion="polite"
                         android:background="@drawable/dtmb_arrow_drop_down_selector"
                         android:rotation="-90" />
                 </LinearLayout>
@@ -328,200 +326,171 @@
                 android:id="@+id/order_container"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:orientation="vertical" >
+                android:orientation="vertical">
 
                 <TextView
                     android:id="@+id/order"
-                    android:accessibilityLiveRegion="polite"
                     android:layout_width="@dimen/ut_scan_channel_edit_text_width"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="@dimen/ut_scan_description_margin_top"
-                    android:layout_marginLeft="@dimen/ut_scan_icon_margin_right"
-                    android:paddingLeft="@dimen/ut_scan_button_padding"
+                    android:accessibilityLiveRegion="polite"
                     android:fontFamily="sans-serif"
+                    android:text="@string/tv_search_order"
                     android:textColor="@color/ut_scan_description_text"
-                    android:textSize="@dimen/ut_scan_description_text_size"
-                    android:text="@string/tv_search_order" />
+                    android:textSize="@dimen/ut_scan_description_text_size" />
+
                 <Spinner
                     android:id="@+id/order_spinner"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="@dimen/ut_scan_button_margin_top"
-                    android:layout_marginLeft="@dimen/ut_scan_icon_margin_right"
-                    android:paddingLeft="@dimen/ut_scan_button_padding"
+                    android:layout_marginTop="@dimen/px_15.0"
                     android:fontFamily="sans-serif"
                     android:textColor="@color/ut_scan_description_text"
-                    android:textSize="@dimen/ut_scan_description_text_size"
-                    android:popupBackground="@color/side_panel_header_droid_background" />
+                    android:textSize="@dimen/ut_scan_description_text_size" />
             </LinearLayout>
 
             <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:orientation="vertical" >
+                android:orientation="vertical">
 
                 <TextView
                     android:id="@+id/atv_color"
-                    android:accessibilityLiveRegion="polite"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="@dimen/ut_scan_description_margin_top"
-                    android:layout_marginLeft="@dimen/ut_scan_icon_margin_right"
-                    android:paddingLeft="@dimen/ut_scan_button_padding"
+                    android:accessibilityLiveRegion="polite"
                     android:fontFamily="sans-serif"
+                    android:text="@string/tv_search_atv_color"
                     android:textColor="@color/ut_scan_description_text"
-                    android:textSize="@dimen/ut_scan_description_text_size"
-                    android:text="@string/tv_search_atv_clolor" />
+                    android:textSize="@dimen/ut_scan_description_text_size" />
+
                 <Spinner
                     android:id="@+id/atv_color_spinner"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="@dimen/ut_scan_button_margin_top"
-                    android:layout_marginLeft="@dimen/ut_scan_icon_margin_right"
-                    android:paddingLeft="@dimen/ut_scan_button_padding"
+                    android:layout_marginTop="@dimen/px_15.0"
                     android:fontFamily="sans-serif"
                     android:textColor="@color/ut_scan_description_text"
-                    android:textSize="@dimen/ut_scan_description_text_size"
-                    android:popupBackground="@color/side_panel_header_droid_background" />
+                    android:textSize="@dimen/ut_scan_description_text_size" />
 
             </LinearLayout>
 
             <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:orientation="vertical" >
+                android:orientation="vertical">
 
                 <TextView
                     android:id="@+id/atv_sound"
-                    android:accessibilityLiveRegion="polite"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="@dimen/ut_scan_description_margin_top"
-                    android:layout_marginLeft="@dimen/ut_scan_icon_margin_right"
-                    android:paddingLeft="@dimen/ut_scan_button_padding"
+                    android:accessibilityLiveRegion="polite"
                     android:fontFamily="sans-serif"
+                    android:text="@string/tv_search_atv_sound"
                     android:textColor="@color/ut_scan_description_text"
-                    android:textSize="@dimen/ut_scan_description_text_size"
-                    android:text="@string/tv_search_atv_sound" />
+                    android:textSize="@dimen/ut_scan_description_text_size" />
+
                 <Spinner
                     android:id="@+id/atv_sound_spinner"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="@dimen/ut_scan_button_margin_top"
-                    android:layout_marginLeft="@dimen/ut_scan_icon_margin_right"
-                    android:paddingLeft="@dimen/ut_scan_button_padding"
+                    android:layout_marginTop="@dimen/px_15.0"
                     android:fontFamily="sans-serif"
                     android:textColor="@color/ut_scan_description_text"
-                    android:textSize="@dimen/ut_scan_description_text_size"
-                    android:popupBackground="@color/side_panel_header_droid_background" />
+                    android:textSize="@dimen/ut_scan_description_text_size" />
 
             </LinearLayout>
 
             <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:orientation="vertical" >
+                android:orientation="vertical">
 
                 <TextView
                     android:id="@+id/dvbc_qam_mode"
-                    android:accessibilityLiveRegion="polite"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="@dimen/ut_scan_description_margin_top"
-                    android:layout_marginLeft="@dimen/ut_scan_icon_margin_right"
-                    android:paddingLeft="@dimen/ut_scan_button_padding"
+                    android:accessibilityLiveRegion="polite"
                     android:fontFamily="sans-serif"
+                    android:text="@string/ut_tune_dvb_c_qam"
                     android:textColor="@color/ut_scan_description_text"
-                    android:textSize="@dimen/ut_scan_description_text_size"
-                    android:text="@string/ut_tune_dvb_c_qam" />
+                    android:textSize="@dimen/ut_scan_description_text_size" />
+
                 <Spinner
                     android:id="@+id/dvbc_qam_mode_spinner"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="@dimen/ut_scan_button_margin_top"
-                    android:layout_marginLeft="@dimen/ut_scan_icon_margin_right"
-                    android:paddingLeft="@dimen/ut_scan_button_padding"
+                    android:layout_marginTop="@dimen/px_15.0"
                     android:fontFamily="sans-serif"
                     android:textColor="@color/ut_scan_description_text"
-                    android:textSize="@dimen/ut_scan_description_text_size"
-                    android:popupBackground="@color/side_panel_header_droid_background" />
+                    android:textSize="@dimen/ut_scan_description_text_size" />
 
             </LinearLayout>
 
             <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:orientation="vertical" >
+                android:orientation="vertical">
 
                 <TextView
                     android:id="@+id/dvbc_symbol"
-                    android:accessibilityLiveRegion="polite"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="@dimen/ut_scan_description_margin_top"
-                    android:layout_marginLeft="@dimen/ut_scan_icon_margin_right"
+                    android:accessibilityLiveRegion="polite"
                     android:fontFamily="sans-serif"
+                    android:text="@string/ut_tune_dvb_c_symbol"
                     android:textColor="@color/ut_scan_description_text"
-                    android:textSize="@dimen/ut_scan_description_text_size"
-                    android:text="@string/ut_tune_dvb_c_symbol" />
+                    android:textSize="@dimen/ut_scan_description_text_size" />
+
                 <EditText
                     android:id="@+id/dvbc_symbol_in"
-                    android:accessibilityLiveRegion="polite"
                     android:layout_width="@dimen/ut_scan_channel_edit_text_width"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="@dimen/ut_scan_button_margin_top"
-                    android:layout_marginLeft="@dimen/ut_scan_icon_margin_right"
+                    android:accessibilityLiveRegion="polite"
                     android:fontFamily="sans-serif"
+                    android:hint=""
                     android:textColor="@color/ut_scan_description_text"
-                    android:textSize="@dimen/ut_scan_description_text_size"
-                    android:hint=""/>
+                    android:textSize="@dimen/ut_scan_description_text_size" />
 
             </LinearLayout>
 
         </LinearLayout>
 
+        <View
+            android:layout_width="0dp"
+            android:layout_height="1dp"
+            android:layout_marginTop="8dp"
+            android:background="@color/ut_scan_progress_background"
+            app:layout_constraintLeft_toLeftOf="@id/search_option_content"
+            app:layout_constraintRight_toRightOf="@id/search_option_content"
+            app:layout_constraintTop_toBottomOf="@id/search_option_content" />
+
         <Button
             android:id="@+id/search_channel"
             android:layout_width="wrap_content"
             android:layout_height="@dimen/ut_scan_button_height"
-            android:layout_marginTop="@dimen/ut_scan_button_margin_top"
-            android:layout_marginLeft="@dimen/ut_scan_icon_margin_right"
-            android:paddingLeft="@dimen/ut_scan_button_padding"
-            android:paddingRight="@dimen/ut_scan_button_padding"
-            android:textAllCaps="false"
+            android:layout_marginTop="@dimen/px_40.0"
+            android:background="@drawable/selector_button"
+            android:elevation="10dp"
             android:focusable="true"
             android:fontFamily="sans-serif-condensed"
+            android:paddingLeft="@dimen/ut_scan_button_padding"
+            android:paddingRight="@dimen/ut_scan_button_padding"
+            android:text="@string/tv_search"
+            android:textAllCaps="false"
             android:textColor="@color/ut_scan_button_text"
             android:textSize="@dimen/ut_scan_button_text_size"
-            android:text="@string/tv_search"
-            style="?android:attr/borderlessButtonStyle" />
+            app:layout_constraintLeft_toLeftOf="@id/tv_tune_title"
+            app:layout_constraintTop_toBottomOf="@id/search_option_content" />
 
-    </LinearLayout>
+    </androidx.constraintlayout.widget.ConstraintLayout>
 
-    <LinearLayout
-        android:id="@+id/channel_holder"
+    <ImageView
         android:layout_width="wrap_content"
-        android:layout_height="fill_parent"
-        android:gravity="center_vertical|center_horizontal"
-        android:orientation="vertical"
-        android:focusable="false"
-        android:descendantFocusability="blocksDescendants"
-        android:animateLayoutChanges="true"
-        android:layout_weight="1"
-        android:visibility="gone" >
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="@dimen/px_320.0"
+        android:src="@drawable/tv_antenna"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
 
-        <ListView
-            android:id="@+id/channel_list"
-            android:layout_width="@dimen/ut_scan_channellist_width"
-            android:layout_height="match_parent"
-            android:layout_marginTop="@dimen/ut_scan_channellist_padding_top"
-            android:layout_marginBottom="@dimen/ut_scan_channellist_padding_bottom"
-            android:paddingStart="@dimen/ut_scan_channellist_padding_start"
-            android:divider="@android:color/transparent"
-            android:scrollbars="none"
-            android:dividerHeight="7dp"
-            android:transcriptMode="alwaysScroll" />
-
-    </LinearLayout>
-
-</LinearLayout>
+</androidx.constraintlayout.widget.ConstraintLayout>

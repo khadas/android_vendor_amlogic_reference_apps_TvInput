@@ -28,6 +28,8 @@ import com.droidlogic.app.tv.TvScanConfig;
 import com.droidlogic.app.tv.TvStoreManager;
 import com.droidlogic.app.DataProviderManager;
 
+import android.widget.Toast;
+import android.provider.Settings;
 import android.content.Context;
 import android.content.ComponentName;
 import android.content.Intent;
@@ -55,11 +57,13 @@ import android.os.Handler;
 import android.os.Message;
 import android.os.SystemClock;
 import android.hardware.hdmi.HdmiControlManager;
+import android.provider.Settings.Global;
 import android.hardware.hdmi.HdmiDeviceInfo;
 import java.util.HashMap;
 
 import org.xmlpull.v1.XmlPullParserException;
 
+import android.provider.Settings;
 import android.content.IntentFilter;
 import android.content.BroadcastReceiver;
 import android.provider.Settings.Secure;
@@ -82,16 +86,21 @@ public abstract class DroidLogicTvInputService extends TvInputService implements
     public Hardware mHardware;
     public TvStreamConfig[] mConfigs;
     private int mDeviceId = -1;
-    private int mSourceType = -1;
+    private int mSourceType = DroidLogicTvUtils.SOURCE_TYPE_OTHER;
     private String mChildClassName;
     private SurfaceHandler mSessionHandler;
     private static final int MSG_DO_TUNE = 0;
     private static final int MSG_DO_RELEASE = 1;
     private static final int MSG_DO_SET_SURFACE = 3;
 
+    private static final String HDMI_CONTROL_ENABLED = "hdmi_control_enabled";
+    private static final int ENABLED = 1;
+    private static final int DISABLED = 0;
+
     private static int mSelectPort = -1;
     private static String ACCESSIBILITY_CAPTIONING_PRESET = "accessibility_captioning_preset";
     protected Surface mSurface;
+    protected boolean isDtvPlayAtvSignal = false;
     protected int ACTION_FAILED = -1;
     protected int ACTION_SUCCESS = 1;
     protected int ACTION_PENDING = 0;
@@ -100,11 +109,9 @@ public abstract class DroidLogicTvInputService extends TvInputService implements
     private int mCurrentSessionId = 0;
 
     private TvInputManager mTvInputManager;
-    private DroidLogicHdmiCecManager mHdmiCecManager;
     private TvControlManager mTvControlManager;
     private SystemControlManager mSystemControlManager;
     private TvStoreManager mTvStoreManager;
-    DroidLogicHdmiCecManager mDroidLogicHdmiCecManager;
     private PendingTuneEvent mPendingTune = new PendingTuneEvent();
     private ContentResolver mContentResolver;
     private MediaCodec mMediaCodec1;
@@ -137,7 +144,6 @@ public abstract class DroidLogicTvInputService extends TvInputService implements
             if (mHardware != null && mConfigs != null) {
                 if (mConfigs.length == 0) {
                     mHardware.setSurface(null, null);
-                    updateAudioPortGain(DroidLogicTvUtils.SOURCE_TYPE_OTHER);
                     /*SystemControlManager mSystemControlManager = new SystemControlManager(mContext);
                     mSystemControlManager.SetCurrentSourceInputInfo(SystemControlManager.SourceInput.values()[mDeviceId]);
                     if (mSession != null) {
@@ -148,8 +154,7 @@ public abstract class DroidLogicTvInputService extends TvInputService implements
                     Log.d(TAG, "open source");
                     //createDecoder();
                     //decoderRelease();
-                    mHardware.setSurface(mSurface, mConfigs[0]);
-                    updateAudioPortGain();
+                    mHardware.setSurface(mSurface, isDtvSource() ? mConfigs[0]: mConfigs[1]);
                 }
             } else {
                 if (DEBUG)
@@ -175,10 +180,8 @@ public abstract class DroidLogicTvInputService extends TvInputService implements
     public void onCreate() {
         super.onCreate();
         mTvInputManager = (TvInputManager)this.getSystemService(Context.TV_INPUT_SERVICE);
-        mHdmiCecManager = DroidLogicHdmiCecManager.getInstance(getApplicationContext());
         mSystemControlManager = SystemControlManager.getInstance();
         mTvControlManager = TvControlManager.getInstance();
-        mDroidLogicHdmiCecManager = DroidLogicHdmiCecManager.getInstance(this);
         mContentResolver = this.getContentResolver();
         initTvPlaySetting();
         mAudioConfigManager = AudioConfigManager.getInstance(getApplicationContext());
@@ -461,6 +464,9 @@ public abstract class DroidLogicTvInputService extends TvInputService implements
                             + "_" + signal_info.reserved + "HZ");
                     mSession.setParameters("audio=hdmi");
                 }
+                if (mTvControlManager.IsAllmInfo()) {
+                    Toast.makeText(DroidLogicTvInputService.this, DroidLogicTvUtils.ALLM_INFO_DISPLAY, Toast.LENGTH_SHORT).show();
+                }
 
                 mSession.notifySessionEvent(DroidLogicTvUtils.SIG_INFO_EVENT, bundle);
                 break;
@@ -581,6 +587,7 @@ public abstract class DroidLogicTvInputService extends TvInputService implements
         return false;
     }
 
+
     protected  boolean doTuneInService(Uri channelUri, int sessionId) {
         Log.d(TAG, "doTuneInService onTune channelUri=" + channelUri);
 
@@ -693,14 +700,6 @@ public abstract class DroidLogicTvInputService extends TvInputService implements
         Log.d(TAG, "decoderRelease done");
     }
 
-    private void updateAudioPortGain() {
-        updateAudioPortGain(mSourceType);
-    }
-    private void updateAudioPortGain(int deviceId) {
-        if (mSession != null) {
-            mSession.updateAudioPortGain(DroidLogicTvUtils.getSourceType(deviceId));
-        }
-    }
 
     private void doSetSurface(Surface surface, TvInputBaseSession session) {
         Log.d(TAG, "doSetSurface inputId=" + mCurrentInputId + " number=" + session.mId + " surface=" + surface);
@@ -737,8 +736,12 @@ public abstract class DroidLogicTvInputService extends TvInputService implements
         if (mHardware != null && mSurface != null && mConfigs.length > 0 && mSurface.isValid()) {
             //createDecoder();
             //decoderRelease();
-            mHardware.setSurface(mSurface, mConfigs[0]);
-            updateAudioPortGain();
+            if (isDtvPlayAtvSignal) {
+                mHardware.setSurface(mSurface,mConfigs[1]);
+                isDtvPlayAtvSignal = false;
+            } else {
+                mHardware.setSurface(mSurface, isDtvSource() ? mConfigs[0] : mConfigs[1]);
+            }
             //completeTvViewFastSwitch();
         }
 
@@ -773,13 +776,6 @@ public abstract class DroidLogicTvInputService extends TvInputService implements
 
     private int startTvPlay() {
         Log.d(TAG, "startTvPlay mHardware=" + mHardware + " mConfigs.length=" + mConfigs.length);
-        if (mSourceType != DroidLogicTvUtils.DEVICE_ID_ADTV &&
-                mSourceType != DroidLogicTvUtils.DEVICE_ID_ATV &&
-                mSourceType != DroidLogicTvUtils.DEVICE_ID_DTV) {
-            if (mSession != null) {
-                mSession.openTvAudio(DroidLogicTvUtils.getSourceType(mSourceType));
-            }
-        }
         if (mHardware != null && mConfigs.length > 0) {
             if (mSurface == null) {
                 return ACTION_PENDING;
@@ -802,7 +798,7 @@ public abstract class DroidLogicTvInputService extends TvInputService implements
                     mSession.closeTvAudio();
                 }
             }
-            mHardware.setSurface(null, mConfigs[0]);
+            mHardware.setSurface(null, isDtvSource() ? mConfigs[0]: mConfigs[1]);
             tvPlayStopped(sessionId);
         }
         return ACTION_SUCCESS;
@@ -1139,4 +1135,9 @@ public abstract class DroidLogicTvInputService extends TvInputService implements
             }
         }*/
     }
+
+    private boolean isDtvSource() {
+        return mDeviceId == DroidLogicTvUtils.DEVICE_ID_ADTV && DroidLogicTvUtils.isDTV(mContext);
+    }
+
 }

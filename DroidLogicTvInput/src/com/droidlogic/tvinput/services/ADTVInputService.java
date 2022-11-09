@@ -36,6 +36,7 @@ import android.view.View;
 import android.database.ContentObserver;
 
 import com.droidlogic.tvinput.Utils;
+import com.droidlogic.tvinput.customer.CustomerOps;
 
 import com.droidlogic.app.tv.TvDataBaseManager;
 import com.droidlogic.app.tv.TvChannelParams;
@@ -45,6 +46,9 @@ import com.droidlogic.app.tv.Program;
 import com.droidlogic.app.tv.TvMultilingualText;
 import com.droidlogic.app.tv.TvTime;
 import com.droidlogic.app.tv.TvStoreManager;
+import com.droidlogic.app.tv.TvChannelSetting;
+import com.droidlogic.app.tv.TvMTSSetting;
+import com.droidlogic.app.tv.TvControlDataManager;
 import com.droidlogic.app.SystemControlManager;
 
 import java.util.HashSet;
@@ -87,7 +91,7 @@ public class ADTVInputService extends DTVInputService {
         return mCurrentSession;
     }
 
-    public class ADTVSessionImpl extends DTVInputService.DTVSessionImpl implements TvControlManager.AVPlaybackListener {
+    public class ADTVSessionImpl extends DTVInputService.DTVSessionImpl implements TvControlManager.AVPlaybackListener , TvControlManager.PlayerInstanceNoListener{
 
         protected ADTVSessionImpl(Context context, String inputId, int deviceId) {
             super(context, inputId, deviceId);
@@ -109,14 +113,21 @@ public class ADTVInputService extends DTVInputService {
             }
 
             //info.print();
-
+            if (enableChannelBlockInServer()) {
+                mTvControlManager.request("ADTV.block", "{\"isblocked\":" + info.isLocked() + ",\"tunning\":" + true + "}");
+            }
             if (mSystemControlManager.getPropertyBoolean(DroidLogicTvUtils.PROP_NEED_FAST_SWITCH, false)) {
                 Log.d(TAG, "fast switch mode, no need replay channel");
                 mSystemControlManager.setProperty(DroidLogicTvUtils.PROP_NEED_FAST_SWITCH, "false");
                 if (info.isAnalogChannel()) {
                     openTvAudio(DroidLogicTvUtils.SOURCE_TYPE_ATV);
+                    if (enableChannelBlockInServer()) {
+                        mTvControlManager.SetAVPlaybackListener(this);
+                        super.onSetStreamVolume(0.0f);
+                    }
                 } else {
                     mTvControlManager.SetAVPlaybackListener(this);
+                    mTvControlManager.SetPlayerInstanceNoListener(this);
                 }
             } else {
                 int audioAuto = getAudioAuto(info);
@@ -145,6 +156,10 @@ public class ADTVInputService extends DTVInputService {
                             .append("}");
 
                     mTvControlManager.startPlay("ntsc", param.toString());
+                    if (enableChannelBlockInServer()) {
+                        mTvControlManager.SetAVPlaybackListener(this);
+                        super.onSetStreamVolume(0.0f);
+                    }
                 } else {
                     String subPidString = new String("\"pid\":0");
                     int subCount = (info.getSubtitlePids() == null)? 0 : info.getSubtitlePids().length;
@@ -175,6 +190,7 @@ public class ADTVInputService extends DTVInputService {
                     TvControlManager.FEParas fe = new TvControlManager.FEParas(info.getFEParas());
 
                     mTvControlManager.SetAVPlaybackListener(this);
+                    mTvControlManager.SetPlayerInstanceNoListener(this);
                     openTvAudio(DroidLogicTvUtils.SOURCE_TYPE_DTV);
                     int timeshiftMaxTime = mSystemControlManager.getPropertyInt("tv.dtv.tf.max.time", 10*60);/*seconds*/
                     int timeshiftMaxSize = mSystemControlManager.getPropertyInt(MAX_CACHE_SIZE_KEY, MAX_CACHE_SIZE_DEF * 1024);/*bytes*/
@@ -193,10 +209,11 @@ public class ADTVInputService extends DTVInputService {
                             .append(",\"as\":" + as.toString())
                             .append("}}");
                     Log.d(TAG, "playProgram adtvparam: " + param.toString());
-
+                    /* Set ad audio first if available then start playback */
+                    startAudioADMainMix(info, audioAuto);
                     mTvControlManager.startPlay("atsc", param.toString());
                     mTvControlManager.DtvSetAudioChannleMod(info.getAudioChannel());
-                    startAudioADMainMix(info, audioAuto);
+
                 }
                 mSystemControlManager.setProperty(DTV_AUDIO_TRACK_IDX,
                 ((audioAuto>=0)? String.valueOf(audioAuto) : "-1"));
@@ -254,10 +271,13 @@ public class ADTVInputService extends DTVInputService {
 
         @Override
         protected TvContentRating[] getContentRatingsOfCurrentProgram(ChannelInfo channelInfo) {
-            if (channelInfo != null && channelInfo.isAnalogChannel())
-                return Program.stringToContentRatings(channelInfo.getContentRatings());
-                //return mATVContentRatings;
-            else
+            if (channelInfo != null && channelInfo.isAnalogChannel()) {
+                TvContentRating[] ratings = Program.stringToContentRatings(channelInfo.getContentRatings());
+                if (ratings == null || ratings.length == 0) {
+                    return CustomerOps.getInstance(mContext).getCustomerNoneRatings();
+                }
+                return ratings;
+            } else
                 return super.getContentRatingsOfCurrentProgram(channelInfo);
         }
 
@@ -296,7 +316,98 @@ public class ADTVInputService extends DTVInputService {
         @Override
         public void onEvent(int msgType, int programID) {
             Log.d(TAG, "AV evt:" + msgType);
+            if (mCurrentSession != null && mCurrentSession.mCurrentChannel != null) {
+                if (mCurrentSession.mCurrentChannel.isAnalogChannel()) {
+                    if (msgType > TvControlManager.EVENT_AV_PLAYER_UNBLOCK
+                        || msgType < TvControlManager.EVENT_AV_PLAYER_BLOCKED) {
+                        //event only used in dtv
+                        return;
+                    }
+                }
+            }
             super.onEvent(msgType, programID);
+        }
+
+        @Override
+        public void doAppPrivateCmd(String action, Bundle bundle) {
+            int value = 0;
+
+            Log.d(TAG, "doAppPrivateCmd: action:" + action);
+
+            if (mCurrentSession == null || mCurrentSession.mCurrentChannel == null) {
+                return;
+            }
+            if (DroidLogicTvUtils.ACTION_ATV_SET_FINETUNE.equals(action)) {
+                value = bundle.getInt("finetune", mCurrentSession.mCurrentChannel.getFineTune());
+
+                TvChannelSetting.setAtvFineTune(mCurrentSession.mCurrentChannel, value);
+            } else if (DroidLogicTvUtils.ACTION_ATV_SET_VIDEO.equals(action)) {
+                value = bundle.getInt("video", mCurrentSession.mCurrentChannel.getVideoStd());
+
+                TvChannelSetting.setAtvChannelVideo(mCurrentSession.mCurrentChannel, value);
+            } else if (DroidLogicTvUtils.ACTION_ATV_SET_AUDIO.equals(action)) {
+                value = bundle.getInt("audio", mCurrentSession.mCurrentChannel.getAudioStd());
+
+                TvChannelSetting.setAtvChannelAudio(mCurrentSession.mCurrentChannel, value);
+            } else if (DroidLogicTvUtils.ACTION_ATV_SET_MTS_OUTPUT_MODE.equals(action)) {
+                value = bundle.getInt("mts_output_mode", mCurrentSession.mCurrentChannel.getAudioOutPutMode());
+
+                TvMTSSetting.setAtvMTSOutModeValue(value);
+            } else if (DroidLogicTvUtils.ACTION_ATV_GET_MTS_OUTPUT_MODE.equals(action)) {
+                value = TvMTSSetting.getAtvMTSOutModeValue();
+
+                TvControlDataManager.putIntValue(mContext, DroidLogicTvUtils.ACTION_ATV_GET_MTS_OUTPUT_MODE, value);
+            } else if (DroidLogicTvUtils.ACTION_ATV_GET_MTS_INPUT_STD.equals(action)) {
+                value = TvMTSSetting.getAtvMTSInSTDValue();
+
+                TvControlDataManager.putIntValue(mContext, DroidLogicTvUtils.ACTION_ATV_GET_MTS_INPUT_STD, value);
+            } else if (DroidLogicTvUtils.ACTION_ATV_GET_MTS_INPUT_MODE.equals(action)) {
+                value = TvMTSSetting.getAtvMTSInModeValue();
+
+                TvControlDataManager.putIntValue(mContext, DroidLogicTvUtils.ACTION_ATV_GET_MTS_INPUT_MODE, value);
+            } else if (DroidLogicTvUtils.ACTION_ATV_SET_VOLUME_COMPENSATE.equals(action)) {
+                value = bundle.getInt(DroidLogicTvUtils.KEY_ATV_SET_VALUE, 0);
+                TvMTSSetting.setVolumeCompensate(value);
+            } else if ("unblockContent".equals(action)
+                || "block_channel".equals(action)) {
+                super.doAppPrivateCmd(action, bundle);
+            } else if (TextUtils.equals(DroidLogicTvUtils.ACTION_DTV_ENABLE_AUDIO_AD, action)) {
+                //don't support to add play thread realtime, add ad by select ad track if supported
+//                boolean enable = (bundle.getInt(DroidLogicTvUtils.PARA_ENABLE) == 0)? false : true;
+//                Log.d(TAG, "do private cmd: ACTION_DTV_ENABLE_AUDIO_AD ["+enable+"]");
+                audioADAutoStart = (bundle.getInt(DroidLogicTvUtils.PARA_ENABLE) == 0)? false : true;
+                String trackId = mSystemControlManager.getProperty(DTV_AUDIO_TRACK_ID);
+                ChannelInfo.Audio audio = parseAudioIdString(trackId);
+                int adTrackIndex = bundle.getInt(DroidLogicTvUtils.PARA_VALUE1);
+                Log.d(TAG, "do private cmd: ACTION_DTV_ENABLE_AUDIO_AD enable["+audioADAutoStart+"] track["+adTrackIndex+"]");
+                if (TextUtils.equals(mSystemControlManager.getProperty(DTV_AUDIO_AD_DISABLE),"1")) {
+                    audioADAutoStart = false;
+                    return;
+                }
+                if (mCurrentChannel != null) {
+                    if (audioADAutoStart) {
+                        if (adTrackIndex == -1)
+                            startAudioADByMain(mCurrentChannel, getAudioAuto(mCurrentChannel));
+                        else {
+//                            startAudioAD(mCurrentChannel, adTrackIndex);
+                            startAudioADMainMix(mCurrentChannel, getAudioAuto(mCurrentChannel));
+                            mTvControlManager.DtvSwitchAudioTrack(audio.mPid, audio.mFormat, 0);
+                        }
+                        return;
+                    }
+                }
+                stopAudioAD();
+                mTvControlManager.DtvSwitchAudioTrack(audio.mPid, audio.mFormat, 0);
+            } else if (TextUtils.equals(DroidLogicTvUtils.ACTION_AD_MIXING_LEVEL, action)) {
+                mAudioADMixingLevel = bundle.getInt(DroidLogicTvUtils.PARA_VALUE1);
+                mHandler.obtainMessage(MSG_MIX_AD_LEVEL, mAudioADMixingLevel, 0).sendToTarget();
+                Log.d(TAG, "do private cmd: ACTION_AD_MIXING_LEVEL ["+mAudioADMixingLevel+"]");
+            } else if (TextUtils.equals(ACTION_AD_VOLUME_LEVEL,action)) {
+                mAudioADVolume = bundle.getInt(DroidLogicTvUtils.PARA_VALUE1);
+                mHandler.obtainMessage(MSG_MIX_AD_SET_VOLUME, mAudioADVolume, 0).sendToTarget();
+            } else {
+                Log.d(TAG, "doAppPrivateCmd: nonsupport action:" + action);
+            }
         }
     }
 

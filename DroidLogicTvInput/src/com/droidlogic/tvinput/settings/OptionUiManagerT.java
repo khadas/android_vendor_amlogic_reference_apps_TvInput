@@ -500,14 +500,14 @@ public class OptionUiManagerT implements  OnFocusChangeListener, TvControlManage
         return 0;
     }
 
-    private int getDvbFrequencyByPd(int pd_number) {
+    public int getDvbFrequencyByPd(int pd_number) {
         TvControlManager.TvMode mode = new TvControlManager.TvMode(mSettingsManager.getDtvType());
         mode.setList(getList(DTV));
         Log.d(TAG, "[get dtv freq]type:"+mode.toType()+" use list:"+mode.getList());
         return getDvbFrequencyByPd(mode.getMode(), pd_number);
     }
 
-    private int getAtvFrequencyByPd(int pd_number) {
+    public int getAtvFrequencyByPd(int pd_number) {
         TvControlManager.TvMode mode = new TvControlManager.TvMode(mSettingsManager.getDtvType());
         mode.setList(getList(ATV));
         Log.d(TAG, "[get atv freq]type: " +mode.toType() + " use list:" + mode.getList());
@@ -535,6 +535,37 @@ public class OptionUiManagerT implements  OnFocusChangeListener, TvControlManage
         }
         Log.d(TAG, "pdNumber: " + pdNumber + ", the_freq: " + the_freq);
         return (the_freq < 0)? m_fList.get(0).freq : the_freq;
+    }
+
+    public int getDtvDvbPdByFrequency(int the_freq) {
+        TvControlManager.TvMode mode = new TvControlManager.TvMode(mSettingsManager.getDtvType());
+        mode.setList(getList(DTV));
+        Log.d(TAG, "[get dtv PdNumber]type:"+mode.toType()+" use list:"+mode.getList());
+        return getDvbPdByFrequency(mode.getMode(), the_freq);
+    }
+
+    public int getAtvPdByFrequency(int the_freq) {
+        TvControlManager.TvMode mode = new TvControlManager.TvMode(mSettingsManager.getDtvType());
+        mode.setList(getList(ATV));
+        Log.d(TAG, "[get atv PdNumber]type: " +mode.toType() + " use list:" + mode.getList());
+        return getDvbPdByFrequency(mode.getMode(), the_freq);
+    }
+
+    private int getDvbPdByFrequency(int tvMode, int the_freq) {
+        //mTvControlManager.SetTvCountry(DroidLogicTvUtils.getCountry(mContext));
+        ArrayList<FreqList> m_fList = mTvControlManager.DTVGetScanFreqList(tvMode);
+        String type = TvControlManager.TvMode.fromMode(tvMode).toType();
+        int size = m_fList.size();
+        int pdNumber = -1;
+
+        for (int i = 0; i < size; i++) {
+            if (the_freq == m_fList.get(i).freq) {
+                pdNumber = m_fList.get(i).channelNum;
+                break;
+            }
+        }
+        Log.d(TAG, "pdNumber: " + pdNumber + ", the_freq: " + the_freq);
+        return (pdNumber < 0)? m_fList.get(0).channelNum : pdNumber;
     }
 
     public ArrayList<HashMap<String, Object>> getSearchedDtvInfo (TvControlManager.ScannerEvent event) {
@@ -608,7 +639,12 @@ public class OptionUiManagerT implements  OnFocusChangeListener, TvControlManage
             mSettingsManager.deleteAtvOrDtvChannels(true);//delete all atv channels
         }
         if (deleteDtv) {
-            mSettingsManager.deleteAtvOrDtvChannels(false);//delete all dtv channels
+            //we just delete dtmb and atsc channels,don't delete dtvkit channels
+            //mSettingsManager.deleteAtvOrDtvChannels(false);//delete all dtv channels
+            mSettingsManager.deleteChannels(TvContract.Channels.TYPE_DTMB);
+            mSettingsManager.deleteChannels(TvContract.Channels.TYPE_ATSC_C);
+            mSettingsManager.deleteChannels(TvContract.Channels.TYPE_ATSC_T);
+            mSettingsManager.deleteChannels(TvContract.Channels.TYPE_ATSC_M_H);
         }
     }
 
@@ -1006,7 +1042,7 @@ public class OptionUiManagerT implements  OnFocusChangeListener, TvControlManage
                 Log.d(TAG, "onEvent:Scan exit.");
                 mScanStage = TvControlManager.EVENT_SCAN_EXIT;
                 //exit finally after receive store status and show update channels to db for this stage
-                mSystemControlManager.setProperty("tv.channels.count", ""+(channelNumber+radioNumber));
+//                mSystemControlManager.setProperty("tv.channels.count", ""+(channelNumber+radioNumber));
                 mSystemControlManager.writeSysFs(AUTO_ATSC_C_PATH, AUTO_ATSC_C_MODE_DISABLE);//disable auto select std lrc hrc
                 isSearching = SEARCH_STOPPED;
                 saveSearchStatus(isSearching);
@@ -1175,7 +1211,7 @@ public class OptionUiManagerT implements  OnFocusChangeListener, TvControlManage
         mHandler.sendMessage(msg);
     }
 
-    private static final String AUTO_ATSC_C_PATH = "/sys/module/dtvdemod/parameters/auto_search_std";
+    private static final String AUTO_ATSC_C_PATH = "/sys/module/aml_media/parameters/auto_search_std";
     private static final String AUTO_ATSC_C_MODE_ENABLE = "1";
     private static final String AUTO_ATSC_C_MODE_DISABLE = "0";
     private static final String AUTO_ATSC_C_ATV_PATH = "/sys/kernel/debug/aml_atvdemod/slow_mode";

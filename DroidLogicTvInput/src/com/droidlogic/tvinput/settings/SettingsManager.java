@@ -136,11 +136,11 @@ public class SettingsManager {
     public static final String STATUS_RAW                           = "raw";
 
     public static final String STATUS_DEFAULT_PERCENT               = "50%";
-    public static final double STATUS_DEFAUT_FREQUENCY              = 44250000;
+    public static final double STATUS_DEFAULT_FREQUENCY              = 44250000;
     public static final int PERCENT_INCREASE                        = 1;
     public static final int PERCENT_DECREASE                        = -1;
     public static final int DEFAULT_SLEEP_TIMER                     = 0;
-    public static final int DEFUALT_MENU_TIME                       = 10;
+    public static final int DEFAULT_MENU_TIME                       = 10;
     public static final String LAUNCHER_NAME                        = "com.android.launcher";
     public static final String LAUNCHER_ACTIVITY                    = "com.android.launcher2.Launcher";
     public static final String TV_NAME                              = "com.droidlogic.tv";
