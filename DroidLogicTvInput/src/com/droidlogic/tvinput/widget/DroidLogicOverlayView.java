@@ -17,6 +17,7 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.graphics.drawable.Drawable;
+import android.util.TypedValue;
 import android.util.Log;
 import android.view.animation.Animation;
 import android.view.animation.LinearInterpolator;
@@ -145,6 +146,7 @@ public abstract class DroidLogicOverlayView extends FrameLayout {
     }
 
     public void setTextVisibility(boolean visible) {
+        mTextView.setTextSize(TypedValue.COMPLEX_UNIT_PX, 60);
         mTextView.setVisibility(visible ? VISIBLE : GONE);
     }
 
