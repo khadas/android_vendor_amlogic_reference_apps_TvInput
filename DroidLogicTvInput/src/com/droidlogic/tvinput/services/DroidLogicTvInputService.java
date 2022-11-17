@@ -700,6 +700,14 @@ public abstract class DroidLogicTvInputService extends TvInputService implements
         Log.d(TAG, "decoderRelease done");
     }
 
+    private void updateAudioPortGain() {
+        updateAudioPortGain(mSourceType);
+    }
+    private void updateAudioPortGain(int deviceId) {
+        if (mSession != null) {
+            mSession.updateAudioPortGain(DroidLogicTvUtils.getSourceType(deviceId));
+        }
+    }
 
     private void doSetSurface(Surface surface, TvInputBaseSession session) {
         Log.d(TAG, "doSetSurface inputId=" + mCurrentInputId + " number=" + session.mId + " surface=" + surface);
@@ -742,6 +750,7 @@ public abstract class DroidLogicTvInputService extends TvInputService implements
             } else {
                 mHardware.setSurface(mSurface, isDtvSource() ? mConfigs[0] : mConfigs[1]);
             }
+            updateAudioPortGain();
             //completeTvViewFastSwitch();
         }
 
