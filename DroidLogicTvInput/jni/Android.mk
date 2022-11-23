@@ -26,10 +26,10 @@ DVB_C_INCLUDES:=vendor/amlogic/common/prebuilt/dvb/include/am_adp \
   vendor/amlogic/common/prebuilt/dvb/include/am_ver \
   vendor/amlogic/common/prebuilt/dvb/ndk/include
 else
-DVB_C_INCLUDES:=vendor/amlogic/common/external/dvb/include/am_adp \
-  vendor/amlogic/common/external/dvb/include/am_mw \
-  vendor/amlogic/common/external/dvb/include/am_ver \
-  vendor/amlogic/common/external/dvb/android/ndk/include
+DVB_C_INCLUDES:=vendor/amlogic/reference/external/dvb/include/am_adp \
+  vendor/amlogic/reference/external/dvb/include/am_mw \
+  vendor/amlogic/reference/external/dvb/include/am_ver \
+  vendor/amlogic/reference/external/dvb/android/ndk/include
 endif
 
 #######################################################################
