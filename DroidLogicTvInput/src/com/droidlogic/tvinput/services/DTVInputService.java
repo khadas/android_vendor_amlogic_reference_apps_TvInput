@@ -770,6 +770,7 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
                 if (DEBUG) Log.d(TAG, "do private cmd:"+ DroidLogicTvUtils.ACTION_TIF_AFTER_TUNE + ", status:" + status);
             } else if ("unblockContent".equals(action)) {
                 if (!enableChannelBlockInServer()) {
+                    mTvControlManager.request("ADTV.UnblockCurrentChannel", "");
                     return;
                 }
                 mTvControlManager.request("ADTV.unblockContent", "");
@@ -1029,6 +1030,7 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
                 if (enableChannelBlockInServer()) {
                     mIsChannelBlocked = ch.isLocked();
                 }
+                mTvControlManager.request("ADTV.setCurrentChannelBlockStatus","{\"Blocked\":"+ch.isLocked()+"}");
                 tryPlayProgram(ch);
             } else {
                 Log.w(TAG, "Failed to get channel info for " + uri);
@@ -4767,6 +4769,7 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
 
         private void doChannelBlockToServer(boolean lock, long channelId) {
             if (!enableChannelBlockInServer()) {
+                mTvControlManager.request("ADTV.BlockCurrentChannel", "");
                 return;
             }
             if (DEBUG) Log.d(TAG, "do private cmd: block_channel: "+ lock);
