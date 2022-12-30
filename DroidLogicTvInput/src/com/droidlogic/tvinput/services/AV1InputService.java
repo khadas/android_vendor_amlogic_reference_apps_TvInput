@@ -643,6 +643,12 @@ public class AV1InputService extends DroidLogicTvInputService {
         }
 
         public void onStatus(int status) {
+            if (status == DTVSubtitleView.TT_NOTIFY_SEARCHING) {
+                Toast.makeText(mContext, "Searching teletext", Toast.LENGTH_SHORT).show();
+            } else if (status == DTVSubtitleView.TT_NOTIFY_NOSIG) {
+                stop_teletext();
+                Toast.makeText(mContext, "No teletext", Toast.LENGTH_SHORT).show();
+            }
         }
 
         private void sendAvRatingByTif() {
