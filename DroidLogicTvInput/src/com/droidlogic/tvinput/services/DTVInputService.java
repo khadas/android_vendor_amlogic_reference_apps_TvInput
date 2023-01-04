@@ -993,7 +993,7 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
             mIsChannelScrambled = false;
 
             subtitleAutoStart = mSystemControlManager.getPropertyBoolean(DTV_SUBTITLE_AUTO_START, true);
-            subtitleAutoSave = subtitleAutoStart;
+            //subtitleAutoSave = subtitleAutoStart;
             subtitleTifMode = mSystemControlManager.getPropertyBoolean(DTV_SUBTITLE_TIF_COMPATIABLE, true);
 
             if (Utils.getChannelId(uri) < 0) {
@@ -1902,6 +1902,7 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
                         mCurrentChannel.setSubtitleTrackIndex(index);
                         mTvDataBaseManager.updateSingleChannelInternalProviderData(mCurrentChannel.getId(),
                                 ChannelInfo.KEY_SUBT_TRACK_INDEX, String.valueOf(index));
+                        CustomerOps.getInstance(mContext).saveTvClosedCaptionIndex(mCurrentChannel, index);
                     }
                 }
 
@@ -2536,7 +2537,10 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
                 || mCurrentSubtitles.size() == 0)
                 return -1;
 
-            int index = info.getSubtitleTrackIndex();
+            int index = CustomerOps.getInstance(mContext).getTvClosedCaptionIndex(info);
+            if (index == CustomerOps.INVALID_INDEX) {
+                index = info.getSubtitleTrackIndex();
+            }
             /*off by user*/
             if (index == -2)
                 return -2;

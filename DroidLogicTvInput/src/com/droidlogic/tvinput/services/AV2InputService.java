@@ -100,7 +100,7 @@ public class AV2InputService extends DroidLogicTvInputService {
     protected static final int KEY_ZOOM = 88;
     protected static final int KEY_SUBPG = 86;
     protected static final int KEY_REGION = 87;
-    protected static final int KEY_LOCK_SUBPG = 172;
+    protected static final int KEY_LOCK_SUBPG = 251;
     protected static final int KEY_TELETEXT_SWITCH = 169;
     protected static final int KEY_REVEAL = 246;
     protected static final int KEY_CANCEL = 247;
@@ -396,6 +396,7 @@ public class AV2InputService extends DroidLogicTvInputService {
         public void notifyVideoAvailable() {
             super.notifyVideoAvailable();
             if (needRestartCC) {
+                notifyTracks(mCurrentChannel);
                 stopSubtitle();
                 startSubtitleAutoAnalog();
             }
@@ -600,6 +601,7 @@ public class AV2InputService extends DroidLogicTvInputService {
                     mCurrentSubtitle = subtitle;
                     startSubtitle();
                 }
+                CustomerOps.getInstance(mContext).saveAvClosedCaptionIndex(index);
                 Log.d(TAG, "onSelectTrack: [type:" + type + "] [id:" + trackId + "] " + "index" + index);
             }
             return true;
@@ -1027,6 +1029,7 @@ public class AV2InputService extends DroidLogicTvInputService {
             }
             if (signalFmt == SIGNAL_NTSC_FMT) {
                 Log.d(TAG, "mCurrentCCStyle:" + mCurrentCCStyle);
+                int trackPid = -1;
                 int temp = mCurrentCCStyle;
                 if (temp == -1) {
                     int ccPrefer = mSystemControlManager.getPropertyInt(DTV_SUBTITLE_CC_PREFER, -1);
@@ -1035,11 +1038,23 @@ public class AV2InputService extends DroidLogicTvInputService {
                 mSubtitleView.stop();
                 if (mCurrentSubtitle != null) {
                     Log.d(TAG, "subtitle pid = " + mCurrentSubtitle.mPid);
-                    setSubtitleParam(ChannelInfo.Subtitle.TYPE_ATV_CC, mCurrentSubtitle.mPid,
+                    trackPid = mCurrentSubtitle.mPid;
+                } else {
+                    int trackIndex = CustomerOps.getInstance(mContext).getAvClosedCaptionIndex();
+                    if (trackIndex != -1
+                        && mCurrentSubtitles != null
+                        && (mCurrentSubtitles.size() > trackIndex)
+                        && mCurrentSubtitles.get(trackIndex) != null) {
+                        mCurrentSubtitle = mCurrentSubtitles.get(trackIndex);
+                        trackPid = mCurrentSubtitle.mPid;
+                    }
+                }
+                if (trackPid != -1) {
+                    setSubtitleParam(ChannelInfo.Subtitle.TYPE_ATV_CC, trackPid,
                             mCurrentCCStyle == -1 ? temp : mCurrentCCStyle, 0, 0, "");
                 } else {
                     setSubtitleParam(ChannelInfo.Subtitle.TYPE_ATV_CC, 15,
-                            mCurrentCCStyle == -1 ? temp : mCurrentCCStyle, 0, 0, "");//we need xds data
+                            mCurrentCCStyle == -1 ? temp : mCurrentCCStyle, 0, 0, "");
                 }
                 mSubtitleView.setActive(true);
                 mSubtitleView.startSub();
@@ -1214,6 +1229,10 @@ public class AV2InputService extends DroidLogicTvInputService {
             Log.d(TAG, "add subtitle tracks["+mCurrentSubtitles.size()+"]");
 
             int auto = (mCurrentSubtitle == null)?-1:mCurrentSubtitle.id;
+            if (auto != -1) {
+                mCurrentSubtitle.id = CustomerOps.getInstance(mContext).getAvClosedCaptionIndex();
+                auto = mCurrentSubtitle.id;
+            }
             Iterator<ChannelInfo.Subtitle> iter = mCurrentSubtitles.iterator();
             while (iter.hasNext()) {
                 ChannelInfo.Subtitle s = iter.next();
