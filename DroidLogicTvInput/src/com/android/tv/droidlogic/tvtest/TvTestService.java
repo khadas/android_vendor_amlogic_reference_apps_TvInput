@@ -880,9 +880,17 @@ public class TvTestService extends Service {
     }
 
     private boolean isActivityTop(String cls,Context context){
+        return false;
+        /*
         ActivityManager manager = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
+        Log.d(TAG, " get runingtask ");
         String name = manager.getRunningTasks(1).get(0).topActivity.getClassName();
-        return name.equals(cls);
+        Log.d(TAG, " top running task is " + name);
+        if (name != null)
+                return name.equals(cls);
+        else
+                return false;
+        */
     }
 
     private void sendHandlerMSG(int what, int arg1, int arg2, Object message, int delayMilis) {
@@ -1488,6 +1496,7 @@ public class TvTestService extends Service {
 					String message = builder.toString();
 					System.out.println("-- send back msg0 --");
 					sendbackMessage(writer, ack+message, false);
+					Log.d(TAG," starting trimming! ");
 					if (message.startsWith("cmd:SearchChannel_manual"))
 					{
 						boolean isActivityTop = isActivityTop(LIVETV_CLASSNAME, mContext);
