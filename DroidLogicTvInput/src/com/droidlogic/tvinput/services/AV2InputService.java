@@ -1226,12 +1226,21 @@ public class AV2InputService extends DroidLogicTvInputService {
             if (mCurrentSubtitles == null || mCurrentSubtitles.size() == 0)
                 return null;
 
-            Log.d(TAG, "add subtitle tracks["+mCurrentSubtitles.size()+"]");
+            Log.d(TAG, "add subtitle tracks[" + mCurrentSubtitles.size() + "]");
 
-            int auto = (mCurrentSubtitle == null)?-1:mCurrentSubtitle.id;
+            int auto = (mCurrentSubtitle == null) ? -1 : mCurrentSubtitle.id;
             if (auto != -1) {
                 mCurrentSubtitle.id = CustomerOps.getInstance(mContext).getAvClosedCaptionIndex();
                 auto = mCurrentSubtitle.id;
+            } else if (mCurrentSubtitle == null) {
+                int trackIndex = CustomerOps.getInstance(mContext).getAvClosedCaptionIndex();
+                if (trackIndex != -1
+                        && mCurrentSubtitles != null
+                        && (mCurrentSubtitles.size() > trackIndex)
+                        && mCurrentSubtitles.get(trackIndex) != null) {
+                    mCurrentSubtitle = mCurrentSubtitles.get(trackIndex);
+                    auto = mCurrentSubtitle.id;
+                }
             }
             Iterator<ChannelInfo.Subtitle> iter = mCurrentSubtitles.iterator();
             while (iter.hasNext()) {
