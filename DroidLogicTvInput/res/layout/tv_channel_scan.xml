@@ -167,6 +167,30 @@
             </LinearLayout>
 
             <LinearLayout
+                android:id="@+id/search_channel_type_ll"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+                <TextView
+                    android:id="@+id/search_channel_type_tv"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:accessibilityLiveRegion="polite"
+                    android:fontFamily="sans-serif"
+                    android:text="@string/tv_search_channel_type"
+                    android:textColor="@color/ut_scan_description_text"
+                    android:textSize="@dimen/ut_scan_description_text_size" />
+                <Spinner
+                    android:id="@+id/search_channel_type_spinner"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/px_15.0"
+                    android:fontFamily="sans-serif"
+                    android:textColor="@color/ut_scan_description_text"
+                    android:textSize="@dimen/ut_scan_description_text_size" />
+            </LinearLayout>
+
+            <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:orientation="vertical">

@@ -42,4 +42,10 @@
         <item>cursive</item>
         <item>sans-serif-smallcaps</item>
     </string-array>
+
+    <string-array name="array_channel_type_values">
+        <item>Analog only</item>
+        <item>Digital only</item>
+        <item>Analog and Digital</item>
+    </string-array>
 </resources>

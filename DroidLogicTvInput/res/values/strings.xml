@@ -193,6 +193,7 @@
     <string name="tv_mode_option">Mode Option:</string>
     <string name="tv_country">Country</string>
     <string name="tv_search_mode">Mode</string>
+    <string name="tv_search_channel_type">Channel Type</string>
     <string name="tv_search_type">Type</string>
     <string name="tv_search_option">Search Option:</string>
     <string name="tv_search_order">Order</string>

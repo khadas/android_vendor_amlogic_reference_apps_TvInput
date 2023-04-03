@@ -181,6 +181,7 @@
     <string name="tv_china">中国</string>
     <string name="tv_philippines">菲律宾</string>
     <string name="tv_search_mode">搜台模式</string>
+    <string name="tv_search_channel_type">频道类型</string>
     <string name="tv_search_mode_manual">手动</string>
     <string name="tv_search_mode_auto">自动</string>
     <string name="tv_search_type">搜台制式</string>
