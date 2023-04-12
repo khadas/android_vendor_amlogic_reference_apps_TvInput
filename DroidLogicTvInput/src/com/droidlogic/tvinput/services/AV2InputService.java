@@ -361,20 +361,17 @@ public class AV2InputService extends DroidLogicTvInputService {
             mCurrentChannel = null;
             needRestartCC = true;
             mTvDataBaseManager = new TvDataBaseManager(mContext);
-            initOverlayView(R.layout.layout_overlay);
-            if (mOverlayView != null) {
-                mOverlayView.setImage(R.drawable.bg_no_signal);
-            }
 
             initWorkThread();
             initOverlayView(R.layout.layout_overlay);
             if (mOverlayView != null) {
                 mOverlayView.setImage(R.drawable.bg_no_signal);
+                mOverlayView.setEasTextVisibility(false);
                 mSubtitleView = (DTVSubtitleView)mOverlayView.getSubtitleView();
                 mSubtitleView.setSubtitleDataListener(this);
             }
 
-           if (getBlockNoRatingEnable()) {
+            if (getBlockNoRatingEnable()) {
                 isBlockNoRatingEnable = true;
             } else {
                 isBlockNoRatingEnable = false;
