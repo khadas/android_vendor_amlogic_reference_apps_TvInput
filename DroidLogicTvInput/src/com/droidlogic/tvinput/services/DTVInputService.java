@@ -967,6 +967,7 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
         }
 
         protected void doPlay(Uri uri) {
+
             float Time= (float) android.os.SystemClock.uptimeMillis() / 1000;
             if (DEBUG) Log.d(TAG, "--doPlay  uri=" + uri + " this:"+ this + "SwitchSourceTime = " + Time);
             if (null == uri) {
@@ -984,7 +985,7 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
             mChannelBlocked = -1;
             isUnlockCurrent_NR = false;
 
-            isTvPlaying = false;
+            //isTvPlaying = false;
             if (mIsChannelScrambled
                     && mSystemControlManager.getPropertyBoolean(DroidLogicTvUtils.PROP_NEED_FAST_SWITCH, false)) {
                 // scrambled channels need replay to receive scrambled message, so it can't do fast switch
@@ -1107,6 +1108,7 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
                 setTuningScreen(true);
             }
             mCurrentChannel = info;
+            isTvPlaying = false;
             if (DEBUG) Log.d(TAG,"mCurrentChannel : " + mCurrentChannel + " AtvDtvMode " + DroidLogicTvUtils.getAtvDtvModeFlag(mContext));
             if (DroidLogicTvUtils.isDTV(mContext) && DroidLogicTvUtils.getAtvDtvModeFlag(mContext) == DroidLogicTvUtils.TV_SEARCH_ATV_DTV) {
                 Log.i(TAG,". " + "mSurface == null " + (mSurface == null));
