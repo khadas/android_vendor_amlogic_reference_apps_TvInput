@@ -290,13 +290,8 @@ public abstract class TvInputBaseSession extends TvInputService.Session implemen
         Log.d(TAG, "notifyVideoAvailable ");
         super.notifyVideoAvailable();
         if (mOverlayView != null) {
-            if (isRadioChannel()) {
-                mOverlayView.setImageVisibility(true);
-                mOverlayView.setTextVisibility(false);
-            } else {
-                mOverlayView.setImageVisibility(false);
-                mOverlayView.setTextVisibility(false);
-            }
+            mOverlayView.setImageVisibility(isRadioChannel());
+            mOverlayView.setTextVisibility(false);
         }
 
         if (isHdmiDevice) {
@@ -308,9 +303,10 @@ public abstract class TvInputBaseSession extends TvInputService.Session implemen
     public void notifyVideoUnavailable(int reason) {
         Log.d(TAG, "notifyVideoUnavailable: "+reason);
         super.notifyVideoUnavailable(reason);
-        Message msg = mSessionHandler.obtainMessage(MSG_IMAGETEXT_SET);
-        mSessionHandler.removeMessages(msg.what);
-        msg.sendToTarget();
+        if (mOverlayView != null) {
+            mOverlayView.setImageVisibility(true);
+            mOverlayView.setTextVisibility(true);
+        }
         if (isHdmiDevice) {
             checkHdmiInfoOnVideoUnavailable();
         }
