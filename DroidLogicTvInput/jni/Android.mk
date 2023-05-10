@@ -38,7 +38,7 @@ include $(CLEAR_VARS)
 
 LOCAL_MODULE    := libjnidtvepgscanner
 LOCAL_MULTILIB := 32
-LOCAL_LICENSE_KINDS := SPDX-license-identifier-Apache-2.0 SPDX-license-identifier-FTL SPDX-license-identifier-GPL SPDX-license-identifier-LGPL-2.1 SPDX-license-identifier-MIT legacy_by_exception_only legacy_notice
+LOCAL_LICENSE_KINDS := SPDX-license-identifier-Apache-2.0 SPDX-license-identifier-FTL SPDX-license-identifier-MIT legacy_by_exception_only legacy_notice
 LOCAL_LICENSE_CONDITIONS := by_exception_only notice restricted
 LOCAL_MODULE_TAGS := optional
 LOCAL_SRC_FILES := DTVEpgScanner.c
@@ -99,7 +99,7 @@ include $(BUILD_SHARED_LIBRARY)
 include $(CLEAR_VARS)
 
 LOCAL_MODULE    := libjnifont
-LOCAL_LICENSE_KINDS := SPDX-license-identifier-Apache-2.0 SPDX-license-identifier-FTL SPDX-license-identifier-GPL SPDX-license-identifier-LGPL-2.1 SPDX-license-identifier-MIT legacy_by_exception_only legacy_notice
+LOCAL_LICENSE_KINDS := SPDX-license-identifier-Apache-2.0 SPDX-license-identifier-FTL SPDX-license-identifier-MIT legacy_by_exception_only legacy_notice
 LOCAL_LICENSE_CONDITIONS := by_exception_only notice restricted
 LOCAL_MODULE_TAGS := optional
 LOCAL_SRC_FILES := Fonts.cpp
