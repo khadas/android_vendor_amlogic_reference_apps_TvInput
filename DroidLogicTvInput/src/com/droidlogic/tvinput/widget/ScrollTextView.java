@@ -29,6 +29,7 @@ public class ScrollTextView extends TextView {
     private Context mContext;
     private Scroller mSetScroll;
     private boolean mHasBkColor;
+    private boolean mStartScroll;
 
     public ScrollTextView(Context context) {
         super(context);
@@ -56,6 +57,7 @@ public class ScrollTextView extends TextView {
             return;
         }
         this.setScroller(mScroller);
+        mStartScroll = true;
         int adjustSpeed = -1;
         if (scrollTime < speed && scrollTime > MINSPEED) {
             adjustSpeed = (int) scrollTime;
@@ -76,10 +78,12 @@ public class ScrollTextView extends TextView {
         scrollTime = -1;
         lastSetTextTime = -1;
         scrollTo(0,0);
+        mStartScroll = false;
     }
 
     @Override
     protected void onDetachedFromWindow() {
+        mStartScroll = false;
         super.onDetachedFromWindow();
         scrollTime = -1;
         lastSetTextTime = -1;
@@ -92,7 +96,7 @@ public class ScrollTextView extends TextView {
         mSetScroll = s;
     }
     public void stopPortScroll() {
-        if (mSetScroll != null||!mHasBkColor) {
+        if (mStartScroll && (mSetScroll != null||!mHasBkColor)) {
             setScroller(null);
             mScroller.startScroll(0,0,0,0,1);
             mScroller.abortAnimation();

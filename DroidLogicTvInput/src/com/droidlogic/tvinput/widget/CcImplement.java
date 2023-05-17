@@ -1122,33 +1122,39 @@ public class CcImplement {
                         }
                     }
                 }
-                for (int i = 0; i < mRowsStrPos && mRowsStrPos > 0 && fill_opacity_int != 0; i++) {
-                    tempContent.add(new SpannableStringBuilder("\n"));
-                }
-                for (int i = mRowsStrPos; mRowsStrPos >= 0 && i <= mEndStrPos; i++) {
-                    SpannableStringBuilder row = new SpannableStringBuilder("");
-                    for (int j = 0; rows[i].rowStrs != null && rows[i].str_count > 0 && j < rows[i].rowStrs.length; j++) {
-                        if (rows[i].rowStrs[j].data.isEmpty()) {
-                            continue;
-                        }
-                        SpannableString rowstr = new SpannableString(rows[i].rowStrs[j].data);
-                        int dateLength = rows[i].rowStrs[j].data.isEmpty() ? 0 : rows[i].rowStrs[j].data.length();
-                        Spanning span = new Spanning();
-                        rowstr.setSpan(span, 0, dateLength, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-                        span.setCurrentRowStrID(this, i, j, caption_screen, style_use_broadcast, ccVersion);
-                        row.append(rowstr);
+
+                if (mRowsStrPos == -1) {
+                    Log.d("TAG","empty Str");
+                    mRowsStrPos= mEndStrPos = 0;
+                }else {
+                    for (int i = 0; i < mRowsStrPos && mRowsStrPos > 0 && fill_opacity_int != 0; i++) {
+                        tempContent.add(new SpannableStringBuilder("\n"));
                     }
-                    SpannableString newline = new SpannableString("\n");
-                    newline.setSpan(new ForegroundColorSpan(Color.TRANSPARENT), 0, 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-                    row.append(newline);
-                    tempContent.add(row);
-                    rows[i].row_number_in_window = i;
-                    row_length = rows[i].row_length_on_paint;
-                    window_left_most = rows[i].row_start_x < window_left_most ?
-                            rows[i].row_start_x : window_left_most;
-                }
-                for (int i = (mEndStrPos + 1); i < n && fill_opacity_int != 0; i++) {
-                    tempContent.add(new SpannableStringBuilder("\n"));
+                    for (int i = mRowsStrPos; mRowsStrPos >= 0 && i <= mEndStrPos; i++) {
+                        SpannableStringBuilder row = new SpannableStringBuilder("");
+                        for (int j = 0; rows[i].rowStrs != null && rows[i].str_count > 0 && j < rows[i].rowStrs.length; j++) {
+                            if (rows[i].rowStrs[j].data.isEmpty()) {
+                                continue;
+                            }
+                            SpannableString rowstr = new SpannableString(rows[i].rowStrs[j].data);
+                            int dateLength = rows[i].rowStrs[j].data.isEmpty() ? 0 : rows[i].rowStrs[j].data.length();
+                            Spanning span = new Spanning();
+                            rowstr.setSpan(span, 0, dateLength, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                            span.setCurrentRowStrID(this, i, j, caption_screen, style_use_broadcast, ccVersion);
+                            row.append(rowstr);
+                        }
+                        SpannableString newline = new SpannableString("\n");
+                        newline.setSpan(new ForegroundColorSpan(Color.TRANSPARENT), 0, 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                        row.append(newline);
+                        tempContent.add(row);
+                        rows[i].row_number_in_window = i;
+                        row_length = rows[i].row_length_on_paint;
+                        window_left_most = rows[i].row_start_x < window_left_most ?
+                                rows[i].row_start_x : window_left_most;
+                    }
+                    for (int i = (mEndStrPos + 1); i < n && fill_opacity_int != 0; i++) {
+                        tempContent.add(new SpannableStringBuilder("\n"));
+                    }
                 }
                 window_left_most *= pensize_window_depend;
                 window_start_x = caption_screen.getWindowLeftTopX(anchor_relative, anchor_h, anchor_point, window_width);
@@ -1160,7 +1166,7 @@ public class CcImplement {
                   //  Log.d("AA","attach"+mTextView+" @"+Window.this);
                 }
                 countWindowPosition(mRowsStrPos, mEndStrPos);
-              //  Log.d("TAG","outsize bufferedContent"+bufferedContent+"--"+tempContent);
+                Log.d("TAG","outsize bufferedContent"+bufferedContent+"--"+tempContent+"--");
                 if (!tempContent.isEmpty() && tempContent.size() > 0) {
                     mTextView.setVisibility(View.VISIBLE);
                     int bufferSize = tempContent.size();
@@ -1208,6 +1214,7 @@ public class CcImplement {
                     tempContent.clear();
                     contents.clear();
                     for (int i = 0; i < bufferedContent.size(); i++) {
+                        Log.d("WW","bufferedContent=="+i+"/"+bufferedContent.size()+"@"+bufferedContent.get(i)+"@");
                         contents.append(bufferedContent.get(i));
                     }
                     mTextView.setText(contents);
@@ -1215,6 +1222,8 @@ public class CcImplement {
                 } else {
                     if (fill_opacity_int == 0) {
                         mTextView.setVisibility(View.INVISIBLE);
+                    }else {
+                        mTextView.setText(" ");
                     }
                     bufferedContent.clear();
                 }
