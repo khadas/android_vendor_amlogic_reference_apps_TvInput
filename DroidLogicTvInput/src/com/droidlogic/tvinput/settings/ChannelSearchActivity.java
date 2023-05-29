@@ -1377,6 +1377,7 @@ public class ChannelSearchActivity extends Activity implements OnClickListener, 
 
     private static final int MANUAL_SEARCH = 0;
     private static final int AUTO_SEARCH = 1;
+    private int mAutoSearchType = -1;
 
     private void initparametres(int type) {
         int flag = DroidLogicTvUtils.getAtvDtvModeFlag(this);
@@ -1401,6 +1402,9 @@ public class ChannelSearchActivity extends Activity implements OnClickListener, 
         }
         setNumberSearchNeed(0);
 
+        if (AUTO_SEARCH == type) {
+            mAutoSearchType = flag;
+        }
         if (NUMBER_SEARCH_START== type) {
             //mTvScanManager.setSearchSys(mNumberSearchDtv, mNumberSearchAtv);
             setNumberSearchNeed(1);
@@ -1700,6 +1704,14 @@ public class ChannelSearchActivity extends Activity implements OnClickListener, 
             } else {
                 setResult(RESULT_OK, intent);
             }
+        } else {
+            // when auto search no channel, let LiveTv know
+            if (mAutoSearchType >= DroidLogicTvUtils.TV_SEARCH_ATV) {
+                Intent it = new Intent();
+                it.putExtra("service_number", 0);
+                it.putExtra("service_type", mAutoSearchType);
+                setResult(RESULT_CANCELED, it);
+            }
         }
         super.finish();
     }
@@ -1707,6 +1719,7 @@ public class ChannelSearchActivity extends Activity implements OnClickListener, 
     private Intent getChannelDataIntent() {
         if (hasFoundInfo.size() > 0) {
             Intent intent = new Intent();
+            intent.putExtra("service_type", mAutoSearchType);
             for (Object key : hasFoundInfo.keySet()) {
                 intent.putExtra((String)key, (int)hasFoundInfo.get(key));
                 Log.d(TAG, "searched info key = " + ((String)key) + ", value = " + ((int)hasFoundInfo.get(key)));

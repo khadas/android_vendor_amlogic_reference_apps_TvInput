@@ -659,17 +659,43 @@ public class OptionUiManagerT implements  OnFocusChangeListener, TvControlManage
 
     private void deleteChannels(TvControlManager.TvMode mode, boolean deleteAtv, boolean deleteDtv) {
         Log.d(TAG, " delete mode:"+mode.getBase()+" atv:"+deleteAtv+" dtv:"+deleteDtv);
-
+        String dtvType = mSettingsManager.getDtvType();
         if (deleteAtv) {
-            mSettingsManager.deleteAtvOrDtvChannels(true);//delete all atv channels
+            Log.d(TAG, " delete mode:"+mode.getBase()+" dtvType:"+dtvType);
+            if (mode.getBase() == TvChannelParams.MODE_ATSC) {
+                if (TvContract.Channels.TYPE_ATSC_T.equals(dtvType)) {
+                    mSettingsManager.deleteChannels(TvContract.Channels.TYPE_PAL, ChannelInfo.COLUMN_ATSC_TYPE + "=0");
+                    mSettingsManager.deleteChannels(TvContract.Channels.TYPE_NTSC, ChannelInfo.COLUMN_ATSC_TYPE + "=0");
+                    mSettingsManager.deleteChannels(TvContract.Channels.TYPE_SECAM, ChannelInfo.COLUMN_ATSC_TYPE + "=0");
+                } else if (TvContract.Channels.TYPE_ATSC_C.equals(dtvType)) {
+                    mSettingsManager.deleteChannels(TvContract.Channels.TYPE_PAL, ChannelInfo.COLUMN_ATSC_TYPE + "=1");
+                    mSettingsManager.deleteChannels(TvContract.Channels.TYPE_NTSC, ChannelInfo.COLUMN_ATSC_TYPE + "=1");
+                    mSettingsManager.deleteChannels(TvContract.Channels.TYPE_SECAM, ChannelInfo.COLUMN_ATSC_TYPE + "=1");
+                } else {
+                    Log.i(TAG, " delete mode:"+" dtvType:"+dtvType + ";");
+                    mSettingsManager.deleteAtvOrDtvChannels(true);//delete all atv channels
+                }
+            } else {
+                mSettingsManager.deleteAtvOrDtvChannels(true);//delete all atv channels
+            }
         }
         if (deleteDtv) {
             //we just delete dtmb and atsc channels,don't delete dtvkit channels
-            //mSettingsManager.deleteAtvOrDtvChannels(false);//delete all dtv channels
-            mSettingsManager.deleteChannels(TvContract.Channels.TYPE_DTMB);
-            mSettingsManager.deleteChannels(TvContract.Channels.TYPE_ATSC_C);
-            mSettingsManager.deleteChannels(TvContract.Channels.TYPE_ATSC_T);
-            mSettingsManager.deleteChannels(TvContract.Channels.TYPE_ATSC_M_H);
+            if (mode.getBase() == TvChannelParams.MODE_ATSC) {
+                if (TvContract.Channels.TYPE_ATSC_T.equals(dtvType)) {
+                    mSettingsManager.deleteChannels(TvContract.Channels.TYPE_ATSC_T);
+                } else {
+                    mSettingsManager.deleteChannels(TvContract.Channels.TYPE_ATSC_C);
+                }
+                mSettingsManager.deleteChannels(TvContract.Channels.TYPE_ATSC_M_H);
+            } else if (mode.getBase() == TvChannelParams.MODE_DTMB) {
+                mSettingsManager.deleteChannels(TvContract.Channels.TYPE_DTMB);
+            } else {
+                mSettingsManager.deleteChannels(TvContract.Channels.TYPE_DTMB);
+                mSettingsManager.deleteChannels(TvContract.Channels.TYPE_ATSC_C);
+                mSettingsManager.deleteChannels(TvContract.Channels.TYPE_ATSC_T);
+                mSettingsManager.deleteChannels(TvContract.Channels.TYPE_ATSC_M_H);
+            }
         }
     }
 

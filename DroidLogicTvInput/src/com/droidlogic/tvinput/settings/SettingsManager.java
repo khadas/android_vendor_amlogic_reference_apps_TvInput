@@ -367,14 +367,18 @@ public class SettingsManager {
     }
 
     public void startTvPlayAndSetSourceInput() {
-            mTvControlManager.StartTv();
-            int deviceId = DroidLogicTvUtils.getHardwareDeviceId(mInputId);
-            //Log.e(TAG,"deviceId:"+deviceId);
-            mTvControlManager.SetSourceInput(mTvSourceInput, DroidLogicTvUtils.parseTvSourceInputFromDeviceId(deviceId));
-        }
+        mTvControlManager.StartTv();
+        int deviceId = DroidLogicTvUtils.getHardwareDeviceId(mInputId);
+        //Log.e(TAG,"deviceId:"+deviceId);
+        mTvControlManager.SetSourceInput(mTvSourceInput, DroidLogicTvUtils.parseTvSourceInputFromDeviceId(deviceId));
+    }
 
     public void deleteChannels(String type) {
-            mTvDataBaseManager.deleteChannels(mInputId, type);
+        mTvDataBaseManager.deleteChannels(mInputId, type);
+    }
+
+    public void deleteChannels(String type, String where) {
+        mTvDataBaseManager.deleteChannels(mInputId, type, where);
     }
 
     public void deleteAtvOrDtvChannels(boolean isatv) {
