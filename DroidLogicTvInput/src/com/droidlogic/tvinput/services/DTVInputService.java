@@ -512,6 +512,7 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
         private String mRecordingId = null;
         private final CountDownLatch mReleaseLatch = new CountDownLatch(1);
         protected final static int AD_MIXING_LEVEL_DEF = 50;
+        protected final static int AD_VOLUME_DEF = 100;
         protected int mAudioADMixingLevel = -1;
         protected int mAudioADVolume = -1;
 
@@ -806,6 +807,7 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
 
         public static final int MSG_UPDATE_VIDEO_RESOLUTION = 23;
         public static final int MSG_RRT5_EVENT = 24;
+        public static final int MSG_START_AUDIO_AD_MAIN_MIX = 25;
 
         protected void initWorkThread() {
             if (DEBUG) Log.d(TAG, "initWorkThread");
@@ -870,7 +872,8 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
                                     if (DEBUG) Log.d(TAG, "receive MSG_MIX_AD_MAIN arg1 = " + msg.arg1);
                                     if (msg.arg1 > 0) {
                                         //handleAdtvAudioEvent(AudioSystemCmdManager.AUDIO_SERVICE_CMD_AD_MIX_SUPPORT, 1, 0);
-                                        //handleAdtvAudioEvent(AudioSystemCmdManager.AUDIO_SERVICE_CMD_AD_MIX_LEVEL, mAudioADMixingLevel, 0);
+                                        handleAdtvAudioEvent(AudioSystemCmdManager.AUDIO_SERVICE_CMD_AD_MIX_LEVEL, 0, mAudioADMixingLevel);
+                                        handleAdtvAudioEvent(AudioSystemCmdManager.AUDIO_SERVICE_CMD_AD_SET_VOLUME, mAudioADVolume, 0);
                                     } else {
                                         //handleAdtvAudioEvent(AudioSystemCmdManager.AUDIO_SERVICE_CMD_AD_MIX_SUPPORT, 0, 0);
                                     }
@@ -908,6 +911,9 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
                                              " abbrevRatingValue = " + rrtEvent.abbrevRatingValue +
                                              " graduatedScale = " + rrtEvent.graduatedScale)));
                                     mRrt5DataBaseManager.SynchronizedUpdateRrt(rrtEvent);
+                                    break;
+                                case MSG_START_AUDIO_AD_MAIN_MIX:
+                                    startAudioADMainMix((ChannelInfo) msg.obj, msg.arg1);
                                     break;
                                 default:
                                     break;
@@ -1826,7 +1832,7 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
                             if (DEBUG) Log.d(TAG, "onSelectTrack firstAdTrackIndex  =" + firstAdTrackIndex + "audio.id = " + audio.id);
                             if (firstAdTrackIndex > 0 && audio.id >= firstAdTrackIndex) {
                                 Log.i(TAG, "find ad audio successfully");
-                                /*
+                                findAdTrackId = index;
                                 findMainTrackIndex = audio.id - firstAdTrackIndex;//play mix audio if ad support
                                 if (findMainTrackIndex >= 0 && mCurrentAudios != null) {//to ensure nomal size of mCurrentAudios
                                     Iterator<ChannelInfo.Audio> iter = mCurrentAudios.iterator();
@@ -1840,22 +1846,21 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
                                         }
                                     }
                                 }
-                                */
-                            } else {
+                            } /*else {
                                 findAdTrackId = audio.mPid + firstAdTrackIndex;
                                 needMixAdMain = true;
                                 if (DEBUG) Log.d(TAG, "current track need to mix AdMain, findAdTrackId : " + findAdTrackId);
-                            }
-                        }
-                        if (mHandler != null) {
-                            if (DEBUG) Log.d(TAG, "send MSG_MIX_AD_MAIN status = " + needMixAdMain);
-                            mHandler.obtainMessage(MSG_MIX_AD_MAIN, (needMixAdMain ? 1 : 0), 0).sendToTarget();
+                            }*/
                         }
                         /* Set ad audio first if available then start playback */
                         if (findAdTrackId != -1) {
                             startAudioADByMain(mCurrentChannel, audio.id);
                         }
                         mTvControlManager.DtvSwitchAudioTrack(audio.mPid, audio.mFormat, 0);
+                        if (mHandler != null) {
+                            if (DEBUG) Log.d(TAG, "send MSG_MIX_AD_MAIN status = " + needMixAdMain);
+                            mHandler.obtainMessage(MSG_MIX_AD_MAIN, (needMixAdMain ? 1 : 0), 0).sendToTarget();
+                        }
                     } else {
                         if (DEBUG) Log.d(TAG, "same audio track");
                     }
@@ -3261,9 +3266,10 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
             //get realtime mix level
             mAudioADMixingLevel = DataProviderManager.getIntValue(mContext, DroidLogicTvUtils.TV_KEY_AD_MIX, AD_MIXING_LEVEL_DEF);
             audioADAutoStart = (DataProviderManager.getIntValue(mContext, DroidLogicTvUtils.TV_KEY_AD_SWITCH, 0) != 0);
+            mAudioADVolume = DataProviderManager.getIntValue(mContext, "ad_volume", AD_VOLUME_DEF);
             AudioManager audioManager = (AudioManager) mContext.getSystemService(Context.AUDIO_SERVICE);
             if (DEBUG) Log.d(TAG, "startAudioADMainMix audioADAutoStart = " + audioADAutoStart + ", mAudioADMixingLevel = " + mAudioADMixingLevel);
-            if (audioADAutoStart ) {
+            if (audioADAutoStart) {
                 //handleAdtvAudioEvent(AudioSystemCmdManager.AUDIO_SERVICE_CMD_AD_DUAL_SUPPORT, 1, 0);
                 audioManager.setParameters("ad_switch_enable=" + 1);
             } else {
@@ -3294,10 +3300,10 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
                     if (adList1 != null && adList1.length > 0) {
                         findAdTrackIndex = adList1[0];
                     }
-                } /*else {//ad audio index
+                } else {//ad audio index
                     findAdTrackIndex = mainAudioTrackIndex;
                     findMainTrackIndex = findAdTrackIndex - firstAdTrackIndex;
-                }*/
+                }
                 if (mCurrentAudios != null) {
                     Iterator<ChannelInfo.Audio> iter = mCurrentAudios.iterator();
                     while (iter.hasNext()) {
@@ -3319,13 +3325,50 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
                 } else {
                     //handleAdtvAudioEvent(AudioSystemCmdManager.AUDIO_SERVICE_CMD_AD_MIX_SUPPORT, 0, 0);
                 }
-               // mTvControlManager.DtvSwitchAudioTrack(main.mPid, main.mFormat, 0);
                 startAudioAD(channelInfo, findAdTrackIndex);
+                mTvControlManager.DtvSwitchAudioTrack(main.mPid, main.mFormat, 0);
+                mHandler.obtainMessage(MSG_MIX_AD_MAIN, 1, 0).sendToTarget();
+                notifyTrackSelected(TvTrackInfo.TYPE_AUDIO, generateAudioIdString(ad));
+                mSystemControlManager.setProperty(DTV_AUDIO_TRACK_ID, generateAudioIdString(ad));
+                if (mCurrentChannel != null) {
+                    if (DEBUG) Log.d(TAG, "audioAutoSave: idx=" + ad.id);
+                    mCurrentChannel.setAudioTrackIndex(ad.id);
+                    mTvDataBaseManager.updateSingleChannelInternalProviderData(mCurrentChannel.getId(),
+                            ChannelInfo.KEY_AUDIO_TRACK_INDEX, String.valueOf(ad.id));
+                }
+
                 if (DEBUG) Log.d(TAG, " startAudioADMainMix find ad and main audio");
             } else {
                 //handleAdtvAudioEvent(AudioSystemCmdManager.AUDIO_SERVICE_CMD_AD_MIX_SUPPORT, 0, 0);
                 if (DEBUG) Log.d(TAG, " startAudioADMainMix not find ad and main audio");
             }
+        }
+
+        protected ChannelInfo.Audio findMainAudioTrack() {
+            int[] adList = DroidLogicTvUtils.getAudioADTracks(mCurrentChannel, 0);//get first ad
+            int firstAdTrackIndex = -1;
+            int findMainTrackIndex = -1;
+            if (adList != null && adList.length > 0 && adList[0] > 0) {
+                firstAdTrackIndex = adList[0];
+            }
+            if (getAudioAuto(mCurrentChannel) < firstAdTrackIndex) {
+                return null;
+            }
+            if (firstAdTrackIndex > 0) {
+                findMainTrackIndex = getAudioAuto(mCurrentChannel) - firstAdTrackIndex;
+            }
+            ChannelInfo.Audio main = null;
+            if (mCurrentAudios != null) {
+                Iterator<ChannelInfo.Audio> iter = mCurrentAudios.iterator();
+                while (iter.hasNext()) {
+                    ChannelInfo.Audio a = iter.next();
+                    if (a != null && a.id == findMainTrackIndex) {
+                        main = a;
+                        if (DEBUG) Log.d(TAG, " findMainAudioTrack find main audio");
+                    }
+                }
+            }
+            return main;
         }
 
         protected boolean hasDollbyAudioAD(ChannelInfo channelInfo) {

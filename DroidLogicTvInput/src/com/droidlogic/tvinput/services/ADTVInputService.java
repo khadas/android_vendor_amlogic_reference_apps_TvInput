@@ -210,7 +210,8 @@ public class ADTVInputService extends DTVInputService {
                             .append("}}");
                     Log.d(TAG, "playProgram adtvparam: " + param.toString());
                     /* Set ad audio first if available then start playback */
-                    startAudioADMainMix(info, audioAuto);
+                    /*When TvServer starts Ts player, it will clear the status of the setting, which needs to be delayed*/
+                    mHandler.sendMessageDelayed(mHandler.obtainMessage(MSG_START_AUDIO_AD_MAIN_MIX, audioAuto, 0, info), 300);
                     mTvControlManager.startPlay("atsc", param.toString());
                     mTvControlManager.DtvSetAudioChannleMod(info.getAudioChannel());
 
@@ -386,18 +387,29 @@ public class ADTVInputService extends DTVInputService {
                 }
                 if (mCurrentChannel != null) {
                     if (audioADAutoStart) {
-                        if (adTrackIndex == -1)
+                        if (adTrackIndex == -1) {
                             startAudioADByMain(mCurrentChannel, getAudioAuto(mCurrentChannel));
-                        else {
-//                            startAudioAD(mCurrentChannel, adTrackIndex);
+                        } else {
                             startAudioADMainMix(mCurrentChannel, getAudioAuto(mCurrentChannel));
-                            mTvControlManager.DtvSwitchAudioTrack(audio.mPid, audio.mFormat, 0);
                         }
                         return;
                     }
                 }
                 stopAudioAD();
-                mTvControlManager.DtvSwitchAudioTrack(audio.mPid, audio.mFormat, 0);
+                ChannelInfo.Audio mainAudioTrack = findMainAudioTrack();
+                if (mainAudioTrack != null) {
+                    mTvControlManager.DtvSwitchAudioTrack(mainAudioTrack.mPid, mainAudioTrack.mFormat, 0);
+                    notifyTrackSelected(TvTrackInfo.TYPE_AUDIO, generateAudioIdString(mainAudioTrack));
+                    mSystemControlManager.setProperty(DTV_AUDIO_TRACK_ID, generateAudioIdString(mainAudioTrack));
+                    if (mCurrentChannel != null) {
+                        Log.d(TAG, "audioAutoSave: idx=" + mainAudioTrack.id);
+                        mCurrentChannel.setAudioTrackIndex(mainAudioTrack.id);
+                        mTvDataBaseManager.updateSingleChannelInternalProviderData(mCurrentChannel.getId(),
+                                ChannelInfo.KEY_AUDIO_TRACK_INDEX, String.valueOf(mainAudioTrack.id));
+                    }
+                } else {
+                    mTvControlManager.DtvSwitchAudioTrack(audio.mPid, audio.mFormat, 0);
+                }
             } else if (TextUtils.equals(DroidLogicTvUtils.ACTION_AD_MIXING_LEVEL, action)) {
                 mAudioADMixingLevel = bundle.getInt(DroidLogicTvUtils.PARA_VALUE1);
                 mHandler.obtainMessage(MSG_MIX_AD_LEVEL, mAudioADMixingLevel, 0).sendToTarget();
