@@ -257,6 +257,8 @@ public class OptionUiManagerT implements  OnFocusChangeListener, TvControlManage
     private static final int DTV_TO_ATV = 5;
     private static final int SET_TO_MODE = 1;
 
+    private static final int CO_ATSC_C = 11;//For Colombia still use atsc
+    private static final int CO_ATSC_T = 12;
     private void startManualSearchAccordingMode() {
         Log.d(TAG, "startManualSearchAccordingMode");
         String channel = mLiveTvFrequencyFrom;
@@ -666,6 +668,7 @@ public class OptionUiManagerT implements  OnFocusChangeListener, TvControlManage
     private void startAutosearchAccrodingTvMode() {
         Log.d(TAG, "startAutosearchAccrodingTvMode");
         TvControlManager.TvMode mode = new TvControlManager.TvMode(mSettingsManager.getDtvType());
+        Log.d(TAG, "getDtvType[" + mSettingsManager.getDtvType() + "], mAtsccMode["+ mAtsccMode+"]");
         //mSettingsManager.sendBroadcastToTvapp("search_channel");
         Bundle bundle = new Bundle();
         int[] freqPair = new int[2];
@@ -724,7 +727,13 @@ public class OptionUiManagerT implements  OnFocusChangeListener, TvControlManage
                 deleteChannels(mode, true, false);
                 checkcablemode = mAtsccMode + 1;
 
-                if (mSettingsManager.getDtvType().equals(TvContract.Channels.TYPE_ATSC_C)) {
+                if (countryId.equals("CO")) {
+                    if (mSettingsManager.getDtvType().equals(TvContract.Channels.TYPE_ATSC_C)) {
+                        bundle.putInt(DroidLogicTvUtils.PARA_SCAN_PARA5, CO_ATSC_C);
+                    } else {
+                        bundle.putInt(DroidLogicTvUtils.PARA_SCAN_PARA5, CO_ATSC_T);
+                    }
+                } else if (mSettingsManager.getDtvType().equals(TvContract.Channels.TYPE_ATSC_C)) {
                     if (checkcablemode == ScanType.CABLE_MODE_STANDARD) {
                         bundle.putInt(DroidLogicTvUtils.PARA_SCAN_PARA5, (STD + DTV_TO_ATV));
                     } else if (checkcablemode == ScanType.CABLE_MODE_LRC) {
