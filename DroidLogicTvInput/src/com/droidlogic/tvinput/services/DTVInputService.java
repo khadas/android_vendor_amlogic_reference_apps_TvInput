@@ -889,7 +889,7 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
                                 case MSG_UPDATE_VIDEO_RESOLUTION:
                                     //Log.d(TAG,"receive MSG_UPDATE_VIDEO_RESOLUTION");
                                     String height = mSystemControlManager.readSysFs("/sys/class/video/frame_height");
-                                    String pi = mSystemControlManager.readSysFs("/sys/class/deinterlace/di0/frame_format");
+                                    String pi = mSystemControlManager.readSysFs("/sys/class/video/frame_original_format");
                                     String format = DroidLogicTvUtils.convertVideoFormat(height, pi);
                                     Log.i(TAG,"height : " + height + " pi " + pi + " currentChannel format : " + mCurrentChannel.getVideoFormat());
                                     if (mCurrentChannel != null) {
