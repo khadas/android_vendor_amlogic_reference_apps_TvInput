@@ -1482,7 +1482,7 @@ public class DTVSubtitleView extends ViewGroup {
     public class SubtitleManagerListener implements SubtitleManager.SubtitleDataListener {
         @Override
         public void onSubtitleEvent(int type, Object data, byte[] subdata, int x, int y,
-            int width ,int height, int videoW, int videoH, boolean showOrHide) {
+            int width ,int height, int videoW, int videoH, boolean showOrHide, int objectSegmentId) {
             //Log.d(TAG, "DTVSubtitleView type:" + type+"; height=" +height+"; width="+width+",videoW:"+videoW+",videoH:"+videoH+", show="+showOrHide);
             synchronized(lock) {
                 handler.removeMessages(TT_NO_SIGAL);
