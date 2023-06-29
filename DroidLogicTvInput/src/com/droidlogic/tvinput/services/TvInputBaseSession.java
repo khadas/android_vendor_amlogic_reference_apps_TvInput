@@ -350,11 +350,8 @@ public abstract class TvInputBaseSession extends TvInputService.Session implemen
 
     private void setAudiodMute(boolean mute) {
         Log.d(TAG, "setAudiodMute="+mute);
-        if (mute) {
-            handleAdtvAudioEvent(AudioSystemCmdManager.AUDIO_SERVICE_CMD_SET_MUTE, 1, 0);
-        } else {
-            handleAdtvAudioEvent(AudioSystemCmdManager.AUDIO_SERVICE_CMD_SET_MUTE, 0, 0);
-        }
+        handleAdtvAudioEvent(AudioSystemCmdManager.AUDIO_SERVICE_CMD_SET_MUTE, mute ? 1 : 0, 0);
+        mTvControlManager.SetAudioMute(mute ? 1 : 0);
     }
 
     public void updateAudioPortGain(int srcType){
