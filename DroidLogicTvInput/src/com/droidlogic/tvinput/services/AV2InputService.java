@@ -1309,6 +1309,11 @@ public class AV2InputService extends DroidLogicTvInputService {
 
             Log.d(TAG, "\tAuto Sub: [" + SubSelectedId + "]");
             notifyTrackSelected(TvTrackInfo.TYPE_SUBTITLE, SubSelectedId);
+
+            ChannelInfo.Subtitle subtitle = parseSubtitleIdString(SubSelectedId);
+            if (subtitle != null) {
+                mCurrentSubtitle = subtitle;
+            }
         }
 
         private int getRawUserStyle(){
