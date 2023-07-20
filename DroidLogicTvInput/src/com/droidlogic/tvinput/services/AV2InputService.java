@@ -146,7 +146,8 @@ public class AV2InputService extends DroidLogicTvInputService {
         intentFilter.addAction(TvInputManager.ACTION_BLOCKED_RATINGS_CHANGED);
         intentFilter.addAction(TvInputManager.ACTION_PARENTAL_CONTROLS_ENABLED_CHANGED);
         intentFilter.addAction(Intent.ACTION_TIME_CHANGED);
-        registerReceiver(mParentalControlsBroadcastReceiver, intentFilter);
+        registerReceiver(mParentalControlsBroadcastReceiver, intentFilter,
+            2/*Context.RECEIVER_EXPORTED*/ | Context.RECEIVER_VISIBLE_TO_INSTANT_APPS);
     }
 
     @Override

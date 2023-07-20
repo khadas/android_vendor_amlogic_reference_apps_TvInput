@@ -1558,7 +1558,8 @@ public class ChannelSearchActivity extends Activity implements OnClickListener, 
         IntentFilter filter = new IntentFilter();
         filter.addAction(DroidLogicTvUtils.ACTION_CHANNEL_CHANGED);
         filter.addAction(Intent.ACTION_CLOSE_SYSTEM_DIALOGS);
-        registerReceiver(mReceiver, filter);
+        registerReceiver(mReceiver, filter,
+            2/*Context.RECEIVER_EXPORTED*/ | Context.RECEIVER_VISIBLE_TO_INSTANT_APPS);
         if (isTvTestDTMBSearchMode)
             sendMessageDelayeds(TVTEST_DTMB_SEARCH_START, 0, null, 1000);
     }

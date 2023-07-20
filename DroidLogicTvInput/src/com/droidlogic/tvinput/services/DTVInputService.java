@@ -260,12 +260,14 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
         intentFilter
                 .addAction(TvInputManager.ACTION_PARENTAL_CONTROLS_ENABLED_CHANGED);
         intentFilter.addAction(Intent.ACTION_TIME_CHANGED);
-        registerReceiver(mParentalControlsBroadcastReceiver, intentFilter);
+        registerReceiver(mParentalControlsBroadcastReceiver, intentFilter,
+            2/*Context.RECEIVER_EXPORTED*/ | Context.RECEIVER_VISIBLE_TO_INSTANT_APPS);
 
         IntentFilter filter= new IntentFilter();
         filter.addAction(DroidLogicTvUtils.ACTION_DTV_AUTO_SCAN);
         filter.addAction(DroidLogicTvUtils.ACTION_DTV_MANUAL_SCAN);
-        registerReceiver(mChannelScanStartReceiver, filter);
+        registerReceiver(mChannelScanStartReceiver, filter,
+            2/*Context.RECEIVER_EXPORTED*/ | Context.RECEIVER_VISIBLE_TO_INSTANT_APPS);
 
         mTvControlManager = TvControlManager.getInstance();
         if (DEBUG) Log.d(TAG,"oncreate:Set EAS listener as TvInput");

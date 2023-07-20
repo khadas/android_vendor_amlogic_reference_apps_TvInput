@@ -1119,7 +1119,8 @@ public class OptionUiManagerT implements  OnFocusChangeListener, TvControlManage
     private void registerChannelScanStartReceiver() {
         IntentFilter filter= new IntentFilter();
         filter.addAction(DroidLogicTvUtils.ACTION_STORE_CHANNEL_STATUS);
-        mContext.registerReceiver(mChannelScanStoreStatusReceiver, filter);
+        mContext.registerReceiver(mChannelScanStoreStatusReceiver, filter,
+            2/*Context.RECEIVER_EXPORTED*/ | Context.RECEIVER_VISIBLE_TO_INSTANT_APPS);
     }
 
     private void unRegisterChannelScanStartReceiver() {

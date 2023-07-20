@@ -169,7 +169,8 @@ public abstract class DroidLogicTvInputService extends TvInputService implements
         filter.addAction(DroidLogicTvUtils.ACTION_DTV_MANUAL_SCAN);
         filter.addAction(DroidLogicTvUtils.ACTION_ATV_AUTO_SCAN);
         filter.addAction(DroidLogicTvUtils.ACTION_ATV_MANUAL_SCAN);
-        registerReceiver(mChannelScanStartReceiver, filter);
+        registerReceiver(mChannelScanStartReceiver, filter,
+            2/*Context.RECEIVER_EXPORTED*/ | Context.RECEIVER_VISIBLE_TO_INSTANT_APPS);
     }
 
     public void unRegisterChannelScanStartReceiver() {

@@ -391,7 +391,8 @@ public abstract class TvInputBaseSession extends TvInputService.Session implemen
                     IntentFilter intentFilter = new IntentFilter();
                     intentFilter.addAction(Intent.ACTION_SCREEN_OFF);
                     intentFilter.addAction(Intent.ACTION_SCREEN_ON);
-                    mContext.registerReceiver(mBroadcastReceiver, intentFilter);
+                    mContext.registerReceiver(mBroadcastReceiver, intentFilter,
+                        2/*Context.RECEIVER_EXPORTED*/ | Context.RECEIVER_VISIBLE_TO_INSTANT_APPS);
                 break;
             case MSG_DO_PRI_CMD:
                 if (isHdmiDevice && DroidLogicTvUtils.ACTION_TIF_SHOW_DOLBY_VISION.equals((String)msg.obj)) {
