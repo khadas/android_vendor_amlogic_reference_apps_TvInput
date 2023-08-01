@@ -767,6 +767,9 @@ public abstract class DroidLogicTvInputService extends TvInputService implements
         Log.d(TAG, "startTvPlay,result= " + result);
         if (mConfigs.length == 0 || result != ACTION_SUCCESS) {
             doTuneFinish(ACTION_FAILED, uri, sessionId);
+            if (1 == mSystemControlManager.getScreenColorForSignalChange()) {
+                mTvControlManager.request("setTestPattern","{\"blue\":1}");//tune tv source fail , need set test pattern
+            }
             if (result == ACTION_PENDING)
                 mPendingTune.setPendingEvent(uri, sessionId);
             else if (result == ACTION_FAILED && mSession != null)
@@ -810,6 +813,7 @@ public abstract class DroidLogicTvInputService extends TvInputService implements
             }
             mHardware.setSurface(null, isDtvSource() ? mConfigs[0]: mConfigs[1]);
             tvPlayStopped(sessionId);
+            mTvControlManager.request("setTestPattern","{\"blue\":0}");//exit tv source, need test pattern is black
         }
         return ACTION_SUCCESS;
     }
