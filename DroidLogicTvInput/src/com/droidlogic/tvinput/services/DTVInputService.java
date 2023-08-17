@@ -25,7 +25,6 @@ import android.media.tv.TvTrackInfo;
 import android.media.tv.TvContract;
 import android.media.tv.TvStreamConfig;
 import android.media.tv.TvInputManager.Hardware;
-import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
@@ -35,7 +34,6 @@ import android.text.TextUtils;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
-import android.view.KeyEvent;
 import android.view.accessibility.CaptioningManager;
 import android.view.accessibility.CaptioningManager.CaptionStyle;
 import android.view.accessibility.CaptioningManager.CaptioningChangeListener;
@@ -68,25 +66,24 @@ import com.droidlogic.tvinput.R;
 import com.droidlogic.tvinput.customer.CustomerOps;
 
 import java.nio.channels.Channel;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.Map;
+import java.util.Arrays;
 import java.util.ArrayList;
+import java.util.Date;
+import java.util.concurrent.CountDownLatch;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Map;
 import java.util.List;
 import java.util.Locale;
-import java.util.Arrays;
-import java.util.Iterator;
-
-import java.util.Date;
-import java.util.TimeZone;
+import java.util.Random;
+import java.util.Set;
 import java.text.SimpleDateFormat;
+import java.util.TimeZone;
 
 import com.droidlogic.app.tv.TvControlManager;
 import com.droidlogic.app.tv.TvControlManager.RrtSearchInfo;
 
-import java.util.HashMap;
-import java.util.Map;
 import android.net.Uri;
 import android.view.Surface;
 import android.os.SystemProperties;
@@ -104,9 +101,6 @@ import android.database.Cursor;
 import android.media.tv.TvInputService;
 import java.io.File;
 import java.io.IOException;
-import java.util.Locale;
-import java.util.Random;
-import java.util.concurrent.CountDownLatch;
 
 import com.droidlogic.tvinput.database.Rrt5DataBaseManager;
 import com.droidlogic.app.tv.RrtEvent;
@@ -641,6 +635,7 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
                 setMonitor(null);
             }
 
+            isPlayingATVInDTVMode = false;
             mCurrentChannelUri = null;
             releaseWorkThread();
             synchronized(mLock) {
@@ -1117,15 +1112,18 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
             }
             mCurrentChannel = info;
             isTvPlaying = false;
-            if (DEBUG) Log.d(TAG,"mCurrentChannel : " + mCurrentChannel + " AtvDtvMode " + DroidLogicTvUtils.getAtvDtvModeFlag(mContext));
-            if (DroidLogicTvUtils.isDTV(mContext) && DroidLogicTvUtils.getAtvDtvModeFlag(mContext) == DroidLogicTvUtils.TV_SEARCH_ATV_DTV) {
-                Log.i(TAG,". " + "mSurface == null " + (mSurface == null));
-                if (DroidLogicTvUtils.getSigType(mCurrentChannel) == DroidLogicTvUtils.SIG_INFO_TYPE_ATV) {
-                    isDtvPlayAtvSignal = true;
-                } else {
-                    isDtvPlayAtvSignal = false;
+            if (DEBUG) Log.d(TAG,"mCurrentChannel : " + mCurrentChannel);
+            if (DroidLogicTvUtils.isAtscCountry(mContext)) {
+                int signalType = DroidLogicTvUtils.getSigType(mCurrentChannel);
+                Log.i(TAG, "signalType = " + signalType + " isPlayingATVInDTVMode = " + isPlayingATVInDTVMode);
+                boolean needResetSurface = false;
+                if (signalType == DroidLogicTvUtils.SIG_INFO_TYPE_ATV && !isPlayingATVInDTVMode) {
+                    needResetSurface = true;
+                } else if (signalType != DroidLogicTvUtils.SIG_INFO_TYPE_ATV && isPlayingATVInDTVMode){
+                    needResetSurface = true;
                 }
-                if (mSurface != null) {
+                isPlayingATVInDTVMode = signalType == DroidLogicTvUtils.SIG_INFO_TYPE_ATV;
+                if (mSurface != null && needResetSurface) {
                     setSurfaceInService(mSurface, this);
                 }
             }

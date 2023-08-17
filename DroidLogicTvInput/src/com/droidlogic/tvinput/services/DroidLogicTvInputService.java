@@ -46,7 +46,6 @@ import android.media.tv.TvStreamConfig;
 import android.media.tv.TvInputManager.Hardware;
 import android.media.tv.TvInputManager.HardwareCallback;
 import android.os.Bundle;
-import android.text.TextUtils;
 import android.util.Log;
 import android.util.SparseArray;
 import android.media.tv.TvContract.Channels;
@@ -63,7 +62,6 @@ import java.util.HashMap;
 
 import org.xmlpull.v1.XmlPullParserException;
 
-import android.provider.Settings;
 import android.content.IntentFilter;
 import android.content.BroadcastReceiver;
 import android.provider.Settings.Secure;
@@ -100,7 +98,7 @@ public abstract class DroidLogicTvInputService extends TvInputService implements
     private static int mSelectPort = -1;
     private static String ACCESSIBILITY_CAPTIONING_PRESET = "accessibility_captioning_preset";
     protected Surface mSurface;
-    protected boolean isDtvPlayAtvSignal = false;
+    protected boolean isPlayingATVInDTVMode = false;
     protected int ACTION_FAILED = -1;
     protected int ACTION_SUCCESS = 1;
     protected int ACTION_PENDING = 0;
@@ -746,9 +744,8 @@ public abstract class DroidLogicTvInputService extends TvInputService implements
         if (mHardware != null && mSurface != null && mConfigs.length > 0 && mSurface.isValid()) {
             //createDecoder();
             //decoderRelease();
-            if (isDtvPlayAtvSignal) {
+            if (isPlayingATVInDTVMode) {
                 mHardware.setSurface(mSurface,mConfigs[1]);
-                isDtvPlayAtvSignal = false;
             } else {
                 mHardware.setSurface(mSurface, isDtvSource() ? mConfigs[0] : mConfigs[1]);
             }
