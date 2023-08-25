@@ -105,10 +105,11 @@ public class Spanning extends ReplacementSpan {
             if (mRowStr.isStartStr) {
                 str_left = mRow.character_gap* mRowStr.str_start_x;
             }else {
-                str_left = mRowStr.pre_str_length;
+                str_left = mRowStr.pre_str_length + mRow.character_gap* mRow.row_start_x;
             }
             str_right = str_left + mRowStr.string_length_on_paint;
-            if (str_right <  mRow.character_gap*mRow.row_start_x + mRow.row_length_on_paint) {
+            if (mRowStr.isStartStr && mRow.row_str_count == 1
+                && (str_right <  mRow.character_gap*mRow.row_start_x + mRow.row_length_on_paint)) {
                 str_right = mRow.character_gap * mRowStr.str_characters_count;
             }
         }
@@ -306,12 +307,14 @@ public class Spanning extends ReplacementSpan {
     }
 
     class RowInfo {
+        int row_str_count;
         double character_gap;
         double row_length_on_paint;
         int row_characters_count;
         double row_start_x;
 
         public RowInfo(CcImplement.CaptionWindow.Window.Rows rows) {
+            row_str_count = rows.str_count;
             character_gap = rows.character_gap;
             row_length_on_paint = rows.row_length_on_paint;
             row_characters_count = rows.row_characters_count;
