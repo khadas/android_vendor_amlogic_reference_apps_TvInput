@@ -218,6 +218,7 @@ public abstract class DroidLogicTvInputService extends TvInputService implements
         mDeviceId = getHardwareDeviceId(info.getId());
         mCurrentInputId = info.getId();
         mHardware = mTvInputManager.acquireTvInputHardware(mDeviceId, info, mHardwareCallback);
+        mHardware.setStreamVolume(1.0f);
         Log.d(TAG, "acquireHardware mDeviceId="+mDeviceId+",  mCurrentInputId="+mCurrentInputId+", mHardware: " + mHardware);
     }
 
