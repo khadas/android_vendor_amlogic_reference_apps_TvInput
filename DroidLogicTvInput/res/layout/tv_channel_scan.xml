@@ -262,7 +262,7 @@
 
                     <TextView
                         android:id="@+id/channel_from"
-                        android:layout_width="@dimen/px_80.0"
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:accessibilityLiveRegion="polite"
                         android:fontFamily="sans-serif"

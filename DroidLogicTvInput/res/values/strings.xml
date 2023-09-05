@@ -257,6 +257,8 @@
     <string name="db">dB</string>
     <string name="tv_search_channel_from">From:</string>
     <string name="tv_search_channel_to">To:</string>
+    <string name="tv_search_channel_frequency">Channel Frequency:</string>
+    <string name="tv_search_frequency_hint">MHz</string>
     <string name="tv_search_center_channel1">Center Channel 1:</string>
     <string name="tv_search_center_channel2">Center Channel 2:</string>
     <string name="tv_search_channel_stopped">channel searching is stopped</string>
