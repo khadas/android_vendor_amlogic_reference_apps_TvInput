@@ -203,6 +203,7 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
     private AudioSystemCmdManager mAudioSystemCmdManager;
     protected static boolean isTvPlaying = false;
     protected TvTime mTvTime = null;
+    private boolean mHasPreferLanguageFeature = false;
 
     public boolean is_subtitle_enabled;
     protected boolean mIsChannelScrambled = false;
@@ -269,6 +270,15 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
         mEASProcessManager = new EASProcessManager(this);
         mTvControlManager.setEasListener(this);
         mTvTime = new TvTime(this);
+
+        //language settings, default disable
+        String value =  mTvControlManager.TvMiscConfigGet("dtv.prefer.language.en", "0");
+        int ret = 0;
+        try {
+            ret = Integer.valueOf(value);
+        } catch (Exception ignore) {
+        }
+        mHasPreferLanguageFeature = (ret == 1);
     }
 
     @Override
@@ -2509,6 +2519,10 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
                 Auto rule: channel specified track > default language track > system language > the 1st track > -1
         */
         protected int getAudioAuto(ChannelInfo info) {
+            /*keep origin design*/
+            boolean useLocalLanguage = !mHasPreferLanguageFeature;
+            boolean useSavedTrack = !mHasPreferLanguageFeature;
+
             if (mCurrentAudios == null || mCurrentAudios.size() == 0)
                 return -1;
 
@@ -2518,62 +2532,104 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
                 return -2;
 
             /*if valid*/
-            if (index >= 0 && index < mCurrentAudios.size())
-                return index;
+            if (useSavedTrack) {
+                if (index >= 0 && index < mCurrentAudios.size())
+                    return index;
+            }
 
             /*default language track*/
-            String defaultLanguage = DataProviderManager.getStringValue(mContext, DroidLogicTvUtils.TV_KEY_DEFAULT_LANGUAGE, null);
-            if (defaultLanguage == null)/*system language track*/
-                defaultLanguage = TvMultilingualText.getLocalLang();
-
-            Iterator<ChannelInfo.Audio> iter = mCurrentAudios.iterator();
-            while (iter.hasNext()) {
-                ChannelInfo.Audio a = iter.next();
-                if (TextUtils.equals(a.mLang, defaultLanguage)) {
-                    return a.id;
+            String firstLanguage =
+                mTvControlManager.GetPreferredLanguage(mContext, DroidLogicTvUtils.PREFERRED_AUD_DEFAULT);
+            String secondaryLanguage =
+                mTvControlManager.GetPreferredLanguage(mContext, DroidLogicTvUtils.PREFERRED_AUD_SECONDARY);
+            if (info.isAtscChannel() || useLocalLanguage) {
+                firstLanguage = TvMultilingualText.getLocalLang();
+                secondaryLanguage = "none";
+            }
+            int firstId = -1;
+            int secondId = -1;
+            for (ChannelInfo.Audio a : mCurrentAudios) {
+                if (!"none".equals(firstLanguage)) {
+                    if (TextUtils.equals(a.mLang, firstLanguage)) {
+                        firstId = a.id;
+                        break;
+                    }
+                }
+                if (!"none".equals(secondaryLanguage)) {
+                    if (TextUtils.equals(a.mLang, secondaryLanguage)) {
+                    secondId = a.id;
+                    }
                 }
             }
+            if (firstId >= 0)
+                return firstId;
+            else if (secondId >= 0)
+                return secondId;
 
             /*none match, use the 1st.*/
             return 0;
         }
 
         protected int getSubtitleAuto(ChannelInfo info) {
+            //keep origin logic
+            boolean useDynamicCaption = false;
+            boolean useLocalLanguage = !mHasPreferLanguageFeature;
+            boolean useSavedTrack = !mHasPreferLanguageFeature;
+
             if (info == null
                 || mCurrentSubtitles == null
                 || mCurrentSubtitles.size() == 0)
                 return -1;
 
-            int index = CustomerOps.getInstance(mContext).getTvClosedCaptionIndex(info);
-            if (index == CustomerOps.INVALID_INDEX) {
-                index = info.getSubtitleTrackIndex();
-            }
-            /*off by user*/
-            if (index == -2)
-                return -2;
+            if ((info.isAtscChannel() || isAtscForcedStandard()) && useDynamicCaption)
+                return getAtscCaptionDefault(info);
 
-            /*if not selected, don't start it*/
-            if (index == -1)
-                return -1;
-
-            /*if valid*/
-            if (index >= 0 && index < mCurrentSubtitles.size())
-                return index;
-
-            String defaultLanguage = DataProviderManager.getStringValue(mContext, DroidLogicTvUtils.TV_KEY_DEFAULT_LANGUAGE, null);
-            if (defaultLanguage == null)
-                defaultLanguage = TvMultilingualText.getLocalLang();
-
-            Iterator<ChannelInfo.Subtitle> iter = mCurrentSubtitles.iterator();
-            while (iter.hasNext()) {
-                ChannelInfo.Subtitle s = iter.next();
-                if (TextUtils.equals(s.mLang, defaultLanguage)) {
-                    return s.id;
+            if (info.isAtscChannel() || info.isNtscChannel()) {
+                int index = CustomerOps.getInstance(mContext).getTvClosedCaptionIndex(info);
+                if (index == CustomerOps.INVALID_INDEX) {
+                    index = info.getSubtitleTrackIndex();
+                }
+                /*if valid*/
+                if (index >= 0 && index < mCurrentSubtitles.size())
+                    return index;
+                else
+                    return -1;
+            } else if (info.isDigitalChannel() && !info.isAtscChannel()) {
+                if (useSavedTrack) {
+                    int index = info.getSubtitleTrackIndex();
+                    if (index >= 0 && index < mCurrentSubtitles.size())
+                        return index;
+                    else
+                        return -1;
+                } else {
+                    String firstLanguage =
+                        mTvControlManager.GetPreferredLanguage(mContext, DroidLogicTvUtils.PREFERRED_SUB_DEFAULT);
+                    String secondaryLanguage =
+                        mTvControlManager.GetPreferredLanguage(mContext, DroidLogicTvUtils.PREFERRED_SUB_SECONDARY);
+                    if (useLocalLanguage) {
+                        firstLanguage = TvMultilingualText.getLocalLang();
+                        secondaryLanguage = "none";
+                    }
+                    int firstId = -1;
+                    int secondId = -1;
+                    for (ChannelInfo.Subtitle s : mCurrentSubtitles) {
+                        if (!"none".equals(firstLanguage)) {
+                            if (TextUtils.equals(s.mLang, firstLanguage)) {
+                                firstId = s.id;
+                                break;
+                            }
+                        }
+                        if (!"none".equals(secondaryLanguage)) {
+                            if (TextUtils.equals(s.mLang, secondaryLanguage)) {
+                                secondId = s.id;
+                            }
+                        }
+                    }
+                    if (firstId >= 0)
+                        return firstId;
+                    return secondId;
                 }
             }
-
-            if (info.isAtscChannel() || isAtscForcedStandard())
-                return getAtscCaptionDefault(info);
 
             /*none match, use the 1st.*/
             return 0;

@@ -98,6 +98,10 @@ public class ChannelSearchActivity extends Activity implements OnClickListener, 
     private Spinner mAtvSoundSystem;
     private Spinner mDvbcQamModeSetting;
     private Spinner mSearchChannelTypeSetting;
+    private Spinner mSubtitleLanguageSetting;
+    private Spinner mSubtitle2ndLanguageSetting;
+    private Spinner mAudioLanguageSetting;
+    private Spinner mAudio2ndLanguageSetting;
     private EditText mInputChannelFrom;
     private EditText mInputChannelTo;
     private TextView mInputChannelFromText;
@@ -120,6 +124,7 @@ public class ChannelSearchActivity extends Activity implements OnClickListener, 
     private LinearLayout mChannelTypeLayout;
     private Button mExportChannel;
     private Button mImportChannel;
+    private LinearLayout mLanguageSettingsLayout;
 
     private String[] mDtmbFrequencyName = null;
 
@@ -182,6 +187,7 @@ public class ChannelSearchActivity extends Activity implements OnClickListener, 
     public static final String KEY_TVTEST_START_DTMB_SEARCH = "isTvTestDTMBSearch";
     private static final int TVTEST_DTMB_SEARCH_START = 0x1001;
     private boolean isTvTestDTMBSearchMode = false;
+    private boolean mHasPreferLanguageFeature = false;
 
     private final KeyCodeHandler mKeyCodeHandler = new KeyCodeHandler();
 
@@ -192,6 +198,15 @@ public class ChannelSearchActivity extends Activity implements OnClickListener, 
         mTvDataBaseManager = new TvDataBaseManager(this);
         mTvControlManager = TvControlManager.getInstance();
         mPowerManager = getSystemService(PowerManager.class);
+
+        //language settings
+        String value =  mTvControlManager.TvMiscConfigGet("dtv.prefer.language.en", "0");
+        int ret = 0;
+        try {
+            ret = Integer.valueOf(value);
+        } catch (Exception ignore) {
+        }
+        mHasPreferLanguageFeature = (ret == 1);
 
         in = getIntent();
         if (in != null) {
@@ -325,6 +340,14 @@ public class ChannelSearchActivity extends Activity implements OnClickListener, 
             }
         });
 
+        if (mHasPreferLanguageFeature) {
+            mLanguageSettingsLayout = (LinearLayout) findViewById(R.id.language_settings);
+            if ("CN".equals(DroidLogicTvUtils.getCountry(this))) {
+                mLanguageSettingsLayout.setVisibility(View.VISIBLE);
+            }
+        } else {
+            mLanguageSettingsLayout = null;
+        }
         initSpinner();
         startShowActivityTimer();
     }
@@ -615,6 +638,10 @@ public class ChannelSearchActivity extends Activity implements OnClickListener, 
         mAtvSoundSystem = (Spinner) findViewById(R.id.atv_sound_spinner);
         mDvbcQamModeSetting = (Spinner) findViewById(R.id.dvbc_qam_mode_spinner);
         mSearchChannelTypeSetting = (Spinner) findViewById(R.id.search_channel_type_spinner);
+        mSubtitleLanguageSetting = (Spinner) findViewById(R.id.subtitle_language_spinner);
+        mSubtitle2ndLanguageSetting = (Spinner) findViewById(R.id.subtitle_second_language_spinner);
+        mAudioLanguageSetting = (Spinner) findViewById(R.id.audio_language_spinner);
+        mAudio2ndLanguageSetting = (Spinner) findViewById(R.id.audio_second_language_spinner);
         country_arr_adapter = new ArrayAdapter<String>(ChannelSearchActivity.this, android.R.layout.simple_spinner_item, mSupportCountryFullNameList);
         country_arr_adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item );
         mCountrySetting.setAdapter(country_arr_adapter);
@@ -656,7 +683,27 @@ public class ChannelSearchActivity extends Activity implements OnClickListener, 
         mOrderSetting.setAdapter(search_order_arr_adapter);
         mOrderSetting.setSelection(DroidLogicTvUtils.getSearchOrder(this));
 
+        if (mLanguageSettingsLayout != null) {
+            ArrayAdapter<String> mPreferredLanguageAdapter =
+                new ArrayAdapter<String>(ChannelSearchActivity.this,
+                    android.R.layout.simple_spinner_item, getPreferredLanguageList());
+            mPreferredLanguageAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+            mSubtitleLanguageSetting.setAdapter(mPreferredLanguageAdapter);
+            mSubtitleLanguageSetting.setSelection(
+                mTvControlManager.getCurrentPreferredSelection(this, DroidLogicTvUtils.PREFERRED_SUB_DEFAULT));
 
+            mSubtitle2ndLanguageSetting.setAdapter(mPreferredLanguageAdapter);
+            mSubtitle2ndLanguageSetting.setSelection(
+                mTvControlManager.getCurrentPreferredSelection(this, DroidLogicTvUtils.PREFERRED_SUB_SECONDARY));
+
+            mAudioLanguageSetting.setAdapter(mPreferredLanguageAdapter);
+            mAudioLanguageSetting.setSelection(
+                mTvControlManager.getCurrentPreferredSelection(this, DroidLogicTvUtils.PREFERRED_AUD_DEFAULT));
+
+            mAudio2ndLanguageSetting.setAdapter(mPreferredLanguageAdapter);
+            mAudio2ndLanguageSetting.setSelection(
+                mTvControlManager.getCurrentPreferredSelection(this, DroidLogicTvUtils.PREFERRED_AUD_SECONDARY));
+        }
 
         if (isAtvSupport) {
             search_atv_color_arr_adapter = new ArrayAdapter<String>(ChannelSearchActivity.this, android.R.layout.simple_spinner_item, mSupportAtvColorSysList);
@@ -746,6 +793,13 @@ public class ChannelSearchActivity extends Activity implements OnClickListener, 
                     mImportChannel.setVisibility(View.INVISIBLE);
                 }
                 if (!curCountry.equals(preCountry)) {
+                    if (mLanguageSettingsLayout != null) {
+                        if ("CN".equals(curCountry)) {
+                            mLanguageSettingsLayout.setVisibility(View.VISIBLE);
+                        } else {
+                            mLanguageSettingsLayout.setVisibility(View.GONE);
+                        }
+                    }
                     DroidLogicTvUtils.setCountry(ChannelSearchActivity.this, curCountry);
                     if (DroidLogicTvUtils.isDtvContainsAtscByCountry(curCountry)) {
                         DroidLogicTvUtils.setAtvDtvModeFlag(ChannelSearchActivity.this, DroidLogicTvUtils.TV_SEARCH_ATV_DTV);
@@ -971,6 +1025,40 @@ public class ChannelSearchActivity extends Activity implements OnClickListener, 
                 // TODO Auto-generated method stub
             }
         });
+
+        if (mLanguageSettingsLayout != null) {
+            OnItemSelectedListener mPreferredListener = new OnItemSelectedListener() {
+                @Override
+                public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                    int type = -1;
+                    switch (parent.getId()) {
+                        case R.id.subtitle_language_spinner:
+                            type = DroidLogicTvUtils.PREFERRED_SUB_DEFAULT;
+                            break;
+                        case R.id.subtitle_second_language_spinner:
+                            type = DroidLogicTvUtils.PREFERRED_SUB_SECONDARY;
+                            break;
+                        case R.id.audio_language_spinner:
+                            type = DroidLogicTvUtils.PREFERRED_AUD_DEFAULT;
+                            break;
+                        case R.id.audio_second_language_spinner:
+                            type = DroidLogicTvUtils.PREFERRED_AUD_SECONDARY;
+                            break;
+                    }
+                    if (type != -1)
+                        mTvControlManager.setPreferredLanguageWithSelection(ChannelSearchActivity.this, type, position);
+                }
+
+                @Override
+                public void onNothingSelected(AdapterView<?> parent) {
+                    // TODO Auto-generated method stub
+                }
+            };
+            mSubtitleLanguageSetting.setOnItemSelectedListener(mPreferredListener);
+            mSubtitle2ndLanguageSetting.setOnItemSelectedListener(mPreferredListener);
+            mAudioLanguageSetting.setOnItemSelectedListener(mPreferredListener);
+            mAudio2ndLanguageSetting.setOnItemSelectedListener(mPreferredListener);
+        }
     }
 
 
@@ -1923,5 +2011,14 @@ public class ChannelSearchActivity extends Activity implements OnClickListener, 
             }
             return result;
         }
+    }
+
+    private List<String> getPreferredLanguageList() {
+        List<String> languageList = new ArrayList<String>();
+        languageList.add("Traditional Chinese");
+        languageList.add("English");
+        languageList.add("Simplified Chinese");
+        languageList.add("None");
+        return languageList;
     }
 }

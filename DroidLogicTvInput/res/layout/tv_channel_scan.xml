@@ -479,6 +479,108 @@
 
         </LinearLayout>
 
+        <LinearLayout
+            android:id="@+id/language_settings"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:layout_constraintLeft_toLeftOf="@id/tv_tune_title"
+            app:layout_constraintTop_toBottomOf="@id/search_option_content"
+            android:visibility="gone"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/ut_scan_description_margin_top"
+                android:accessibilityLiveRegion="polite"
+                android:fontFamily="sans-serif"
+                android:text="@string/tv_preferred_language"
+                android:textColor="#FFFFFF"
+                android:textSize="@dimen/ut_scan_button_text_size"
+                android:textStyle="bold" />
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:paddingTop="@dimen/px_30.0"
+                android:orientation="horizontal">
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:accessibilityLiveRegion="polite"
+                        android:fontFamily="sans-serif"
+                        android:text="@string/tv_subtitle_preferred"
+                        android:textColor="@color/ut_scan_description_text"
+                        android:textSize="@dimen/ut_scan_description_text_size" />
+
+                    <Spinner
+                        android:id="@+id/subtitle_language_spinner"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/px_15.0"
+                        android:fontFamily="sans-serif"
+                        android:minHeight="48dp"
+                        android:textColor="@color/ut_scan_description_text"
+                        android:textSize="@dimen/ut_scan_description_text_size" />
+
+                    <Spinner
+                        android:id="@+id/subtitle_second_language_spinner"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/px_15.0"
+                        android:fontFamily="sans-serif"
+                        android:minHeight="48dp"
+                        android:textColor="@color/ut_scan_description_text"
+                        android:textSize="@dimen/ut_scan_description_text_size" />
+
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:accessibilityLiveRegion="polite"
+                        android:fontFamily="sans-serif"
+                        android:text="@string/tv_audio_preferred"
+                        android:textColor="@color/ut_scan_description_text"
+                        android:textSize="@dimen/ut_scan_description_text_size" />
+
+                    <Spinner
+                        android:id="@+id/audio_language_spinner"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/px_15.0"
+                        android:contentDescription="@string/app_name"
+                        android:fontFamily="sans-serif"
+                        android:minHeight="48dp"
+                        android:textColor="@color/ut_scan_description_text"
+                        android:textSize="@dimen/ut_scan_description_text_size" />
+
+                    <Spinner
+                        android:id="@+id/audio_second_language_spinner"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/px_15.0"
+                        android:contentDescription="@string/app_name"
+                        android:fontFamily="sans-serif"
+                        android:minHeight="48dp"
+                        android:textColor="@color/ut_scan_description_text"
+                        android:textSize="@dimen/ut_scan_description_text_size" />
+
+                </LinearLayout>
+            </LinearLayout>
+        </LinearLayout>
+
         <View
             android:layout_width="0dp"
             android:layout_height="1dp"
@@ -486,7 +588,7 @@
             android:background="@color/ut_scan_progress_background"
             app:layout_constraintLeft_toLeftOf="@id/search_option_content"
             app:layout_constraintRight_toRightOf="@id/search_option_content"
-            app:layout_constraintTop_toBottomOf="@id/search_option_content" />
+            app:layout_constraintTop_toBottomOf="@id/language_settings" />
 
         <Button
             android:id="@+id/search_channel"
@@ -504,7 +606,7 @@
             android:textColor="@color/ut_scan_button_text"
             android:textSize="@dimen/ut_scan_button_text_size"
             app:layout_constraintLeft_toLeftOf="@id/tv_tune_title"
-            app:layout_constraintTop_toBottomOf="@id/search_option_content" />
+            app:layout_constraintTop_toBottomOf="@id/language_settings" />
 
         <Button
             android:id="@+id/export_channel"
