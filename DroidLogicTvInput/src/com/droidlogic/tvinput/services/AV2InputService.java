@@ -195,14 +195,14 @@ public class AV2InputService extends DroidLogicTvInputService {
 
     private int signal_is_pal(TvInSignalInfo signal_info)
     {
-        if (signal_info.sigFmt == TvInSignalInfo.SignalFmt.TVIN_SIG_FMT_CVBS_PAL_60 ||
-            signal_info.sigFmt == TvInSignalInfo.SignalFmt.TVIN_SIG_FMT_CVBS_PAL_CN ||
-            signal_info.sigFmt == TvInSignalInfo.SignalFmt.TVIN_SIG_FMT_CVBS_PAL_I ||
-            signal_info.sigFmt == TvInSignalInfo.SignalFmt.TVIN_SIG_FMT_CVBS_PAL_M) {
+        if (signal_info.sigFmt == TvInSignalInfo.SignalFmt.TVIN_SIG_FMT_CVBS_PAL_CN ||
+            signal_info.sigFmt == TvInSignalInfo.SignalFmt.TVIN_SIG_FMT_CVBS_PAL_I) {
             return SIGNAL_PAL_FMT;
         }
         else if (signal_info.sigFmt == TvInSignalInfo.SignalFmt.TVIN_SIG_FMT_CVBS_NTSC_443 ||
-            signal_info.sigFmt == TvInSignalInfo.SignalFmt.TVIN_SIG_FMT_CVBS_NTSC_M) {
+            signal_info.sigFmt == TvInSignalInfo.SignalFmt.TVIN_SIG_FMT_CVBS_NTSC_M ||
+            signal_info.sigFmt == TvInSignalInfo.SignalFmt.TVIN_SIG_FMT_CVBS_PAL_60 ||
+            signal_info.sigFmt == TvInSignalInfo.SignalFmt.TVIN_SIG_FMT_CVBS_PAL_M) {
             return SIGNAL_NTSC_FMT;
         }
         else {
