@@ -94,6 +94,14 @@ public class Hdmi3InputService extends DroidLogicTvInputService {
         }
 
         @Override
+        public boolean onTune(Uri channelUri, Bundle params) {
+            if (params != null) {
+                mIsPip = params.getBoolean("is_pip", false);
+            }
+            return super.onTune(channelUri, params);
+        }
+
+        @Override
         public void doRelease() {
             if (sessionMap.containsKey(getSessionId())) {
                 sessionMap.remove(getSessionId());
@@ -112,6 +120,9 @@ public class Hdmi3InputService extends DroidLogicTvInputService {
                 if (mHardware != null) {
                     mHardware.setSurface(null, null);
                 }
+            } else if (TextUtils.equals("action_enabled_hdmi_pip", action)) {
+                Utils.logd(TAG,"doAppPrivateCmd action = " + action);
+                mIsPip = true;
             }
         }
     }

@@ -895,8 +895,7 @@ public class ChannelSearchActivity extends Activity implements OnClickListener, 
                 if (atvDtvMode != DroidLogicTvUtils.TV_SEARCH_ATV_DTV || !searchType.equals(DroidLogicTvUtils.getSearchType(ChannelSearchActivity.this))) {
                     Log.d(TAG, "tv_search_type / atvDtvMode was changed, update");
                     DroidLogicTvUtils.setSearchType(ChannelSearchActivity.this, searchType);
-                    if (!DroidLogicTvUtils.TV_SEARCH_MODE_MANUAL.equals(DroidLogicTvUtils.getSearchMode(ChannelSearchActivity.this))
-                            || atvDtvMode != DroidLogicTvUtils.TV_SEARCH_ATV_DTV) {
+                    if (atvDtvMode != DroidLogicTvUtils.TV_SEARCH_ATV_DTV || !DroidLogicTvUtils.TV_SEARCH_MODE_MANUAL.equals(DroidLogicTvUtils.getSearchMode(ChannelSearchActivity.this))) {
                         DroidLogicTvUtils.setAtvDtvModeFlag(ChannelSearchActivity.this, atvDtvMode);
                         mSearchChannelTypeSetting.setSelection(atvDtvMode);
                     }

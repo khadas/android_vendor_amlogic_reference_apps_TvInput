@@ -117,6 +117,7 @@ public abstract class DroidLogicTvInputService extends TvInputService implements
     private MediaCodec mMediaCodec3;
     private AudioConfigManager mAudioConfigManager;
     private static int mCurrentUserId = 0;//UserHandle.USER_SYSTEM
+    protected boolean mIsPip = false;
 
     private Handler mHandler = new Handler();
 
@@ -152,7 +153,7 @@ public abstract class DroidLogicTvInputService extends TvInputService implements
                     Log.d(TAG, "open source");
                     //createDecoder();
                     //decoderRelease();
-                    mHardware.setSurface(mSurface, isDtvSource() ? mConfigs[0]: mConfigs[1]);
+                    mHardware.setSurface(mSurface, (isDtvSource() || mIsPip) ? mConfigs[0]: mConfigs[1]);
                 }
             } else {
                 if (DEBUG)
@@ -235,6 +236,7 @@ public abstract class DroidLogicTvInputService extends TvInputService implements
     protected void registerInputSession(TvInputBaseSession session) {
         mSession = session;
         if (session == null) {
+            mIsPip = false;
             return;
         }
         mCurrentSessionId = session.mId;
@@ -740,14 +742,13 @@ public abstract class DroidLogicTvInputService extends TvInputService implements
             setCurrentSessionById(session.mId);
             mSurface = surface;
         }
-
         if (mHardware != null && mSurface != null && mConfigs.length > 0 && mSurface.isValid()) {
             //createDecoder();
             //decoderRelease();
             if (isPlayingATVInDTVMode) {
                 mHardware.setSurface(mSurface,mConfigs[1]);
             } else {
-                mHardware.setSurface(mSurface, isDtvSource() ? mConfigs[0] : mConfigs[1]);
+                mHardware.setSurface(mSurface, (isDtvSource() || mIsPip) ? mConfigs[0] : mConfigs[1]);
             }
             updateAudioPortGain();
             //completeTvViewFastSwitch();
@@ -809,7 +810,7 @@ public abstract class DroidLogicTvInputService extends TvInputService implements
                     mSession.closeTvAudio();
                 }
             }
-            mHardware.setSurface(null, isDtvSource() ? mConfigs[0]: mConfigs[1]);
+            mHardware.setSurface(null, (isDtvSource() || mIsPip) ? mConfigs[0]: mConfigs[1]);
             tvPlayStopped(sessionId);
             mTvControlManager.request("setTestPattern","{\"blue\":0}");//exit tv source, need test pattern is black
         }
