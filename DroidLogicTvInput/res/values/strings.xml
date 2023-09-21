@@ -268,4 +268,8 @@
     <string name="tv_all_band_search_dialog_message2">Keep searching?</string>
     <string name="dialog_btn_confirm_text">YES</string>
     <string name="dialog_btn_cancel_text">NO</string>
+    <string name="channel_export_successful">Channel export successful</string>
+    <string name="channel_export_failed">Channel export failed</string>
+    <string name="channel_import_successful">Channel import successful</string>
+    <string name="channel_import_failed">Channel import failed</string>
 </resources>

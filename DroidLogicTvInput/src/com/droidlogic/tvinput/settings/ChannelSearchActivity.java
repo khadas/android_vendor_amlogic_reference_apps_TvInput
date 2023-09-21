@@ -45,6 +45,9 @@ import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.droidlogic.app.FileListManager;
+import com.droidlogic.app.tv.PrebuiltChannelsManager;
+import com.droidlogic.tvinput.KeyCodeHandler;
 import com.droidlogic.tvinput.R;
 import com.droidlogic.app.tv.ChannelInfo;
 import com.droidlogic.app.tv.DroidLogicTvUtils;
@@ -115,6 +118,8 @@ public class ChannelSearchActivity extends Activity implements OnClickListener, 
     private TextView mDtmbFrequency;
     private Button mDtmbSelectFrequencyRight;
     private LinearLayout mChannelTypeLayout;
+    private Button mExportChannel;
+    private Button mImportChannel;
 
     private String[] mDtmbFrequencyName = null;
 
@@ -177,6 +182,8 @@ public class ChannelSearchActivity extends Activity implements OnClickListener, 
     public static final String KEY_TVTEST_START_DTMB_SEARCH = "isTvTestDTMBSearch";
     private static final int TVTEST_DTMB_SEARCH_START = 0x1001;
     private boolean isTvTestDTMBSearchMode = false;
+
+    private final KeyCodeHandler mKeyCodeHandler = new KeyCodeHandler();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -295,8 +302,55 @@ public class ChannelSearchActivity extends Activity implements OnClickListener, 
         if (!DroidLogicTvUtils.isDtvContainsAtscByCountry(country)) {
             mChannelTypeLayout.setVisibility(View.GONE);
         }
+
+        mExportChannel = (Button) findViewById(R.id.export_channel);
+        mImportChannel = (Button) findViewById(R.id.import_channel);
+        mExportChannel.setOnClickListener(v -> {
+            PrebuiltChannelsManager prebuiltChannelsManager = new PrebuiltChannelsManager(ChannelSearchActivity.this, getChannelFilePath());
+            int result = prebuiltChannelsManager.dbChannelInfoWriteToConfigFile();
+            if (result == PrebuiltChannelsManager.RETURN_VALUE_SUCCESS) {
+                ShowToastTint(getString(R.string.channel_export_successful));
+                mScanningMessage.setText("file path:" + prebuiltChannelsManager.getChannelFilePath());
+            } else {
+                ShowToastTint(getString(R.string.channel_export_failed));
+            }
+        });
+        mImportChannel.setOnClickListener(v -> {
+            int result = new PrebuiltChannelsManager(ChannelSearchActivity.this, getChannelFilePath()).configFileReadToDbChannelInfo();
+            if (result == PrebuiltChannelsManager.RETURN_VALUE_SUCCESS) {
+                ShowToastTint(getString(R.string.channel_import_successful));
+                finish();
+            } else {
+                ShowToastTint(getString(R.string.channel_import_failed));
+            }
+        });
+
         initSpinner();
         startShowActivityTimer();
+    }
+
+    private String getChannelFilePath() {
+        FileListManager fileListManager = new FileListManager(this);
+        List<Map<String, Object>> devices = fileListManager.getDevices();
+        String path = null;
+        if (devices != null && devices.size() > 0) {
+            for (Map<String, Object> map : devices) {
+                if (map != null) {
+                    path = (String) map.get("key_path");
+                    Log.i(TAG, "ChannelFilePath map:" + map.toString());
+                    if (path != null && path.startsWith("/storage/")) {
+                        if (path.startsWith("/storage/emulated/0")) {
+                            continue;
+                        }
+                        break;
+                    } else {
+                        path = null;
+                    }
+                }
+            }
+        }
+        Log.i(TAG, "ChannelFilePath path:" + path);
+        return path;
     }
 
     @Override
@@ -687,6 +741,10 @@ public class ChannelSearchActivity extends Activity implements OnClickListener, 
                 }
                 String curCountry = mCountryFullNameToShortName.get(mSupportCountryFullNameList.get(position));
                 String preCountry = DroidLogicTvUtils.getCountry(ChannelSearchActivity.this);
+                if (!TextUtils.equals(curCountry, "US")) {
+                    mExportChannel.setVisibility(View.INVISIBLE);
+                    mImportChannel.setVisibility(View.INVISIBLE);
+                }
                 if (!curCountry.equals(preCountry)) {
                     DroidLogicTvUtils.setCountry(ChannelSearchActivity.this, curCountry);
                     if (DroidLogicTvUtils.isDtvContainsAtscByCountry(curCountry)) {
@@ -1496,6 +1554,17 @@ public class ChannelSearchActivity extends Activity implements OnClickListener, 
     private void stopScan() {
         dtvStopScan();
         DroidLogicTvUtils.resetSearchStatus(this);
+    }
+
+    @Override
+    public boolean dispatchKeyEvent(KeyEvent event) {
+        String country = DroidLogicTvUtils.getCountry(this);
+        if (mKeyCodeHandler.input(event) && TextUtils.equals("US", country) && !isSearching()) {
+            mExportChannel.setVisibility(View.VISIBLE);
+            mImportChannel.setVisibility(View.VISIBLE);
+            return true;
+        }
+        return super.dispatchKeyEvent(event);
     }
 
     @Override

@@ -506,6 +506,44 @@
             app:layout_constraintLeft_toLeftOf="@id/tv_tune_title"
             app:layout_constraintTop_toBottomOf="@id/search_option_content" />
 
+        <Button
+            android:id="@+id/export_channel"
+            android:layout_width="wrap_content"
+            android:layout_height="@dimen/ut_scan_button_height"
+            android:layout_marginStart="@dimen/px_10.0"
+            android:background="@drawable/selector_button"
+            android:elevation="10dp"
+            android:focusable="true"
+            android:fontFamily="sans-serif-condensed"
+            android:paddingLeft="@dimen/ut_scan_button_padding"
+            android:paddingRight="@dimen/ut_scan_button_padding"
+            android:text="Export"
+            android:textAllCaps="false"
+            android:textColor="@color/ut_scan_button_text"
+            android:textSize="@dimen/ut_scan_button_text_size"
+            android:visibility="gone"
+            app:layout_constraintLeft_toRightOf="@id/search_channel"
+            app:layout_constraintTop_toTopOf="@id/search_channel" />
+
+        <Button
+            android:id="@+id/import_channel"
+            android:layout_width="wrap_content"
+            android:layout_height="@dimen/ut_scan_button_height"
+            android:layout_marginStart="@dimen/px_10.0"
+            android:background="@drawable/selector_button"
+            android:elevation="10dp"
+            android:focusable="true"
+            android:fontFamily="sans-serif-condensed"
+            android:paddingLeft="@dimen/ut_scan_button_padding"
+            android:paddingRight="@dimen/ut_scan_button_padding"
+            android:text="Import"
+            android:textAllCaps="false"
+            android:textColor="@color/ut_scan_button_text"
+            android:textSize="@dimen/ut_scan_button_text_size"
+            android:visibility="gone"
+            app:layout_constraintLeft_toRightOf="@id/export_channel"
+            app:layout_constraintTop_toTopOf="@id/search_channel" />
+
     </androidx.constraintlayout.widget.ConstraintLayout>
 
     <ImageView
