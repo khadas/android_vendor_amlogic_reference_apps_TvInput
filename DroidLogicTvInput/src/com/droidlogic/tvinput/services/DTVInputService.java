@@ -1118,7 +1118,7 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
             } else {
                 if (DEBUG) Log.d(TAG, "disable show last frame");
                 mTvControlManager.setBlackoutEnable(1, 0);
-                setTuningScreen(true);
+                //setTuningScreen(true);
             }
             mCurrentChannel = info;
             isTvPlaying = false;
@@ -2104,9 +2104,9 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
                 mMainHandler.post(new Runnable() {
                     @Override
                     public void run() {
-                        /*if (mOverlayView != null) {
+                        if (mOverlayView != null) {
                             mOverlayView.setTuningImageVisibility(status);
-                        }*/
+                        }
                     }
                 });
             }
