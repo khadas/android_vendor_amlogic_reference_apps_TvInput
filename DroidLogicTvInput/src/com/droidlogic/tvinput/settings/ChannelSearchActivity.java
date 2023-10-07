@@ -195,7 +195,7 @@ public class ChannelSearchActivity extends Activity implements OnClickListener, 
 
         in = getIntent();
         if (in != null) {
-            mTvScanManager = new TvScanManager(this, in);
+            mTvScanManager = TvScanManager.getInstance(this, in);
             mTvScanManager.setMessageListener(this);
 
             if (in.getBooleanExtra(NUMBERSEARCH, NUMBERSEARCHDEFAULT)) {
