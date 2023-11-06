@@ -1045,6 +1045,9 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
                     mIsChannelBlocked = ch.isLocked();
                 }
                 mTvControlManager.request("ADTV.setCurrentChannelBlockStatus","{\"Blocked\":"+ch.isLocked()+"}");
+                int isRadioChannel = ChannelInfo.isRadioChannel(ch)?1:0;
+                mTvControlManager.request("ADTV.setNoneStaticChangetoCurrentProgram","{\"Scrambled\":"+ch.getScrambled()+
+                    ",\"RadioChannel\":"+ isRadioChannel +"}");
                 tryPlayProgram(ch);
             } else {
                 Log.w(TAG, "Failed to get channel info for " + uri);
