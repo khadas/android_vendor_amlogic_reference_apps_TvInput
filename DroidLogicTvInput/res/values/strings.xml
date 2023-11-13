@@ -69,6 +69,7 @@
     <string name="atv_program">ATV program</string>
     <string name="mts">MTS</string>
     <string name="av_scrambled">Scrambled</string>
+	<string name="av_Unsuppot">Unsuppot</string>
 
     <!-- Settings -->
     <string name="settings">Settings</string>

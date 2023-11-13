@@ -1783,7 +1783,7 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
 
         @Override
         public void onEvent(int msgType, int programID) {
-            if (DEBUG) Log.d(TAG, "AV evt:" + msgType);
+            Log.d(TAG, "AV evt:" + msgType);
             switch (msgType) {
                 case TvControlManager.EVENT_AV_SCRAMBLED:
                     if (mOverlayView != null) {
@@ -1836,6 +1836,14 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
                         super.onSetStreamVolume(1.0f);
                         notifyContentAllowed();
                     }
+                    break;
+                case TvControlManager.EVENT_AV_UNSUPPORT:
+                    Log.d(TAG, "EVENT_AV_UNSUPPORT");
+                    if (mOverlayView != null) {
+                        mOverlayView.setText(R.string.av_Unsuppot);
+                        mOverlayView.setTextVisibility(true);
+                    }
+                     notifyVideoUnavailable(DroidLogicTvUtils.VIDEO_UNAVAILABLE_NOT_SUPPORT);
                     break;
             }
         }
@@ -2056,6 +2064,7 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
             if (mOverlayView != null) {
                 switch (reason) {
                     case TvInputManager.VIDEO_UNAVAILABLE_REASON_AUDIO_ONLY:
+                    case DroidLogicTvUtils.VIDEO_UNAVAILABLE_NOT_SUPPORT:
                         /*mOverlayView.setImage(R.drawable.bg_radio);
                         mSystemControlManager.writeSysFs("/sys/class/video/disable_video",
                                 "2");*///dealt in TvControlManager.EVENT_AV_PLAYBACK_RESUME
