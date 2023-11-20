@@ -351,10 +351,18 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
             if (status == TvInSignalInfo.SignalStatus.TVIN_SIG_STATUS_STABLE
                     && mCurrentSession != null
                     && mCurrentSession.mCurrentChannel != null
-                    && !mCurrentSession.mCurrentChannel.isAnalogChannel()
-                    && mTvControlManager.DtvGetVideoFormatInfo().fps != 0) {
-                if (DEBUG) Log.d(TAG, "Signal and video look well");
-                mCurrentSession.notifyVideoAvailable();
+                    && !mCurrentSession.mCurrentChannel.isAnalogChannel()) {
+
+                if (mTvControlManager.DtvGetVideoFormatInfo().fps != 0) {
+                    if (DEBUG) Log.d(TAG, "Signal and video look well");
+                    mCurrentSession.notifyVideoAvailable();
+                } else if (ChannelInfo.isRadioChannel(mCurrentSession.mCurrentChannel)) {
+                    //for plug/unplug cable quickly case
+                    //for radio channel, if display picture, needn't display audio only
+                    Log.d(TAG, "current is radio Channel");
+                    mCurrentSession.notifyVideoAvailable();
+                }
+
 
                 if (DEBUG)
                     Log.d(TAG, "onSigChange" + status.ordinal() + status.toString());
@@ -1762,8 +1770,10 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
                     break;
                 case TvControlManager.EVENT_AV_PLAYBACK_RESUME:
                     if (mCurrentChannel != null && ChannelInfo.isRadioChannel(mCurrentChannel)) {
-                        showRadioPicture(1000);
-                        notifyVideoUnavailable(TvInputManager.VIDEO_UNAVAILABLE_REASON_AUDIO_ONLY);
+                        //for radio channel, if display picture, needn't display audio only
+                        //showRadioPicture(1000);
+                        //notifyVideoUnavailable(TvInputManager.VIDEO_UNAVAILABLE_REASON_AUDIO_ONLY);
+                        mCurrentSession.notifyVideoAvailable();
                     } else if (mCurrentChannel != null && mOverlayView != null){
                         //Hide SCRAMBLED when receiving "EVENT_AV_PLAYBACK_RESUME" request
                         mOverlayView.setTextVisibility(false);
