@@ -930,7 +930,10 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
                                              " valuesDefined = " + rrtEvent.valuesDefined +
                                              " abbrevRatingValue = " + rrtEvent.abbrevRatingValue +
                                              " graduatedScale = " + rrtEvent.graduatedScale)));
-                                    mRrt5DataBaseManager.SynchronizedUpdateRrt(rrtEvent);
+                                    if (mCurrentChannel != null) {
+                                        mRrt5DataBaseManager.SynchronizedUpdateRrt(
+                                            mCurrentChannel.getMajorChannelNumber(), rrtEvent);
+                                    }
                                     break;
                                 case MSG_START_AUDIO_AD_MAIN_MIX:
                                     startAudioADMainMix((ChannelInfo) msg.obj, msg.arg1);
@@ -2928,8 +2931,8 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
                         //Log.d(TAG, "[parseMultiRatings] channelname = " + channelname + ", programtitle = " + programtitle + ", dimension:" + dimension + ",rating_value:" + value);
                         if (dimension == -1 || value == -1)
                             continue;
-                        if (mRrt5DataBaseManager != null) {
-                            String[] rrtResult = mRrt5DataBaseManager.getRrt5Rating(dimension, value);
+                        if (mRrt5DataBaseManager != null && mCurrentChannel != null) {
+                            String[] rrtResult = mRrt5DataBaseManager.getRrt5Rating(mCurrentChannel.getMajorChannelNumber(), dimension, value);
                             if (rrtResult[0] == null || rrtResult[1] == null || rrtResult[2] == null)
                                 continue;
                             TvContentRating r = TvContentRating.createRating(mRrt5DataBaseManager.getRrt5Domain(),
