@@ -903,6 +903,11 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
                                     break;
                                 case MSG_UPDATE_VIDEO_RESOLUTION:
                                     //Log.d(TAG,"receive MSG_UPDATE_VIDEO_RESOLUTION");
+                                    String new_frame_count =  mSystemControlManager.readSysFs("/sys/module/aml_media/parameters/new_frame_count");
+                                    if (TextUtils.isEmpty(new_frame_count) || Integer.parseInt(new_frame_count) == 0) {
+                                        mHandler.sendEmptyMessageDelayed(MSG_UPDATE_VIDEO_RESOLUTION, 200);
+                                        break;
+                                    }
                                     String height = mSystemControlManager.readSysFs("/sys/class/video/frame_height");
                                     String pi = mSystemControlManager.readSysFs("/sys/class/video/frame_original_format");
                                     String format = DroidLogicTvUtils.convertVideoFormat(height, pi);
