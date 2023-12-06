@@ -1165,6 +1165,7 @@ public class OptionUiManagerT implements  OnFocusChangeListener, TvControlManage
 
     public void release() {
         Log.d(TAG,"release");
+        stopSearch();//Confirm stopping channel scanning before the release.
         mTvControlManager.setScannerListener(null);
         mHandler.removeCallbacksAndMessages(null);
         unRegisterChannelScanStartReceiver();
