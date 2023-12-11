@@ -137,6 +137,8 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
     protected static final String ACTION_AD_VOLUME_LEVEL = "android.intent.action.ad_volume_level";
 
     protected static final String KEY_TVINPUTINFO_AUDIO_AD = "audio_ad";
+    protected static final String EVENT_SIGNAL_INFO = "event_signal_info";
+    protected static final String KEY_SIGNAL_STRENGTH = "signal_strength";
 
     protected static final int KEY_RED = 183;
     protected static final int KEY_GREEN = 184;
@@ -823,6 +825,8 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
         public static final int MSG_UPDATE_VIDEO_RESOLUTION = 23;
         public static final int MSG_RRT5_EVENT = 24;
         public static final int MSG_START_AUDIO_AD_MAIN_MIX = 25;
+        public static final int MSG_GET_SIGNAL_STRENGTH = 26;
+        public static final int MSG_GET_SIGNAL_STRENGTH_PERIOD = 1000;//MS
 
         protected void initWorkThread() {
             if (DEBUG) Log.d(TAG, "initWorkThread");
@@ -938,6 +942,20 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
                                 case MSG_START_AUDIO_AD_MAIN_MIX:
                                     startAudioADMainMix((ChannelInfo) msg.obj, msg.arg1);
                                     break;
+                                case MSG_GET_SIGNAL_STRENGTH:
+                                    if (mCurrentChannel == null || !mCurrentChannel.isDigitalChannel()) {
+                                        break;
+                                    }
+                                    int strength = mTvControlManager.DtvGetSignalStrength();
+                                    Bundle signalBundle = new Bundle();
+                                    signalBundle.putInt(KEY_SIGNAL_STRENGTH, strength);
+                                    notifySessionEvent(EVENT_SIGNAL_INFO, signalBundle);
+                                    if (mHandler != null) {
+                                        mHandler.removeMessages(MSG_GET_SIGNAL_STRENGTH);
+                                        mHandler.sendEmptyMessageDelayed(MSG_GET_SIGNAL_STRENGTH,
+                                                MSG_GET_SIGNAL_STRENGTH_PERIOD);
+                                    }
+                                    break;
                                 default:
                                     break;
                             }
@@ -953,6 +971,7 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
             if (DEBUG) Log.d(TAG, "releaseWorkThread");
             if (mHandlerThread != null) {
                 mHandlerThread.quit();
+                mHandler.removeCallbacksAndMessages(null);
                 mHandlerThread = null;
                 mHandler = null;
                 mMainHandler = null;
@@ -1970,6 +1989,11 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
                 mOverlayView.setImageVisibility(true);
             } else {
                 if (DEBUG) Log.d(TAG, "notifyVideoAvailable not radio case");
+            }
+
+            if (mHandler != null) {
+                mHandler.removeMessages(MSG_GET_SIGNAL_STRENGTH);
+                mHandler.sendEmptyMessageDelayed(MSG_GET_SIGNAL_STRENGTH, MSG_GET_SIGNAL_STRENGTH_PERIOD);
             }
 
             if (mIsChannelScrambled && mTvControlManager.DtvGetVideoFormatInfo().fps <= 0
