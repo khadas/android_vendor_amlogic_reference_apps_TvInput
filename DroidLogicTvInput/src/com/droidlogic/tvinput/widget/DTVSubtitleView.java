@@ -1518,16 +1518,26 @@ public class DTVSubtitleView extends ViewGroup {
                         && dis_w > 0
                         && dis_h > 0) {
                         int[] colors = (int [])data;
-                        if (bitmap != null)
+                        if (bitmap != null && !bitmap.isRecycled())
                             bitmap.recycle();
-                        bitmap = Bitmap.createBitmap(dis_w, dis_h, Bitmap.Config.ARGB_8888);
+                        Rect src = new Rect(0, 0, width, height);
+                        Rect dsc;
+                        if (getWidth() < width || getHeight() < height) {
+                            float xRatio = (float) getWidth() / (float) width;
+                            float yRatio = (float) getHeight() / (float) height;
+                            int xOffSet = (int) ((float) src_x * xRatio);
+                            int yOffSet = (int) ((float) src_y * yRatio);
+                            dsc = new Rect(xOffSet, yOffSet, xOffSet + getWidth(),yOffSet + getHeight());
+                            bitmap = Bitmap.createBitmap(getWidth(), getHeight(), Bitmap.Config.ARGB_8888);
+                        } else {
+                            dsc = new Rect(src_x, src_y, src_x + widtmp, src_y + heitmp);
+                            bitmap = Bitmap.createBitmap(dis_w, dis_h, Bitmap.Config.ARGB_8888);
+                        }
                         Canvas canvas = new Canvas(bitmap);
                         Log.d(TAG, "mixmode = " + mMixMode);
                         //if ((type == SubtitleManager.SUBTITLE_IMAGE_CENTER) && mMixMode == TTX_MIX_MODE_NORAML)
                         //    canvas.drawColor(0xFF000000);
                         Bitmap databm = Bitmap.createBitmap(colors, 0, width, width, height, Bitmap.Config.ARGB_8888);
-                        Rect src = new Rect(0, 0, width, height);
-                        Rect dsc = new Rect(src_x, src_y, src_x + widtmp, src_y + heitmp);
                         canvas.drawBitmap(databm, src, dsc, null);
                         databm.recycle();
                     } else {
