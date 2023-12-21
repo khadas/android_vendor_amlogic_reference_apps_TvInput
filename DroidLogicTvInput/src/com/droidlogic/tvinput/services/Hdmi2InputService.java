@@ -29,6 +29,7 @@ import android.os.Bundle;
 import android.text.TextUtils;
 import android.view.KeyEvent;
 import android.view.Surface;
+import android.widget.FrameLayout;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -90,6 +91,16 @@ public class Hdmi2InputService extends DroidLogicTvInputService {
         @Override
         public boolean onTune(Uri channelUri) {
             return doTuneInService(channelUri, getSessionId());
+        }
+
+        @Override
+        public void onOverlayViewSizeChanged(int width, int height) {
+            Utils.logd(TAG, "onOverlayViewSizeChanged: "+width+","+height);
+            super.onOverlayViewSizeChanged(width, height);
+            if (mIsPip) {
+                FrameLayout.LayoutParams layoutParams = new FrameLayout.LayoutParams(width, height);
+                mOverlayView.setLayoutParams(layoutParams);
+            }
         }
 
         @Override

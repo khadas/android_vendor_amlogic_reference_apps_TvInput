@@ -34,6 +34,7 @@ import android.os.Bundle;
 import android.text.TextUtils;
 import android.view.KeyEvent;
 import android.view.Surface;
+import android.widget.FrameLayout;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Field;
@@ -423,6 +424,15 @@ public class AV1InputService extends DroidLogicTvInputService {
             return setSurfaceInService(surface,this);
         }
 
+        @Override
+        public void onOverlayViewSizeChanged(int width, int height) {
+            Log.d(TAG, "onOverlayViewSizeChanged: "+ width + "," + height);
+            super.onOverlayViewSizeChanged(width, height);
+            if (mIsPip) {
+                FrameLayout.LayoutParams layoutParams = new FrameLayout.LayoutParams(width, height);
+                mOverlayView.setLayoutParams(layoutParams);
+            }
+        }
 
         @Override
         public boolean onTune(Uri channelUri) {
@@ -517,6 +527,9 @@ public class AV1InputService extends DroidLogicTvInputService {
                 else if (DroidLogicTvUtils.NORATING_UNLOCK_CURRENT == bundle.getInt(DroidLogicTvUtils.PARAM_NORATING_ENABLE))
                     isUnlockCurrent_NR = true;
                 checkCurrentContentBlockNeeded();
+            } else if (TextUtils.equals("action_enabled_hdmi_pip", action)) {
+                Log.d(TAG,"doAppPrivateCmd action = " + action);
+                mIsPip = true;
             }
         }
         public int mParentControlDelay = 3000;
