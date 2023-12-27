@@ -4243,6 +4243,7 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
                                           + "eid[" + evt.evt_id + "]"
                                           + "ver[" + evt.sub_flag + ":" +evt.sub_status + "]"
                                           + "{" + p.getTitle() + "}"
+                                          + "{" + p.getDescription() + "}"
                                           + "[" + (p.getStartTimeUtcMillis() == 0 ? 0 : p.getStartTimeUtcMillis() / 1000)
                                           + "-" + (p.getEndTimeUtcMillis() == 0 ? 0 : p.getEndTimeUtcMillis() / 1000) + "]"
                                           + "R["+ Program.contentRatingsToString(p.getContentRatings()) +"]"
@@ -4426,13 +4427,14 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
                         /*without Epglock, there may be still chance that programs updating in the EPG handler thread runs after codes below*/
                         if (mTvDataBaseManager != null) {
                             for (Integer c : mVctMap.keySet()) {
-                                    if (DEBUG) Log.d(TAG, "epg eit, clear old programs for channel(id:"+c+") with version: "
+                                /* Move the logic of deleting the EPG information of the old version of EIT to the place where the program is updated */
+                                    /*if (DEBUG) Log.d(TAG, "epg eit, clear old programs for channel(id:"+c+") with version: "
                                                     +oldVersion+":"+event.eitNumber);
                                     if (oldVersion != -1) {
                                     mTvDataBaseManager.deletePrograms(mVctMap.get(c),
                                                     String.valueOf(mEitVersions[event.eitNumber]));
                                                     //String.valueOf(event.eitNumber));
-                                    }
+                                    }*/
                                     refreshChannelMap();
                                     for (ChannelInfo ch : channelMap) {
                                         if (!isAlive) {
