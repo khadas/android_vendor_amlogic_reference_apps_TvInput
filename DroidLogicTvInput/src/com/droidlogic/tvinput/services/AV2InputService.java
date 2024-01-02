@@ -105,6 +105,7 @@ public class AV2InputService extends DroidLogicTvInputService {
     protected static final int KEY_REVEAL = 246;
     protected static final int KEY_CANCEL = 247;
     protected static final int KEY_SUBTITLE = 175;
+    protected static final int KEY_SUB_PAGE = 206;
 
     protected static final int DTV_COLOR_WHITE = 1;
     protected static final int DTV_COLOR_BLACK = 2;
@@ -930,6 +931,9 @@ public class AV2InputService extends DroidLogicTvInputService {
                 case KEY_GO_HOME: //Fast forward
                     reset_atv_status();
                     mSubtitleView.goHome();
+                    break;
+                case KEY_SUB_PAGE: // TT SubPage
+                    mSubtitleView.tt_goto_subpage();
                     break;
                 case KEY_ZOOM: //Zoom in
                     mSubtitleView.tt_zoom_in();

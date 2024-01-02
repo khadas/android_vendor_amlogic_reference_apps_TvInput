@@ -154,6 +154,7 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
     protected static final int KEY_REGION = 87;
     protected static final int KEY_LOCK_SUBPG = 251;
     protected static final int KEY_TELETEXT_SWITCH = 169;
+    protected static final int KEY_SUB_PAGE = 206;
     protected static final int KEY_REVEAL = 246;
     protected static final int KEY_CANCEL = 247;
     protected static final int KEY_SUBTITLE = 175;
@@ -1683,6 +1684,9 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
                 case KEY_GO_HOME: //Fast forward
                     reset_atv_status();
                     mSubtitleView.goHome();
+                    break;
+                case KEY_SUB_PAGE: // TT SubPage
+                    mSubtitleView.tt_goto_subpage();
                     break;
                 case KEY_ZOOM: //Zoom in
                     mSubtitleView.tt_zoom_in();

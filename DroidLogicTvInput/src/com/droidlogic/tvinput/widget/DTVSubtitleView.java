@@ -1168,6 +1168,18 @@ public class DTVSubtitleView extends ViewGroup {
         }
     }
 
+    public void tt_goto_subpage()
+    {
+        synchronized(lock) {
+            if (activeView != this)
+                return;
+            if (play_mode != PLAY_TT)
+                return;
+
+            subtitlemanager_tt_control(SubtitleManager.TT_EVENT_SUBPAGE_MODE, -1, -1);
+        }
+    }
+
     private boolean tt_show_switch = true;
     public void setTTSwitch(boolean show)
     {
