@@ -1185,7 +1185,7 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
             }
 
             if (info.isAnalogChannel()) {
-                mCurrentCCContentRatings = null;
+//                mCurrentCCContentRatings = null;
                 saveCurrentChannelRatings();
                 if (CustomerOps.getInstance(mContext).shouldSendTimeShiftStatusToAtv()) {
                     notifyTimeShiftStatusChanged(TvInputManager.TIME_SHIFT_STATUS_UNAVAILABLE);
@@ -1382,43 +1382,41 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
             if (DEBUG) Log.d(TAG, "TvTime:"+getDateAndTime(currentProgramTime)+" ("+currentProgramTime+")");
 
             TvContentRating[] ratings = mCurrentProgram == null ? null : mCurrentProgram.getContentRatings();
-            //if (isAtsc(channelInfo)) {
-                String json = null;
-                TvContentRating[] newParseRatings = null;
-                if (mCurrentProgram != null) {
-                    json = mCurrentProgram.getInternalProviderData();
-                    if (DEBUG) Log.d(TAG, "getContentRatingsOfCurrentProgram programid = " + mCurrentProgram.getId() + ", channel json = " + json);
-                    newParseRatings = parseMultiRatings(json, channelInfo.getDisplayNumber(), mCurrentProgram.getTitle());
-                } else if (DEBUG) {
-                    Log.d(TAG, "getContentRatingsOfCurrentProgram mCurrentProgram = null");
-                }
-                if (DEBUG) {
-                    Log.d(TAG, "getContentRatingsOfCurrentProgram newrating = " + Program.contentRatingsToString(newParseRatings) + ", ratings = " + Program.contentRatingsToString(ratings));
-                }
-                if (newParseRatings != null && !TextUtils.equals(Program.contentRatingsToString(newParseRatings), Program.contentRatingsToString(ratings))) {
-                    ratings = newParseRatings;
-                    mCurrentProgram.setContentRatings(ratings);
-                    mTvDataBaseManager.updateProgram(mCurrentProgram);
-                    Log.d(TAG, "getContentRatingsOfCurrentProgram update ratings:" +mCurrentProgram.getTitle());
-                }
+            String json = null;
+            TvContentRating[] newParseRatings = null;
+            if (mCurrentProgram != null) {
+                json = mCurrentProgram.getInternalProviderData();
+                if (DEBUG) Log.d(TAG, "getContentRatingsOfCurrentProgram programid = " + mCurrentProgram.getId() + ", channel json = " + json);
+                newParseRatings = parseMultiRatings(json, channelInfo.getDisplayNumber(), mCurrentProgram.getTitle());
+            } else if (DEBUG) {
+                Log.d(TAG, "getContentRatingsOfCurrentProgram mCurrentProgram = null");
+            }
+            if (DEBUG) {
+                Log.d(TAG, "getContentRatingsOfCurrentProgram newrating = " + Program.contentRatingsToString(newParseRatings) + ", ratings = " + Program.contentRatingsToString(ratings));
+            }
+            if (newParseRatings != null && !TextUtils.equals(Program.contentRatingsToString(newParseRatings), Program.contentRatingsToString(ratings))) {
+                ratings = newParseRatings;
+                mCurrentProgram.setContentRatings(ratings);
+                mTvDataBaseManager.updateProgram(mCurrentProgram);
+                Log.d(TAG, "getContentRatingsOfCurrentProgram update ratings:" +mCurrentProgram.getTitle());
+            }
 
-                /*pmt ratings 2nd*/
-                if (ratings == null) {
-                    ratings = mCurrentPmtContentRatings;
-                    if (ratings != null && ratings.length > 0) {
-                        if (DEBUG) Log.d(TAG, "mCurrentPmtContentRatings = " + Program.contentRatingsToString(ratings));
-                        saveCurrentChannelRatings();
-                    }
+            /*pmt ratings 2nd*/
+            if (ratings == null) {
+                ratings = mCurrentPmtContentRatings;
+                if (ratings != null && ratings.length > 0) {
+                    if (DEBUG) Log.d(TAG, "mCurrentPmtContentRatings = " + Program.contentRatingsToString(ratings));
+                    saveCurrentChannelRatings();
                 }
-                /*cc ratings 3rd*/
-                if (ratings == null) {
-                    ratings = mCurrentCCContentRatings;
-                    if (ratings != null && ratings.length > 0) {
-                        if (DEBUG) Log.d(TAG, "mCurrentCCContentRatings = " + Program.contentRatingsToString(ratings));
-                        saveCurrentChannelRatings();
-                    }
+            }
+            /*cc ratings 3rd*/
+            if (ratings == null) {
+                ratings = mCurrentCCContentRatings;
+                if (ratings != null && ratings.length > 0) {
+                    if (DEBUG) Log.d(TAG, "mCurrentCCContentRatings = " + Program.contentRatingsToString(ratings));
+                    saveCurrentChannelRatings();
                 }
-            //}
+            }
             if (ratings == null && mCurrentChannel != null) {
                 ratings = Program.stringToContentRatings(mCurrentChannel.getContentRatings());
                 if (ratings != null && ratings.length > 0) {
@@ -1543,6 +1541,7 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
                     }
                 }
                 mCurChannelRatings = null;
+                mTvControlManager.request("ADTV.UnblockCurrentChannel", "");
                 if (DEBUG) Log.d(TAG, "notifyContentAllowed");
                 notifyContentAllowed();
             }
@@ -2114,9 +2113,10 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
 
         @Override
         public void notifyContentBlocked(final TvContentRating rating) {
-            if (DEBUG) Log.d(TAG, "notifyContentBlocked: "+rating);
+            if (DEBUG) Log.d(TAG, "notifyContentBlocked: " +rating);
             super.notifyContentBlocked(rating);
             setTuningScreen(true);
+            mTvControlManager.request("ADTV.BlockCurrentChannel", "");
             if (enableChannelBlockInServer()) {
                 if (mMainHandler != null) {
                     mMainHandler.post(new Runnable() {
