@@ -88,6 +88,8 @@ public class AV2InputService extends DroidLogicTvInputService {
     protected static final int DTV_CC_STYLE_USE_DEFAULT = 4;
     protected static final int DTV_CC_STYLE_USE_CUSTOM = -1;
 
+    protected static final int KEY_UP = 19;
+    protected static final int KEY_DOWN = 20;
     protected static final int KEY_RED = 183;
     protected static final int KEY_GREEN = 184;
     protected static final int KEY_YELLOW = 185;
@@ -917,10 +919,12 @@ public class AV2InputService extends DroidLogicTvInputService {
                         layoutSurface(rect.left, rect.top, rect.right,  rect.bottom);
                     }
                     break;
+                case KEY_UP:
                 case KEY_NEXT_PAGE: //Next program
                     reset_atv_status();
                     mSubtitleView.nextPage();
                     break;
+                case KEY_DOWN:
                 case KEY_PRIOR_PAGE: //Prior program
                     reset_atv_status();
                     mSubtitleView.previousPage();

@@ -158,6 +158,8 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
     protected static final int KEY_REVEAL = 246;
     protected static final int KEY_CANCEL = 247;
     protected static final int KEY_SUBTITLE = 175;
+    protected static final int KEY_UP = 19;
+    protected static final int KEY_DOWN = 20;
     protected static final int KEY_LEFT = 21;
     protected static final int KEY_RIGHT = 22;
 
@@ -1669,10 +1671,12 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
                         layoutSurface(rect.left, rect.top, rect.right,  rect.bottom);
                     }
                     break;
+                case KEY_UP:
                 case KEY_NEXT_PAGE: //Next program
                     reset_atv_status();
                     mSubtitleView.nextPage();
                     break;
+                case KEY_DOWN:
                 case KEY_PRIOR_PAGE: //Prior program
                     reset_atv_status();
                      mSubtitleView.previousPage();
