@@ -284,7 +284,7 @@ public class OptionUiManagerT implements  OnFocusChangeListener, TvControlManage
             frequencyend = Integer.valueOf(channelend) * 1000000;
             atvfrequencyend = Integer.valueOf(channelend) * 1000000;
         } else if (DroidLogicTvUtils.TV_SEARCH_MODE_MANUAL.equals(DataProviderManager.getStringValue(mContext, DroidLogicTvUtils.TV_SEARCH_MODE, ""))
-                && DroidLogicTvUtils.isDtvContainsAtscByCountry(DroidLogicTvUtils.getCountry(mContext))) {
+                && DroidLogicTvUtils.isAtscCountry(mContext)) {
             frequency = Integer.valueOf(channel) * 1000000;
             atvfrequency = Integer.valueOf(channel) * 1000000 + 250000;
             frequencyend = Integer.valueOf(channelend) > 0 ? Integer.valueOf(channelend)* 1000000 : (Integer.valueOf(channel) + 1) * 1000000 - 1;

@@ -1093,8 +1093,7 @@ public class ChannelSearchActivity extends Activity implements OnClickListener, 
                 mDvbcSymbolRateText.setVisibility(View.VISIBLE);
                 mDvbcSymbolRateValue.setVisibility(View.VISIBLE);
                 mDvbcSymbolRateValue.setHint(DroidLogicTvUtils.getDvbcSymbolRate(this) + "");
-            } else if (TvScanConfig.TV_SEARCH_MODE.get(TvScanConfig.TV_SEARCH_MANUAL_INDEX).equals(DroidLogicTvUtils.getSearchMode(this))
-                    && DroidLogicTvUtils.isDtvContainsAtscByCountry(DroidLogicTvUtils.getCountry(this))) {
+            } else if (TvScanConfig.TV_SEARCH_MODE.get(TvScanConfig.TV_SEARCH_MANUAL_INDEX).equals(DroidLogicTvUtils.getSearchMode(this)) && DroidLogicTvUtils.isAtscCountry(this)) {
                 mInputChannelFrom.setHint(HINT_CHANNEL_FREQUENCY);
                 mInputChannelTo.setFilters(new InputFilter[]{new InputFilter.LengthFilter(10)});
                 mInputChannelFromText.setText(R.string.tv_search_channel_frequency);
