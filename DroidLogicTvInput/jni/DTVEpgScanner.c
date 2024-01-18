@@ -1238,6 +1238,11 @@ static int epg_mgt_update(AM_EPG_Handle_t handle, int type, void *tables, void *
     if (!pch_cur->valid)
         return 1;
 
+   if (mgts->i_protocol != 0) {
+        log_info("mgt: protocol_version changed to [%d], ignore", mgts->i_protocol);
+        return 1;
+    }
+
     AM_SI_LIST_BEGIN(mgts, mgt)
         AM_SI_LIST_BEGIN(mgt->p_first_table, table)
             switch(table->i_table_type) {

@@ -4436,27 +4436,27 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
                         if (mTvDataBaseManager != null) {
                             for (Integer c : mVctMap.keySet()) {
                                 /* Move the logic of deleting the EPG information of the old version of EIT to the place where the program is updated */
-                                    /*if (DEBUG) Log.d(TAG, "epg eit, clear old programs for channel(id:"+c+") with version: "
-                                                    +oldVersion+":"+event.eitNumber);
-                                    if (oldVersion != -1) {
+                                if (DEBUG) Log.d(TAG, "epg eit, clear old programs for channel(id:"+c+") with version: "
+                                                +oldVersion+":"+event.eitNumber);
+                                if (oldVersion != -1) {
                                     mTvDataBaseManager.deletePrograms(mVctMap.get(c),
-                                                    String.valueOf(mEitVersions[event.eitNumber]));
-                                                    //String.valueOf(event.eitNumber));
-                                    }*/
-                                    refreshChannelMap();
-                                    for (ChannelInfo ch : channelMap) {
-                                        if (!isAlive) {
-                                            Log.e(TAG, "DTVMonitor is destroyed, exit EVENT_EIT_CHANGED");
-                                            return;
-                                        }
-                                        if (ch.getId() == mVctMap.get(c)) {
-                                            if (DEBUG) Log.d(TAG, "epg eit, update channel(id:"+ch.getId()+" name:"+ch.getDisplayName()+") with new version");
-                                            ch.setEitVersions(mEitVersions);
-                                            if (mCurrentChannel != null && ch.getId() == mCurrentChannel.getId())
-                                                mCurrentChannel.setEitVersions(mEitVersions);
-                                            mTvDataBaseManager.updateChannelInfo(ch);
-                                        }
+                                            String.valueOf(mEitVersions[event.eitNumber]));
+                                            //String.valueOf(event.eitNumber));
+                                }
+                                refreshChannelMap();
+                                for (ChannelInfo ch : channelMap) {
+                                    if (!isAlive) {
+                                        Log.e(TAG, "DTVMonitor is destroyed, exit EVENT_EIT_CHANGED");
+                                        return;
                                     }
+                                    if (ch.getId() == mVctMap.get(c)) {
+                                        if (DEBUG) Log.d(TAG, "epg eit, update channel(id:"+ch.getId()+" name:"+ch.getDisplayName()+") with new version");
+                                        ch.setEitVersions(mEitVersions);
+                                        if (mCurrentChannel != null && ch.getId() == mCurrentChannel.getId())
+                                            mCurrentChannel.setEitVersions(mEitVersions);
+                                        mTvDataBaseManager.updateChannelInfo(ch);
+                                    }
+                                }
                                 }
                             }
 
