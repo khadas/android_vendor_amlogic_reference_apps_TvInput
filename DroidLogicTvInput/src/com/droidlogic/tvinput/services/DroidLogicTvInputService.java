@@ -253,6 +253,8 @@ public abstract class DroidLogicTvInputService extends TvInputService implements
     protected void registerInputSession(TvInputBaseSession session) {
         mSession = session;
         if (session == null) {
+            mTvControlManager.removeSourceConnectListener(this);
+            mTvControlManager.removeSigInfoChangeListener(this);
             mIsPip = false;
             return;
         }
@@ -430,6 +432,9 @@ public abstract class DroidLogicTvInputService extends TvInputService implements
             Log.d(TAG, "onSigChange: " + status.ordinal() + ", "+ status.toString());
         if (mSession == null) {
             Log.w(TAG, "mSession is null ,discard this signal!");
+            return;
+        }
+        if ((signal_info.isPiP == 1) != mIsPip) {
             return;
         }
         onSigChanged(signal_info);
