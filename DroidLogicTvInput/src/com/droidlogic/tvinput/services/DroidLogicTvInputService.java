@@ -59,6 +59,7 @@ import android.hardware.hdmi.HdmiControlManager;
 import android.provider.Settings.Global;
 import android.hardware.hdmi.HdmiDeviceInfo;
 import java.util.HashMap;
+import java.util.concurrent.Executor;
 
 import org.xmlpull.v1.XmlPullParserException;
 
@@ -168,6 +169,12 @@ public abstract class DroidLogicTvInputService extends TvInputService implements
             }
         }
     };
+    public class CallbackExecutor implements Executor {
+        @Override
+        public void execute(Runnable r) {
+            r.run();
+        }
+    }
 
     public void registerChannelScanStartReceiver() {
         IntentFilter filter= new IntentFilter();
@@ -221,9 +228,10 @@ public abstract class DroidLogicTvInputService extends TvInputService implements
     }
 
     protected void acquireHardware(TvInputInfo info){
+        CallbackExecutor executor = new CallbackExecutor();
         mDeviceId = getHardwareDeviceId(info.getId());
         mCurrentInputId = info.getId();
-        mHardware = mTvInputManager.acquireTvInputHardware(mDeviceId, info, mHardwareCallback);
+        mHardware = mTvInputManager.acquireTvInputHardware(mDeviceId, info, null, TvInputService.PRIORITY_HINT_USE_CASE_TYPE_BACKGROUND, executor, mHardwareCallback);
         mHardware.setStreamVolume(1.0f);
         Log.d(TAG, "acquireHardware mDeviceId="+mDeviceId+",  mCurrentInputId="+mCurrentInputId+", mHardware: " + mHardware);
     }
