@@ -42,6 +42,7 @@ import com.droidlogic.app.tv.TvScanConfig;
 import com.droidlogic.app.DataProviderManager;
 import com.droidlogic.tvinput.R;
 
+import java.io.IOException;
 import java.lang.StringBuilder;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -1087,6 +1088,12 @@ public class OptionUiManagerT implements  OnFocusChangeListener, TvControlManage
                 //this log print for auto test
                 Log.d("TvStoreManager", "video channel number =" + channelNumber + " radio channel number =" + radioNumber);
                 showToast(prompt);
+
+                try {
+                    Runtime.getRuntime().exec("sync");
+                } catch (IOException e) {
+                    Log.e(TAG, "error: " + e.getMessage());
+                }
                 break;
 
             case TvControlManager.EVENT_SCAN_END:
