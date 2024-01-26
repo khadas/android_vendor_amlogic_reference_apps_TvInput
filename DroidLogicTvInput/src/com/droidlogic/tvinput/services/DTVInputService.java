@@ -1035,6 +1035,7 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
             mCurrentChannelUri = uri;
             mChannelBlocked = -1;
             isUnlockCurrent_NR = false;
+            mIsBlocked = false;//Restore to default
 
             //isTvPlaying = false;
             if (mIsChannelScrambled
@@ -1308,11 +1309,9 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
                     if (!mUnblockedRatingSet.contains(contentRating)) {
                         notifyContentBlocked(contentRating);
                     }
-                    mIsBlocked = true;
                 } else if (isBlockNoRatingEnable) {
                     if (DEBUG) Log.d(TAG, "notifyBlock because of block_norating:"+tcr.flattenToString());
                     notifyContentBlocked(tcr);
-                    mIsBlocked = true;
                 }
                 mLastBlockedRating = contentRating;
                 if (!isTvPlaying) {
@@ -1331,7 +1330,6 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
                                 notifyContentAllowed();
                             }
                         }
-                        mIsBlocked = false;
                     }
                 }
             }
@@ -1543,7 +1541,6 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
                     }
                 }
                 mCurChannelRatings = null;
-                mTvControlManager.request("ADTV.UnblockCurrentChannel", "");
                 if (DEBUG) Log.d(TAG, "notifyContentAllowed");
                 notifyContentAllowed();
             }
@@ -2103,6 +2100,10 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
             if (DEBUG) Log.d(TAG, "notifyContentAllowed ");
             super.notifyContentAllowed();
             setTuningScreen(false);
+            if (mIsBlocked) {
+                mTvControlManager.request("ADTV.UnblockCurrentChannel", "");
+                mIsBlocked = false;
+            }
             if (enableChannelBlockInServer()) {
                 if (mMainHandler != null) {
                     mMainHandler.post(new Runnable() {
@@ -2120,6 +2121,7 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
             if (DEBUG) Log.d(TAG, "notifyContentBlocked: " +rating);
             super.notifyContentBlocked(rating);
             setTuningScreen(true);
+            mIsBlocked = true;
             mTvControlManager.request("ADTV.BlockCurrentChannel", "");
             if (enableChannelBlockInServer()) {
                 if (mMainHandler != null) {
