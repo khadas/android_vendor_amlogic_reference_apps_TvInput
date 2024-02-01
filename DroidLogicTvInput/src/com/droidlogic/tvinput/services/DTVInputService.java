@@ -2551,7 +2551,7 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
                 if (DEBUG) Log.d(TAG, "\t" + "   [id1:" + s.mId1 + "] [id2:" + s.mId2 + "] [stype:" + s.mStype + "]");
             }
 
-            if (auto >= 0 && mCurrentSubtitles.size() > 0)
+            if (auto >= 0 && mCurrentSubtitles.size() > auto)
                 return generateSubtitleIdString(mCurrentSubtitles.get(auto));
 
             return null;
