@@ -3712,6 +3712,8 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
             private ArrayList<DTVEpgScanner.Event> mEpgeventQueue = new ArrayList<DTVEpgScanner.Event>();
             private ArrayList<DTVEpgScanner.Event> mEpgeventBuffer = new ArrayList<DTVEpgScanner.Event>();
 
+            private long mTDTTime = 0;
+
 
             private void buildVct () {
                 if (mVct == null || channelMap == null) {
@@ -3853,6 +3855,11 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
                             if (DEBUG) Log.d(TAG, "[Time Update]:" + event.time);
                             if (DEBUG) Log.d(TAG, "[Time]:"+getDateAndTime(event.time*1000));
 
+                            if (mTDTTime == event.time) {
+                                return;
+                            }
+
+                            mTDTTime = event.time;
                             if ((mTvTime.getTime()/1000 - event.time) > 30) {
                                 Log.e(TAG, "stream replay, tdt time " + event.time + " now time " + mTvTime.getTime()/1000);
                                 //when the stream back, it would trigger this event.
