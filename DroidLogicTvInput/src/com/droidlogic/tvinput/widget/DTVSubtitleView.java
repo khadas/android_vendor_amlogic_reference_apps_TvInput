@@ -248,7 +248,11 @@ public class DTVSubtitleView extends ViewGroup {
             subtitlemanager_init(getContext()).setSubPid(pid);
             if (subtitlemanager_init(getContext()).open("", (dmx_id << 16)|SUBTITLE_DEMUX_SOURCE)) {
                 if (!is_sub) {
-                    subtitlemanager_init(getContext()).ttGoHome();
+                    subtitlemanager_init(getContext()).ttControl(
+                        SubtitleManager.TT_EVENT_GO_TO_PAGE, page, sub_page, region_id);
+                } else {
+                    subtitlemanager_init(getContext()).ttControl(
+                        SubtitleManager.TT_EVENT_GO_TO_SUBTITLE, page, sub_page, region_id);
                 }
             }
         }
@@ -869,9 +873,11 @@ public class DTVSubtitleView extends ViewGroup {
                         is_subtitle = false;
                     else
                         is_subtitle = true;
-                    tt_notify_status = TT_NOTIFY_SEARCHING;
-                    postInvalidate();
-                    handler.sendEmptyMessageDelayed(TT_NO_SIGAL, TT_DETECT_TIMEOUT);
+                    if (!is_subtitle) {
+                        tt_notify_status = TT_NOTIFY_SEARCHING;
+                        postInvalidate();
+                        handler.sendEmptyMessageDelayed(TT_NO_SIGAL, TT_DETECT_TIMEOUT);
+                    }
                     ret = subtitlemanager_start_dtv_tt(sub_params.dtv_tt.dmx_id,
                             sub_params.dtv_tt.region_id,
                             sub_params.dtv_tt.pid,
