@@ -2584,7 +2584,6 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
         */
         protected int getAudioAuto(ChannelInfo info) {
             /*keep origin design*/
-            boolean useLocalLanguage = !mHasPreferLanguageFeature;
             boolean useSavedTrack = !mHasPreferLanguageFeature;
 
             if (mCurrentAudios == null || mCurrentAudios.size() == 0)
@@ -2602,13 +2601,15 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
             }
 
             /*default language track*/
-            String firstLanguage =
-                mTvControlManager.GetPreferredLanguage(mContext, DroidLogicTvUtils.PREFERRED_AUD_DEFAULT);
-            String secondaryLanguage =
-                mTvControlManager.GetPreferredLanguage(mContext, DroidLogicTvUtils.PREFERRED_AUD_SECONDARY);
-            if (info.isAtscChannel() || useLocalLanguage) {
-                firstLanguage = TvMultilingualText.getLocalLang();
-                secondaryLanguage = "none";
+            String firstLanguage = TvMultilingualText.getLocalLang();
+            String secondaryLanguage = "none";
+            /*prefer language feature*/
+            if (info.isAtscChannel()) {
+                firstLanguage = mTvControlManager.GetPreferredLanguage(mContext, DroidLogicTvUtils.PREFERRED_ATSC_AUD_DEFAULT, "eng");
+                secondaryLanguage =  mTvControlManager.GetPreferredLanguage(mContext, DroidLogicTvUtils.PREFERRED_ATSC_AUD_SECONDARY, "eng");
+            } else if (mHasPreferLanguageFeature) {
+                firstLanguage = mTvControlManager.GetPreferredLanguage(mContext, DroidLogicTvUtils.PREFERRED_AUD_DEFAULT, null);
+                secondaryLanguage =  mTvControlManager.GetPreferredLanguage(mContext, DroidLogicTvUtils.PREFERRED_AUD_SECONDARY, null);
             }
             int firstId = -1;
             int secondId = -1;
@@ -2667,9 +2668,9 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
                         return -1;
                 } else {
                     String firstLanguage =
-                        mTvControlManager.GetPreferredLanguage(mContext, DroidLogicTvUtils.PREFERRED_SUB_DEFAULT);
+                        mTvControlManager.GetPreferredLanguage(mContext, DroidLogicTvUtils.PREFERRED_SUB_DEFAULT, null);
                     String secondaryLanguage =
-                        mTvControlManager.GetPreferredLanguage(mContext, DroidLogicTvUtils.PREFERRED_SUB_SECONDARY);
+                        mTvControlManager.GetPreferredLanguage(mContext, DroidLogicTvUtils.PREFERRED_SUB_SECONDARY, null);
                     if (useLocalLanguage) {
                         firstLanguage = TvMultilingualText.getLocalLang();
                         secondaryLanguage = "none";
