@@ -1658,14 +1658,19 @@ public class CcImplement {
                         {
                             use_caption_manager_style = true;
                             if (cc_setting.font_scale != 1.0 && ccVersion.matches("cea708")) {
-                                if (cc_setting.font_scale == 2.0) {
+                                //To support customer(A) settings and android settings
+                                if (cc_setting.font_scale >= 2.0) {
                                     this.font_scale = 0.8;
-                                } else if (cc_setting.font_scale == 1.5) {
+                                } else if (cc_setting.font_scale >= 1.5 && cc_setting.font_scale < 2.0) {
                                     this.font_scale = 0.7;
-                                } else if (cc_setting.font_scale == 0.75) {
+                                } else if (cc_setting.font_scale > 1.0 && cc_setting.font_scale < 1.5) {
+                                    this.font_scale = 0.65;
+                                } else if (cc_setting.font_scale >= 0.75 && cc_setting.font_scale < 1.0) {
                                     this.font_scale = 0.5;
-                                } else if (cc_setting.font_scale == 0.5) {
+                                } else if (cc_setting.font_scale >= 0.5 && cc_setting.font_scale < 0.75) {
                                     this.font_scale = 0.4;
+                                } else if (cc_setting.font_scale < 0.5) {
+                                    this.font_scale = 0.3;
                                 }
                             } else {
                                 try {
