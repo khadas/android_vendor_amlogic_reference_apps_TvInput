@@ -361,7 +361,8 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
                 if (mTvControlManager.DtvGetVideoFormatInfo().fps != 0) {
                     if (DEBUG) Log.d(TAG, "Signal and video look well");
                     mCurrentSession.notifyVideoAvailable();
-                } else if (ChannelInfo.isRadioChannel(mCurrentSession.mCurrentChannel)) {
+                } else if (ChannelInfo.isRadioChannel(mCurrentSession.mCurrentChannel)
+                        && mCurrentSession.mVideoUnavailableReason != TvInputManager.VIDEO_UNAVAILABLE_REASON_UNKNOWN - 1 /* Video status remains unchanged */) {
                     //for plug/unplug cable quickly case
                     //for radio channel, if display picture, needn't display audio only
                     Log.d(TAG, "current is radio Channel");
@@ -1083,10 +1084,16 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
                 if (enableChannelBlockInServer()) {
                     mIsChannelBlocked = ch.isLocked();
                 }
-                mTvControlManager.request("ADTV.setCurrentChannelBlockStatus","{\"Blocked\":"+ch.isLocked()+"}");
-                int isRadioChannel = ChannelInfo.isRadioChannel(ch)?1:0;
-                mTvControlManager.request("ADTV.setNoneStaticChangetoCurrentProgram","{\"Scrambled\":"+ch.getScrambled()+
-                    ",\"RadioChannel\":"+ isRadioChannel +"}");
+                mTvControlManager.request("ADTV.setCurrentChannelBlockStatus", "{\"Blocked\":" + ch.isLocked() + "}");
+                int isRadioChannel = ChannelInfo.isRadioChannel(ch) ? 1 : 0;
+                int isInvalidService = TvContract.Channels.SERVICE_TYPE_OTHER.equals(ch.getServiceType()) && (ch.getVideoPid() == 0 || ch.getVideoPid() >= 0x1FFF) ? 1 : 0;
+                mTvControlManager.request("ADTV.setNoneStaticChangeToCurrentProgram", "{\"Scrambled\":" + ch.getScrambled()
+                        + ",\"RadioChannel\":" + isRadioChannel
+                        + ",\"invalidService\":" + isInvalidService
+                        + "}");
+                if (isInvalidService == 1) {
+                    updateEasState();
+                }
                 tryPlayProgram(ch);
             } else {
                 Log.w(TAG, "Failed to get channel info for " + uri);
