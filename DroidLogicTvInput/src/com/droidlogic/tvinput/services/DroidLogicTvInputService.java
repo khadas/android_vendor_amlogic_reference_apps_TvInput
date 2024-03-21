@@ -74,7 +74,8 @@ import java.util.Map;
 
 public abstract class DroidLogicTvInputService extends TvInputService implements
         TvInSignalInfo.SigInfoChangeListener, TvControlManager.StorDBEventListener,
-        TvControlManager.ScanningFrameStableListener, TvControlManager.StatusSourceConnectListener {
+        TvControlManager.ScanningFrameStableListener, TvControlManager.StatusSourceConnectListener,
+        TvControlManager.QmsEventListener {
     private static final String TAG = DroidLogicTvInputService.class.getSimpleName();
     private static final boolean DEBUG = Log.isLoggable("HDMI", Log.DEBUG);
 
@@ -91,6 +92,7 @@ public abstract class DroidLogicTvInputService extends TvInputService implements
     private static final int MSG_DO_TUNE = 0;
     private static final int MSG_DO_RELEASE = 1;
     private static final int MSG_DO_SET_SURFACE = 3;
+    private static final int MSG_HIDE_QMS_FPS_TEXT = 4;
 
     private static final String HDMI_CONTROL_ENABLED = "hdmi_control_enabled";
     private static final int ENABLED = 1;
@@ -268,6 +270,7 @@ public abstract class DroidLogicTvInputService extends TvInputService implements
         mTvControlManager.SetSigInfoChangeListener(this);
         mTvControlManager.SetSourceConnectListener(this);
         mTvControlManager.setScanningFrameStableListener(this);
+        mTvControlManager.setQmsListener(this);
     }
 
     /**
@@ -542,6 +545,25 @@ public abstract class DroidLogicTvInputService extends TvInputService implements
     }
 
     @Override
+    public void onEvent(TvControlManager.QmsEvent ev) {
+        if (isHdmiDeviceId(mDeviceId)) {
+            Log.i(TAG,"QmsEvent " + " ev.qms_en = " + ev.qms_en + " ev.qms_base_fps " + ev.qms_base_fps + " ev.qms_fps " + ev.qms_fps);
+            String qms_message = null;
+            double qms_fps = (double) ev.qms_fps / 1000;
+            double qms_base_fps = (double) ev.qms_base_fps / 1000;
+            if (ev.qms_en == 1) {
+                qms_message = "QMS " + (qms_fps % 1 == 0 ? String.valueOf((int) qms_fps) :  String.valueOf(qms_fps));
+            } else {
+                qms_message = qms_base_fps % 1 == 0 ?  String.valueOf((int) qms_base_fps) : String.valueOf(qms_base_fps);
+            }
+
+            mSession.mOverlayView.setQmsFpsText(qms_message);
+            mSession.mOverlayView.setQmsFpsTextVisibility(true);
+            mSessionHandler.sendEmptyMessageDelayed(MSG_HIDE_QMS_FPS_TEXT, 5000);
+        }
+    }
+
+    @Override
     public void StorDBonEvent(TvControlManager.ScannerEvent event) {
         if (mTvStoreManager != null) {
             mTvStoreManager.onStoreEvent(event);
@@ -630,6 +652,10 @@ public abstract class DroidLogicTvInputService extends TvInputService implements
                 SomeArgs args = (SomeArgs) message.obj;
                 doSetSurface((Surface)args.arg1, (TvInputBaseSession)args.arg2);
                 break;
+            case MSG_HIDE_QMS_FPS_TEXT:
+                if (mSession != null) {
+                    mSession.mOverlayView.setQmsFpsTextVisibility(false);
+                }
             }
         }
     }

@@ -35,6 +35,7 @@ public abstract class DroidLogicOverlayView extends FrameLayout {
     protected View mSubtitleView;
     protected TextView mEasTextView;
     protected TextView mTeletextNumber;
+    protected TextView mQmsFpsView;
     protected ImageView mDoblyVisionImageView;
     protected HorizontalScrollView mEasScrollView;
     protected TranslateAnimation mRigthToLeftAnim;
@@ -95,6 +96,10 @@ public abstract class DroidLogicOverlayView extends FrameLayout {
         mTextView.setText(resId);
     }
 
+    public void setQmsFpsText(String qmsFpsText) {
+        mQmsFpsView.setText(qmsFpsText);
+    }
+
     public void setTextForEas(String text){
         mEasTextView.setText(text);
         mEasTextView.post(new Runnable() {
@@ -148,6 +153,10 @@ public abstract class DroidLogicOverlayView extends FrameLayout {
     public void setTextVisibility(boolean visible) {
         mTextView.setTextSize(TypedValue.COMPLEX_UNIT_PX, 60);
         mTextView.setVisibility(visible ? VISIBLE : GONE);
+    }
+
+    public void setQmsFpsTextVisibility(boolean visible) {
+        mQmsFpsView.setVisibility(visible ? VISIBLE : GONE);
     }
 
     public void setTeleTextNumberVisibility(boolean visible) {
