@@ -37,7 +37,7 @@ endif
 include $(CLEAR_VARS)
 
 LOCAL_MODULE    := libjnidtvepgscanner
-LOCAL_MULTILIB := 32
+LOCAL_MULTILIB := both
 LOCAL_LICENSE_KINDS := SPDX-license-identifier-Apache-2.0 SPDX-license-identifier-FTL SPDX-license-identifier-MIT legacy_by_exception_only legacy_notice
 LOCAL_LICENSE_CONDITIONS := by_exception_only notice restricted
 LOCAL_MODULE_TAGS := optional
