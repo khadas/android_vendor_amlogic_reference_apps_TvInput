@@ -1061,7 +1061,7 @@ public class AV1InputService extends DroidLogicTvInputService {
                     trackPid = mCurrentSubtitle.mPid;
                 } else {
                     int trackIndex = CustomerOps.getInstance(mContext).getAvClosedCaptionIndex();
-                    if (trackIndex != -1
+                    if (trackIndex >= 0
                         && mCurrentSubtitles != null
                         && (mCurrentSubtitles.size() > trackIndex)
                         && mCurrentSubtitles.get(trackIndex) != null) {
@@ -1254,7 +1254,7 @@ public class AV1InputService extends DroidLogicTvInputService {
                 auto = mCurrentSubtitle.id;
             } else if (mCurrentSubtitle == null) {
                 int trackIndex = CustomerOps.getInstance(mContext).getAvClosedCaptionIndex();
-                if (trackIndex != -1
+                if (trackIndex >= 0
                         && mCurrentSubtitles != null
                         && (mCurrentSubtitles.size() > trackIndex)
                         && mCurrentSubtitles.get(trackIndex) != null) {
@@ -1277,7 +1277,7 @@ public class AV1InputService extends DroidLogicTvInputService {
                 Log.d(TAG, "\t" + "   [id1:" + s.mId1 + "] [id2:" + s.mId2 + "] [stype:" + s.mStype + "]");
             }
 
-            if (auto >= 0)
+            if (auto >= 0 && mCurrentSubtitles.size() > auto)
                 return generateSubtitleIdString(mCurrentSubtitles.get(auto));
 
             return null;

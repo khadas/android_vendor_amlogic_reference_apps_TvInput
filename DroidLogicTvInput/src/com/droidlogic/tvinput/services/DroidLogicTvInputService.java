@@ -134,7 +134,14 @@ public abstract class DroidLogicTvInputService extends TvInputService implements
         public void onStreamConfigChanged(TvStreamConfig[] configs) {
             if (DEBUG)
                 Log.d(TAG, "onStreamConfigChanged");
-            mConfigs = configs;
+
+            if (configs != null && configs.length == 1 && configs[0].getStreamId() == 0 /* STREAM_ID_UNAVAILABLE = 0 */) {
+                Log.d(TAG, "onStreamConfigChanged configs = " + configs[0].toString() + "is not available");
+                mConfigs = new TvStreamConfig[0]; //Restore to default
+            } else {
+                mConfigs = configs;
+            }
+
             if (DEBUG && mConfigs != null)
                 Log.d(TAG, "mConfigs.length:"+mConfigs.length);
             else
@@ -149,7 +156,7 @@ public abstract class DroidLogicTvInputService extends TvInputService implements
                         Log.d(TAG, " Plug out & Input is not conneted,show overlay infomations");
                         mSession.notifyVideoUnavailable(TvInputManager.VIDEO_UNAVAILABLE_REASON_WEAK_SIGNAL);
                     }*/
-                }  else if (mConfigs.length > 0 && mSurface != null){
+                } else if (mSurface != null) {
                     Log.d(TAG, "open source");
                     //createDecoder();
                     //decoderRelease();

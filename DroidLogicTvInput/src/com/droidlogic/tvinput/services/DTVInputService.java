@@ -361,7 +361,8 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
                 if (mTvControlManager.DtvGetVideoFormatInfo().fps != 0) {
                     if (DEBUG) Log.d(TAG, "Signal and video look well");
                     mCurrentSession.notifyVideoAvailable();
-                } else if (ChannelInfo.isRadioChannel(mCurrentSession.mCurrentChannel)) {
+                } else if (ChannelInfo.isRadioChannel(mCurrentSession.mCurrentChannel)
+                        && mCurrentSession.mVideoUnavailableReason != TvInputManager.VIDEO_UNAVAILABLE_REASON_UNKNOWN - 1 /* Video status remains unchanged */) {
                     //for plug/unplug cable quickly case
                     //for radio channel, if display picture, needn't display audio only
                     Log.d(TAG, "current is radio Channel");
@@ -1035,6 +1036,7 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
             mCurrentChannelUri = uri;
             mChannelBlocked = -1;
             isUnlockCurrent_NR = false;
+            mIsBlocked = false;//Restore to default
 
             //isTvPlaying = false;
             if (mIsChannelScrambled
@@ -1082,10 +1084,16 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
                 if (enableChannelBlockInServer()) {
                     mIsChannelBlocked = ch.isLocked();
                 }
-                mTvControlManager.request("ADTV.setCurrentChannelBlockStatus","{\"Blocked\":"+ch.isLocked()+"}");
-                int isRadioChannel = ChannelInfo.isRadioChannel(ch)?1:0;
-                mTvControlManager.request("ADTV.setNoneStaticChangetoCurrentProgram","{\"Scrambled\":"+ch.getScrambled()+
-                    ",\"RadioChannel\":"+ isRadioChannel +"}");
+                mTvControlManager.request("ADTV.setCurrentChannelBlockStatus", "{\"Blocked\":" + ch.isLocked() + "}");
+                int isRadioChannel = ChannelInfo.isRadioChannel(ch) ? 1 : 0;
+                int isInvalidService = TvContract.Channels.SERVICE_TYPE_OTHER.equals(ch.getServiceType()) && (ch.getVideoPid() == 0 || ch.getVideoPid() >= 0x1FFF) ? 1 : 0;
+                mTvControlManager.request("ADTV.setNoneStaticChangeToCurrentProgram", "{\"Scrambled\":" + ch.getScrambled()
+                        + ",\"RadioChannel\":" + isRadioChannel
+                        + ",\"invalidService\":" + isInvalidService
+                        + "}");
+                if (isInvalidService == 1) {
+                    updateEasState();
+                }
                 tryPlayProgram(ch);
             } else {
                 Log.w(TAG, "Failed to get channel info for " + uri);
@@ -1308,11 +1316,9 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
                     if (!mUnblockedRatingSet.contains(contentRating)) {
                         notifyContentBlocked(contentRating);
                     }
-                    mIsBlocked = true;
                 } else if (isBlockNoRatingEnable) {
                     if (DEBUG) Log.d(TAG, "notifyBlock because of block_norating:"+tcr.flattenToString());
                     notifyContentBlocked(tcr);
-                    mIsBlocked = true;
                 }
                 mLastBlockedRating = contentRating;
                 if (!isTvPlaying) {
@@ -1331,7 +1337,6 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
                                 notifyContentAllowed();
                             }
                         }
-                        mIsBlocked = false;
                     }
                 }
             }
@@ -1543,7 +1548,6 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
                     }
                 }
                 mCurChannelRatings = null;
-                mTvControlManager.request("ADTV.UnblockCurrentChannel", "");
                 if (DEBUG) Log.d(TAG, "notifyContentAllowed");
                 notifyContentAllowed();
             }
@@ -2103,6 +2107,10 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
             if (DEBUG) Log.d(TAG, "notifyContentAllowed ");
             super.notifyContentAllowed();
             setTuningScreen(false);
+            if (mIsBlocked) {
+                mTvControlManager.request("ADTV.UnblockCurrentChannel", "");
+                mIsBlocked = false;
+            }
             if (enableChannelBlockInServer()) {
                 if (mMainHandler != null) {
                     mMainHandler.post(new Runnable() {
@@ -2120,6 +2128,7 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
             if (DEBUG) Log.d(TAG, "notifyContentBlocked: " +rating);
             super.notifyContentBlocked(rating);
             setTuningScreen(true);
+            mIsBlocked = true;
             mTvControlManager.request("ADTV.BlockCurrentChannel", "");
             if (enableChannelBlockInServer()) {
                 if (mMainHandler != null) {
@@ -2551,7 +2560,7 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
                 if (DEBUG) Log.d(TAG, "\t" + "   [id1:" + s.mId1 + "] [id2:" + s.mId2 + "] [stype:" + s.mStype + "]");
             }
 
-            if (auto >= 0 && mCurrentSubtitles.size() > 0)
+            if (auto >= 0 && mCurrentSubtitles.size() > auto)
                 return generateSubtitleIdString(mCurrentSubtitles.get(auto));
 
             return null;
@@ -2582,7 +2591,6 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
         */
         protected int getAudioAuto(ChannelInfo info) {
             /*keep origin design*/
-            boolean useLocalLanguage = !mHasPreferLanguageFeature;
             boolean useSavedTrack = !mHasPreferLanguageFeature;
 
             if (mCurrentAudios == null || mCurrentAudios.size() == 0)
@@ -2600,13 +2608,15 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
             }
 
             /*default language track*/
-            String firstLanguage =
-                mTvControlManager.GetPreferredLanguage(mContext, DroidLogicTvUtils.PREFERRED_AUD_DEFAULT);
-            String secondaryLanguage =
-                mTvControlManager.GetPreferredLanguage(mContext, DroidLogicTvUtils.PREFERRED_AUD_SECONDARY);
-            if (info.isAtscChannel() || useLocalLanguage) {
-                firstLanguage = TvMultilingualText.getLocalLang();
-                secondaryLanguage = "none";
+            String firstLanguage = TvMultilingualText.getLocalLang();
+            String secondaryLanguage = "none";
+            /*prefer language feature*/
+            if (info.isAtscChannel()) {
+                firstLanguage = mTvControlManager.GetPreferredLanguage(mContext, DroidLogicTvUtils.PREFERRED_ATSC_AUD_DEFAULT, "eng");
+                secondaryLanguage =  mTvControlManager.GetPreferredLanguage(mContext, DroidLogicTvUtils.PREFERRED_ATSC_AUD_SECONDARY, "eng");
+            } else if (mHasPreferLanguageFeature) {
+                firstLanguage = mTvControlManager.GetPreferredLanguage(mContext, DroidLogicTvUtils.PREFERRED_AUD_DEFAULT, null);
+                secondaryLanguage =  mTvControlManager.GetPreferredLanguage(mContext, DroidLogicTvUtils.PREFERRED_AUD_SECONDARY, null);
             }
             int firstId = -1;
             int secondId = -1;
@@ -2665,9 +2675,9 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
                         return -1;
                 } else {
                     String firstLanguage =
-                        mTvControlManager.GetPreferredLanguage(mContext, DroidLogicTvUtils.PREFERRED_SUB_DEFAULT);
+                        mTvControlManager.GetPreferredLanguage(mContext, DroidLogicTvUtils.PREFERRED_SUB_DEFAULT, null);
                     String secondaryLanguage =
-                        mTvControlManager.GetPreferredLanguage(mContext, DroidLogicTvUtils.PREFERRED_SUB_SECONDARY);
+                        mTvControlManager.GetPreferredLanguage(mContext, DroidLogicTvUtils.PREFERRED_SUB_SECONDARY, null);
                     if (useLocalLanguage) {
                         firstLanguage = TvMultilingualText.getLocalLang();
                         secondaryLanguage = "none";
@@ -3047,11 +3057,11 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
                 mSubtitleView.setSubParams(params);
 
             } else if (type == ChannelInfo.Subtitle.TYPE_DTV_TELETEXT) {
-                int pgno;
-                pgno = (id1 == 0) ? 800 : id1 * 100;
-                pgno += (id2 & 15) + ((id2 >> 4) & 15) * 10 + ((id2 >> 8) & 15) * 100;
+                //int pgno;
+                //pgno = (id1 == 0) ? 800 : id1 * 100;
+                //pgno += (id2 & 15) + ((id2 >> 4) & 15) * 10 + ((id2 >> 8) & 15) * 100;
                 DTVSubtitleView.DTVTTParams params =
-                    new DTVSubtitleView.DTVTTParams(0, pid, pgno, 0x3F7F, getDbTeletextRegionID(), type, stype, player_instance_id, sync_instance_id);
+                    new DTVSubtitleView.DTVTTParams(0, pid, id1, id2, getDbTeletextRegionID(), type, stype, player_instance_id, sync_instance_id);
                 mSubtitleView.setSubParams(params);
 
             } else if (type == ChannelInfo.Subtitle.TYPE_ATV_TELETEXT) {
@@ -3095,11 +3105,11 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
                 mSubtitleView.setMargin(225, 128, 225, 128);
                 if (DEBUG) Log.d(TAG, "ATV CC pid="+pid+" dp "+id1+ " lang "+lang+",fg_color="+ccParam.fg_color+", fg_op="+ccParam.fg_opacity+", bg_color="+ccParam.bg_color+", bg_op="+ccParam.bg_opacity);
             } else if (type == ChannelInfo.Subtitle.TYPE_DTV_TELETEXT_IMG) {
-                int pgno;
-                pgno = (id1 == 0) ? 800 : id1 * 100;
-                pgno += (id2 & 15) + ((id2 >> 4) & 15) * 10 + ((id2 >> 8) & 15) * 100;
+                //int pgno;
+                //pgno = (id1 == 0) ? 800 : id1 * 100;
+                //pgno += (id2 & 15) + ((id2 >> 4) & 15) * 10 + ((id2 >> 8) & 15) * 100;
                 DTVSubtitleView.DTVTTParams params =
-                        new DTVSubtitleView.DTVTTParams(0, pid, pgno, 0x3F7F, getDbTeletextRegionID(), type, stype, player_instance_id, sync_instance_id);
+                        new DTVSubtitleView.DTVTTParams(0, pid, id1, id2, getDbTeletextRegionID(), type, stype, player_instance_id, sync_instance_id);
                 mSubtitleView.setSubParams(params);
             } else if (type == ChannelInfo.Subtitle.TYPE_ISDB_SUB) {
                 DTVSubtitleView.ISDBParams params = new DTVSubtitleView.ISDBParams(0, pid, 0);
@@ -3710,6 +3720,8 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
             private ArrayList<DTVEpgScanner.Event> mEpgeventQueue = new ArrayList<DTVEpgScanner.Event>();
             private ArrayList<DTVEpgScanner.Event> mEpgeventBuffer = new ArrayList<DTVEpgScanner.Event>();
 
+            private long mTDTTime = 0;
+
 
             private void buildVct () {
                 if (mVct == null || channelMap == null) {
@@ -3851,6 +3863,11 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
                             if (DEBUG) Log.d(TAG, "[Time Update]:" + event.time);
                             if (DEBUG) Log.d(TAG, "[Time]:"+getDateAndTime(event.time*1000));
 
+                            if (mTDTTime == event.time) {
+                                return;
+                            }
+
+                            mTDTTime = event.time;
                             if ((mTvTime.getTime()/1000 - event.time) > 30) {
                                 Log.e(TAG, "stream replay, tdt time " + event.time + " now time " + mTvTime.getTime()/1000);
                                 //when the stream back, it would trigger this event.
