@@ -138,7 +138,7 @@ public abstract class DroidLogicTvInputService extends TvInputService implements
             if (DEBUG)
                 Log.d(TAG, "onStreamConfigChanged");
 
-            if (configs != null && configs.length == 1 && configs[0].getStreamId() == 0 /* STREAM_ID_UNAVAILABLE = 0 */) {
+            if (configs != null && configs.length == 1 && configs[0].getStreamId() == 5 /* STREAM_ID_UNAVAILABLE = 5 */) {
                 Log.d(TAG, "onStreamConfigChanged configs = " + configs[0].toString() + "is not available");
                 mConfigs = new TvStreamConfig[0]; //Restore to default
             } else {
