@@ -1375,7 +1375,7 @@ public class CcImplement {
                 if (ccVersion.equalsIgnoreCase("cea708")) {
                     double rect_left, rect_right, rect_top, rect_bottom;
                     float border = caption_screen.window_border_width;
-                    if (display_effect.equalsIgnoreCase("fade")) {
+                    if (display_effect.equalsIgnoreCase("fade") && (fill_opacity_int != 0)) {
                         fade_paint.setColor(Color.WHITE);
                         fade_paint.setAlpha(effect_percent * 255 / 100);
                         fade_paint.setXfermode(porter_screen);
