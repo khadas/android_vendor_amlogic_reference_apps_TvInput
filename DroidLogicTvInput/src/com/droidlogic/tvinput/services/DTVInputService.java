@@ -1217,6 +1217,9 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
                     mTvControlManager.setBlackoutEnable(1, 0);
                     needResumeBlackout = true;
                 }
+                if (!isSurfaceAlive) {
+                    return true;
+                }
                 mTvControlManager.TvSetFrontEnd(new TvControlManager.FEParas(info.getFEParas()));
 
                 if (needResumeBlackout) {

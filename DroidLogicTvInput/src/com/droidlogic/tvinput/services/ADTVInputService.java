@@ -107,11 +107,6 @@ public class ADTVInputService extends DTVInputService {
             if (info == null)
                 return false;
 
-            if (mSurface == null) {
-                Log.d(TAG, "surface is null, drop playProgram");
-                return true;
-            }
-
             //info.print();
             if (enableChannelBlockInServer()) {
                 mTvControlManager.request("ADTV.block", "{\"isblocked\":" + info.isLocked() + ",\"tunning\":" + true + "}");
@@ -155,6 +150,10 @@ public class ADTVInputService extends DTVInputService {
                             .append(",\"a\":{\"AudComp\":"+info.getAudioCompensation()+"}")
                             .append("}");
 
+                    if (mSurface == null) {
+                        Log.d(TAG, "surface is null, drop playProgram");
+                        return true;
+                    }
                     mTvControlManager.startPlay("ntsc", param.toString());
                     if (enableChannelBlockInServer()) {
                         mTvControlManager.SetAVPlaybackListener(this);
@@ -212,6 +211,10 @@ public class ADTVInputService extends DTVInputService {
                     /* Set ad audio first if available then start playback */
                     /*When TvServer starts Ts player, it will clear the status of the setting, which needs to be delayed*/
                     mHandler.sendMessageDelayed(mHandler.obtainMessage(MSG_START_AUDIO_AD_MAIN_MIX, audioAuto, 0, info), 300);
+                    if (mSurface == null) {
+                        Log.d(TAG, "surface is null, drop playProgram");
+                        return true;
+                    }
                     mTvControlManager.startPlay("atsc", param.toString());
                     mTvControlManager.DtvSetAudioChannleMod(info.getAudioChannel());
 
