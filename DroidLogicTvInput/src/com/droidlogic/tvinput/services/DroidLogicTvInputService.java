@@ -564,6 +564,7 @@ public abstract class DroidLogicTvInputService extends TvInputService implements
 
             mSession.mOverlayView.setQmsFpsText(qms_message);
             mSession.mOverlayView.setQmsFpsTextVisibility(true);
+            mSessionHandler.removeMessages(MSG_HIDE_QMS_FPS_TEXT);
             mSessionHandler.sendEmptyMessageDelayed(MSG_HIDE_QMS_FPS_TEXT, 5000);
         }
     }
