@@ -91,6 +91,8 @@ public class AV1InputService extends DroidLogicTvInputService {
 
     protected static final int KEY_UP = 19;
     protected static final int KEY_DOWN = 20;
+    protected static final int KEY_LEFT = 21;
+    protected static final int KEY_RIGHT = 22;
     protected static final int KEY_RED = 183;
     protected static final int KEY_GREEN = 184;
     protected static final int KEY_YELLOW = 185;
@@ -956,6 +958,10 @@ public class AV1InputService extends DroidLogicTvInputService {
                 case KEY_ZOOM: //Zoom in
                     mSubtitleView.tt_zoom_in();
                     break;
+                case KEY_LEFT:
+                    mSubtitleView.tt_get_previousSubpage();
+                    break;
+                case KEY_RIGHT:
                 case KEY_SUBPG: //Stop
                     mSubtitleView.tt_get_nextsubpage();
                     break;

@@ -1637,10 +1637,6 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
                 case 16:
                     mSubtitleView.tt_handle_number_event(keyCode - 7);
                     break;
-                case KEY_LEFT:
-                    break;
-                case KEY_RIGHT:
-                    break;
                 case KEY_RED: //Red
                     mSubtitleView.colorLink(0);
                     break;
@@ -1685,7 +1681,7 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
                     break;
                 case KEY_DOWN:
                 case KEY_PRIOR_PAGE: //Prior program
-                    reset_atv_status();
+                     reset_atv_status();
                      mSubtitleView.previousPage();
                     break;
                 case KEY_CLOCK: //Fast backward
@@ -1701,6 +1697,10 @@ public class DTVInputService extends DroidLogicTvInputService implements TvContr
                 case KEY_ZOOM: //Zoom in
                     mSubtitleView.tt_zoom_in();
                     break;
+                case KEY_LEFT:
+                    mSubtitleView.tt_get_previousSubpage();
+                    break;
+                case KEY_RIGHT:
                 case KEY_SUBPG: //Stop
                     mSubtitleView.tt_get_nextsubpage();
                     break;

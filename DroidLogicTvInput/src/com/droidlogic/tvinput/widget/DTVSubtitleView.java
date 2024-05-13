@@ -159,7 +159,7 @@ public class DTVSubtitleView extends ViewGroup {
     public static final int TT_PAGE_TYPE = 5;
     public static final int TT_NO_SIGAL = 6;
 
-    private static final int TT_DETECT_TIMEOUT = 3 * 1000;
+    private static final int TT_DETECT_TIMEOUT = 5 * 1000;
 
     private static int init_count = 0;
     private static CaptioningManager captioningManager = null;
@@ -1120,6 +1120,17 @@ public class DTVSubtitleView extends ViewGroup {
                 return;
 
             subtitlemanager_tt_control(SubtitleManager.TT_EVENT_NEXTSUBPAGE, -1, -1);
+        }
+    }
+
+    public void tt_get_previousSubpage() {
+        synchronized(lock) {
+            if (activeView != this)
+                return;
+            if (play_mode != PLAY_TT)
+                return;
+
+            subtitlemanager_tt_control(SubtitleManager.TT_EVENT_PREVIOUSSUBPAGE, -1, -1);
         }
     }
 
