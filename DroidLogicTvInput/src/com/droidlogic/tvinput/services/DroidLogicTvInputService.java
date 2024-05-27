@@ -68,6 +68,7 @@ import android.content.BroadcastReceiver;
 import android.provider.Settings.Secure;
 import android.content.ContentResolver;
 import android.media.MediaCodec;
+import android.media.AudioManager;
 import android.text.TextUtils;
 import android.os.UserHandle;
 import java.util.Map;
@@ -121,6 +122,7 @@ public abstract class DroidLogicTvInputService extends TvInputService implements
     private AudioConfigManager mAudioConfigManager;
     private static int mCurrentUserId = 0;//UserHandle.USER_SYSTEM
     protected boolean mIsPip = false;
+    private AudioManager mAudioManager;
 
     private Handler mHandler = new Handler();
 
@@ -201,6 +203,7 @@ public abstract class DroidLogicTvInputService extends TvInputService implements
         mContentResolver = this.getContentResolver();
         initTvPlaySetting();
         mAudioConfigManager = AudioConfigManager.getInstance(getApplicationContext());
+        mAudioManager = (AudioManager) getApplicationContext().getSystemService(Context.AUDIO_SERVICE);
     }
 
     /**
@@ -792,6 +795,11 @@ public abstract class DroidLogicTvInputService extends TvInputService implements
         if (mHardware != null && mSurface != null && mConfigs.length > 0 && mSurface.isValid()) {
             //createDecoder();
             //decoderRelease();
+            if (mDeviceId == DroidLogicTvUtils.DEVICE_ID_AV1 || mDeviceId == DroidLogicTvUtils.DEVICE_ID_AV2) {
+                mAudioManager.setParameters("hal_param_Audio_Patch=LINEIN " + (mIsPip ? "OFF" : "ON"));
+            } else if (mDeviceId >= DroidLogicTvUtils.DEVICE_ID_HDMI1 || mDeviceId == DroidLogicTvUtils.DEVICE_ID_HDMI4){
+                mAudioManager.setParameters("hal_param_Audio_Patch=HDMIIN " + (mIsPip ? "OFF" : "ON"));
+            }
             if (isPlayingATVInDTVMode) {
                 mHardware.setSurface(mSurface,mConfigs[1]);
             } else {
